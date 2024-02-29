@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概况图 无痕模式无痕模式可以保证 Chrome 在一个相对干净的环境下运行，避免 chrome 上安装的插件影响性能分析结果。文件—&gt;打开新的无痕式窗口，或使用快捷键 ctrl + shift + N 打开无痕模式下的 chrome 新标签页 性能记录点击面板里的 ○，可以记录运行时的性能记录，如下图： 再次点击 Record 或者点击 Stop 停止记录。 加载时性能记录录制若要分析页面记">
+<meta property="og:type" content="article">
+<meta property="og:title" content="chrome performance 面板解析">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/chrome%20performance%E9%9D%A2%E6%9D%BF.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="概况图 无痕模式无痕模式可以保证 Chrome 在一个相对干净的环境下运行，避免 chrome 上安装的插件影响性能分析结果。文件—&gt;打开新的无痕式窗口，或使用快捷键 ctrl + shift + N 打开无痕模式下的 chrome 新标签页 性能记录点击面板里的 ○，可以记录运行时的性能记录，如下图： 再次点击 Record 或者点击 Stop 停止记录。 加载时性能记录录制若要分析页面记">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/B31D1703-5E66-4F19-8D12-448E4D283BC9.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8B1B5662-14CE-47BA-A799-07447D14021C.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8BE55FF4-23D8-4373-9700-6FC306487719.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/2E1306AE-F26B-4DE5-8E02-96106AA7CA11.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9DD1F5C8-9131-4F02-BDA0-8D5DCB6095A3.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/F4D6D133-2769-4173-9090-79276AFC56D4.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/7D7EC5FB-7086-4767-99DB-4BCB7AE4E430.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/A2BE4509-9F3E-4AAC-90D2-E0F68820471A.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9E98C9B1-90D8-4D50-A6BC-FDCB4EB51B0F.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/BBFE6629-C9A4-4901-A79C-3E850194B322.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9278865D-99FC-4945-A7DA-55264A743F15.png">
+<meta property="og:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/DCF59BFE-D663-4BF2-B581-1562C15B425E.png">
+<meta property="article:published_time" content="2023-06-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-06-14T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="性能优化">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://rile14929.github.io/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/B31D1703-5E66-4F19-8D12-448E4D283BC9.png">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/chrome%20performance%E9%9D%A2%E6%9D%BF.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>chrome performance 面板解析 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/chrome%20performance%E9%9D%A2%E6%9D%BF.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          chrome performance 面板解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-15 00:00:00" itemprop="dateCreated datePublished" datetime="2023-06-15T00:00:00+08:00">2023-06-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="概况图"><a href="#概况图" class="headerlink" title="概况图"></a>概况图</h2><p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/B31D1703-5E66-4F19-8D12-448E4D283BC9.png" alt="71d6a82a01519413ca2a1be4b957c544"></p>
+<h4 id="无痕模式"><a href="#无痕模式" class="headerlink" title="无痕模式"></a>无痕模式</h4><p>无痕模式可以保证 Chrome 在一个相对干净的环境下运行，避免 chrome 上安装的插件影响性能分析结果。<br>文件—&gt;打开新的无痕式窗口，或使用快捷键 ctrl + shift + N 打开无痕模式下的 chrome 新标签页</p>
+<h4 id="性能记录"><a href="#性能记录" class="headerlink" title="性能记录"></a>性能记录</h4><p>点击面板里的 ○，可以记录运行时的性能记录，如下图：<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8B1B5662-14CE-47BA-A799-07447D14021C.png" alt="0b82ba7820c6d3ec5b21fe563191a08d"></p>
+<p>再次点击 Record 或者点击 Stop 停止记录。</p>
+<h4 id="加载时性能记录录制"><a href="#加载时性能记录录制" class="headerlink" title="加载时性能记录录制"></a>加载时性能记录录制</h4><p>若要分析页面记载时性能需要录制加载时性能。</p>
+<ol>
+<li>打开待分析性能的页面。</li>
+<li>打开 Devtools 中 Performance 窗口。</li>
+<li>点击左上角重新加载按钮。DevTools 会自动记录页面加载是各项性能指标，加载完成几秒后自动停止记录。<br>Devtools 记录会自动增加<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8BE55FF4-23D8-4373-9700-6FC306487719.png" alt="bcc3faa215dab1b20aefba15f42fa29d"></li>
+</ol>
+<p>页面加载时记录<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/2E1306AE-F26B-4DE5-8E02-96106AA7CA11.png" alt="8faf902b1637f885df323e7791713c33"></p>
+<h4 id="清除记录"><a href="#清除记录" class="headerlink" title="清除记录"></a>清除记录</h4><p>清除 Performance 窗口中的记录数据。</p>
+<h4 id="抓取运行时屏幕快照"><a href="#抓取运行时屏幕快照" class="headerlink" title="抓取运行时屏幕快照"></a>抓取运行时屏幕快照</h4><p>点选 Screenshots 选项开启为每一帧记录屏幕快照功能。</p>
+<h4 id="查看内存度量值"><a href="#查看内存度量值" class="headerlink" title="查看内存度量值"></a>查看内存度量值</h4><p>点选 Memory 选项打开内存度量功能。<br>DevTools 在 Summary 面板上侧显示一个新的 Memory 图表。在 NET 图表下边也显示一个 HEAP 图表。HEAP 图表提供的信息同 Memory 面板中 JS Heap 提供的信息相同。</p>
+<h4 id="开启加速渲染工具"><a href="#开启加速渲染工具" class="headerlink" title="开启加速渲染工具"></a>开启加速渲染工具</h4><p>点选 Enable advanced paint instrumentation 选项（会带来大量的性能开销）</p>
+<h4 id="控制录制过程中-CPU-工作频率"><a href="#控制录制过程中-CPU-工作频率" class="headerlink" title="控制录制过程中 CPU 工作频率"></a>控制录制过程中 CPU 工作频率</h4><p>将 CPU 设置为需要的运算速度模式。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9DD1F5C8-9131-4F02-BDA0-8D5DCB6095A3.png" alt="886c6b4d80132d8e286af2d6ed89cdb9"></p>
+<p>CPU 工作频率的控制结果跟实际使用的机器能力有关。例如，4x slowdown 选项会使你本地 CPU 运算速率比正常情况下降低 4 倍。不同设备由于设计架构不同，Devtools 不能精确模拟移动端设备的 CPU 运算模式。</p>
+<h4 id="保存记录"><a href="#保存记录" class="headerlink" title="保存记录"></a>保存记录</h4><p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/F4D6D133-2769-4173-9090-79276AFC56D4.png" alt="da01643afd3f94a7927b96b2ddd7a044"><br>会生成 JSON 文件</p>
+<h4 id="加载记录"><a href="#加载记录" class="headerlink" title="加载记录"></a>加载记录</h4><p>单击鼠标右键选择 Load Profile 加载记录</p>
+<h2 id="分析性能记录"><a href="#分析性能记录" class="headerlink" title="分析性能记录"></a>分析性能记录</h2><p>运行时或者加载时性能录制结束后，在 Performance 窗口中会显示相关数据，从而对于记录过程中的情况进行分析。</p>
+<h4 id="选择记录中的一部分"><a href="#选择记录中的一部分" class="headerlink" title="选择记录中的一部分"></a>选择记录中的一部分</h4><p>在 Overview 窗口中，可以选中记录的某一部分。 Overview 窗口指的是包含 FPS, CPU 和 NET 图表部分。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/7D7EC5FB-7086-4767-99DB-4BCB7AE4E430.png" alt="3c66d685cee9f55228ca867b5a07a88e"></p>
+<h4 id="查看主线程活动"><a href="#查看主线程活动" class="headerlink" title="查看主线程活动"></a>查看主线程活动</h4><p>利用 Main 区域查看页面主线程加载时的主要活动。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/A2BE4509-9F3E-4AAC-90D2-E0F68820471A.png" alt="26247567fd6f9281d4a16d8fcbcba32f"></p>
+<p>点击某一函数在 Summary 窗口中查看更多详细信息。如图中所示 DevTools 选中_getRequestData 事件。<br>DevTools 采用随机的颜色标识脚本信息，如上面图中浅绿色标识函数调用，深黄色标识脚本活动。<br>若想隐藏火焰图中的 JavaScript 中调用的详细信息，请查看前面介绍的禁用 JavaScript 样例功能。若禁用 JavaScript 样例功能，你只可以看到初始调用事件。比如，图中标识的 Timer fired 和 Function Call 。</p>
+<h4 id="在表格中查看活动"><a href="#在表格中查看活动" class="headerlink" title="在表格中查看活动"></a>在表格中查看活动</h4><p>录制结束后，利用 Main 窗口中信息不是分析数据的唯一方式。DevTools 另外提供了三种表格式分析活动方式，每种方式都是从不同的角度出发:<br>若想分析那些活动占用时间更多时，可以利用 Bottom-Up 窗口。<br>若想分析导致更多活动的根活动时，可以采用 Call Tree。<br>若想按顺序分析记录中发生的活动时，可以利用 Event Log 窗口。</p>
+<h4 id="根活动"><a href="#根活动" class="headerlink" title="根活动"></a>根活动</h4><p>根活动指的是浏览器触发的一系列流程。例如，当你点击页面内容，浏览器触发一个 Event 作为根活动，该 Event 可能回调一个事件处理事件。<br>在 Main 面板中的火焰图中，根活动展示在上部，在 Call Tree 和 Event Log 面板中，根活动展示在顶层。</p>
+<h4 id="Call-Tree-标签页"><a href="#Call-Tree-标签页" class="headerlink" title="Call Tree 标签页"></a>Call Tree 标签页</h4><p>Call Tree 标签页中展示记录中被选中部分的活动信息。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9E98C9B1-90D8-4D50-A6BC-FDCB4EB51B0F.png" alt="6f4e0500bac02ec6143b950c159c63ae"></p>
+<p>图中 Activity 列中显示的 Timer fired、 Paint、Recalculate Style 和 Layout 代表根活动。层级嵌套表示代表回调栈。如图中 Function Call 调用 u，再调用 getImageUrl，继续调用 getLinkUrl 等等。<br>Self Time 表示对应活动消耗的时间，Total Time 表示对应活动以及子活动共同消耗的时间。<br>点击 Self Time，Total Time 或者 Activity 表头区域，可按对应列排序。<br>利用 Filter 输入框区域，输入活动名过滤事件。<br>Grouping 分组菜单默认为 No Grouping，利用该功能可以根据不同的分类将活动进行分组。<br>点击右侧 Show Heaviest Stack，在右侧展示当前选中活动中占用时间最多的子活动信息。</p>
+<p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/BBFE6629-C9A4-4901-A79C-3E850194B322.png" alt="6562aca6f7e21ca7a5746f1cff491455"></p>
+<h4 id="Bottom-Up-标签页"><a href="#Bottom-Up-标签页" class="headerlink" title="Bottom-Up 标签页"></a>Bottom-Up 标签页</h4><p>利用 Bottom-Up 标签查看占用最多时间的活动。<br>Self Time 表示对应活动消耗的时间。<br>Total Time 表示对应活动以及子活动共同消耗的时间。</p>
+<h4 id="Event-Log-标签页"><a href="#Event-Log-标签页" class="headerlink" title="Event Log 标签页"></a>Event Log 标签页</h4><p>Event Log 标签页按顺序展示记录中发生的活动。<br>Start Time 列表示该项活动的开始时间，该时间相对于记录开始时间计算。例如图中选中项开始时间为 1566.2 ms，代表该活动在记录开始之后 1566.2 ms 后开始。<br>Self Time 表示对应活动消耗的时间。<br>Total Time 表示对应活动以及子活动共同消耗的时间。<br>点击 Start Time 、Self Time、Total Time 表头区域，可按对应列排序。<br>利用 Filter 输入框区域，输入活动名过滤事件。<br>利用 Duration 下拉菜单过滤&gt;=1ms 或者&gt;=15ms 的活动。该菜单默认选中 All 选项，展示所有活动。<br>利用 Loading、Experience、Scripting、Rendering、Painting 选项进行分类过滤。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9278865D-99FC-4945-A7DA-55264A743F15.png" alt="58c29a0d627c26c7d9fc1afd80a348ef"></p>
+<h4 id="分析每秒传输帧数（FPS）"><a href="#分析每秒传输帧数（FPS）" class="headerlink" title="分析每秒传输帧数（FPS）"></a>分析每秒传输帧数（FPS）</h4><ul>
+<li>查看 FPS 图表了解整个记录中 FPS 的概况。</li>
+<li>Frames 模块查看每一帧时间消耗。</li>
+<li>利用 FPS meter 工具(MoreTools—&gt;Rendering)在页面运行时实时查看 FPS 信息。</li>
+</ul>
+<h4 id="FPS-图表"><a href="#FPS-图表" class="headerlink" title="FPS 图表"></a>FPS 图表</h4><p>FPS 图表显示了整个记录过程中帧率的概况。图表中绿色折线越高代表帧率越好。<br>FPS 折线图上测出现的红色横线为一条性能警示线，表示帧率低于该值会严重影响用户体验。</p>
+<h4 id="Frames-模块"><a href="#Frames-模块" class="headerlink" title="Frames 模块"></a>Frames 模块</h4><p>Frames 模块清晰表明每个帧消耗时间。<br>鼠标在某一帧上悬停可以查看更多详细信息。</p>
+<h4 id="查看交互信息"><a href="#查看交互信息" class="headerlink" title="查看交互信息"></a>查看交互信息</h4><p>利用 Interactions 模块查看并分析记录过程中用户的交互操作。</p>
+<h4 id="查看-GPU-活动"><a href="#查看-GPU-活动" class="headerlink" title="查看 GPU 活动"></a>查看 GPU 活动</h4><p>在 GPU 模块查看 GPU 活动信息<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/DCF59BFE-D663-4BF2-B581-1562C15B425E.png" alt="69c660e3d248b30ffc310f2813525e08"></p>
+<h4 id="查看栅格活动"><a href="#查看栅格活动" class="headerlink" title="查看栅格活动"></a>查看栅格活动</h4><p>在 Raster 模块查看栅格活动信息</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag"># 性能优化</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/%E5%89%8D%E7%AB%AF%E8%84%9A%E6%89%8B%E6%9E%B6%E6%90%AD%E5%BB%BA.html" rel="prev" title="前端脚手架搭建">
+      <i class="fa fa-chevron-left"></i> 前端脚手架搭建
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/zh-CN/Gitlab%20CI_CD%20%E5%AE%9E%E8%B7%B5.html" rel="next" title="Gitlab CI/CD 实践">
+      Gitlab CI/CD 实践 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概况图"><span class="nav-number">1.</span> <span class="nav-text">概况图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#无痕模式"><span class="nav-number">1.0.1.</span> <span class="nav-text">无痕模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#性能记录"><span class="nav-number">1.0.2.</span> <span class="nav-text">性能记录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#加载时性能记录录制"><span class="nav-number">1.0.3.</span> <span class="nav-text">加载时性能记录录制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#清除记录"><span class="nav-number">1.0.4.</span> <span class="nav-text">清除记录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#抓取运行时屏幕快照"><span class="nav-number">1.0.5.</span> <span class="nav-text">抓取运行时屏幕快照</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看内存度量值"><span class="nav-number">1.0.6.</span> <span class="nav-text">查看内存度量值</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#开启加速渲染工具"><span class="nav-number">1.0.7.</span> <span class="nav-text">开启加速渲染工具</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#控制录制过程中-CPU-工作频率"><span class="nav-number">1.0.8.</span> <span class="nav-text">控制录制过程中 CPU 工作频率</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#保存记录"><span class="nav-number">1.0.9.</span> <span class="nav-text">保存记录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#加载记录"><span class="nav-number">1.0.10.</span> <span class="nav-text">加载记录</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析性能记录"><span class="nav-number">2.</span> <span class="nav-text">分析性能记录</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#选择记录中的一部分"><span class="nav-number">2.0.1.</span> <span class="nav-text">选择记录中的一部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看主线程活动"><span class="nav-number">2.0.2.</span> <span class="nav-text">查看主线程活动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#在表格中查看活动"><span class="nav-number">2.0.3.</span> <span class="nav-text">在表格中查看活动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#根活动"><span class="nav-number">2.0.4.</span> <span class="nav-text">根活动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Call-Tree-标签页"><span class="nav-number">2.0.5.</span> <span class="nav-text">Call Tree 标签页</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Bottom-Up-标签页"><span class="nav-number">2.0.6.</span> <span class="nav-text">Bottom-Up 标签页</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Event-Log-标签页"><span class="nav-number">2.0.7.</span> <span class="nav-text">Event Log 标签页</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#分析每秒传输帧数（FPS）"><span class="nav-number">2.0.8.</span> <span class="nav-text">分析每秒传输帧数（FPS）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FPS-图表"><span class="nav-number">2.0.9.</span> <span class="nav-text">FPS 图表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Frames-模块"><span class="nav-number">2.0.10.</span> <span class="nav-text">Frames 模块</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看交互信息"><span class="nav-number">2.0.11.</span> <span class="nav-text">查看交互信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看-GPU-活动"><span class="nav-number">2.0.12.</span> <span class="nav-text">查看 GPU 活动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看栅格活动"><span class="nav-number">2.0.13.</span> <span class="nav-text">查看栅格活动</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="初始化创建空文件夹，然后运行： 1npx lerna init  这行命令会创建一个空的packages文件夹，一个package.json 和 lerna.json 1234|-- mono-repo    |-- packages    |-- lerna.json    |-- package.json  package.json有一点需要注意，他的private必须设置为true，因为本身">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lerna构建monorepo实战">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="初始化创建空文件夹，然后运行： 1npx lerna init  这行命令会创建一个空的packages文件夹，一个package.json 和 lerna.json 1234|-- mono-repo    |-- packages    |-- lerna.json    |-- package.json  package.json有一点需要注意，他的private必须设置为true，因为本身">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-11-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-25T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="工程化">
+<meta property="article:tag" content="构建">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>lerna构建monorepo实战 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          lerna构建monorepo实战
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-26 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-26T00:00:00+08:00">2022-11-26</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>创建空文件夹，然后运行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npx lerna init</span><br></pre></td></tr></table></figure>
+
+<p>这行命令会创建一个空的<code>packages</code>文件夹，一个<code>package.json</code> 和 <code>lerna.json</code></p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">|<span class="comment">-- mono-repo</span></span><br><span class="line">    |<span class="comment">-- packages</span></span><br><span class="line">    |<span class="comment">-- lerna.json</span></span><br><span class="line">    |<span class="comment">-- package.json</span></span><br></pre></td></tr></table></figure>
+
+<p><code>package.json</code>有一点需要注意，他的<code>private</code>必须设置为<code>true</code>，因为本身并不是一个项目，而是承载多个子项目的项目，所以他自己不能直接发布，发布的应该是 packages/下面的各个子项目。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"private": true</span><br></pre></td></tr></table></figure>
+
+<p>lerna.json 初始化长这样：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"0.0.0"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>packages</code>字段就是标记你子项目的位置，默认就是<code>packages/</code>文件夹，他是一个数组，所以是支持多个不同位置的。</p>
+<p>另外一个需要特别注意的是<code>version</code>字段，这个字段有两个类型的值，一个是像上面的<code>0.0.0</code>这样一个具体版本号，还可以是<code>independent</code>这个关键字。如果是具体版本号，那<code>lerna</code>管理的所有子项目都会有相同的版本号，如果你设置为<code>independent</code>，那各个子项目可以有自己的版本号。</p>
+<p>因为我们的组件都是需要独立版本号，所以直接将<code>version</code>设置为<code>independent</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"independent"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="创建子项目"><a href="#创建子项目" class="headerlink" title="创建子项目"></a>创建子项目</h2><p>创建子项目可以使用 lerna 的命令来创建：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna create &lt;name&gt;</span><br></pre></td></tr></table></figure>
+
+<p>通过 create 创建的子项目目录：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">|<span class="comment">-- mono-repo</span></span><br><span class="line">    |<span class="comment">-- packages</span></span><br><span class="line">        |<span class="comment">-- @mono-repo/project_1 # 推荐使用 `@&lt;项目名&gt;/&lt;子项目名&gt;` 的方式命名</span></span><br><span class="line">            |<span class="comment">--  __test__</span></span><br><span class="line">            |<span class="comment">-- lib</span></span><br><span class="line">        |<span class="comment">-- @mono-repo/project_2</span></span><br><span class="line">            |<span class="comment">--  __test__</span></span><br><span class="line">            |<span class="comment">-- lib</span></span><br><span class="line">    |<span class="comment">-- lerna.json</span></span><br><span class="line">    |<span class="comment">-- package.json</span></span><br></pre></td></tr></table></figure>
+
+<p>这个是使用<code>lerna create</code>默认生成的目录结构，<code>__test__</code>文件夹下面放得是单元测试内容，<code>lib</code>下面放得是代码。实际使用过程中可以进行调整。</p>
+<h2 id="安装依赖项"><a href="#安装依赖项" class="headerlink" title="安装依赖项"></a>安装依赖项</h2><h4 id="lerna-bootstrap"><a href="#lerna-bootstrap" class="headerlink" title="lerna bootstrap"></a>lerna bootstrap</h4><p><code>packages/</code>下面的每个子项目有自己的依赖包，可使用命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">lerna bootstrap</span><br><span class="line">或</span><br><span class="line">lerna bootstrap --hoist</span><br></pre></td></tr></table></figure>
+
+<p>删除已经安装的子项目<code>node_modules</code>可以手动删除，也可以使用：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna clean</span><br></pre></td></tr></table></figure>
+
+<p>具体命令含义可参考</p>
+<ul>
+<li><a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/bootstrap.html" target="_blank" rel="noopener">lerna/bootstrap</a></li>
+<li><a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/clean.html" target="_blank" rel="noopener">lerna/clean</a></li>
+</ul>
+<hr>
+<h4 id="yarn-workspace"><a href="#yarn-workspace" class="headerlink" title="yarn workspace"></a>yarn workspace</h4><p><code>lerna bootstrap --hoist</code>虽然可以将子项目的依赖提升到顶层，但是他的方式比较粗暴：先在每个子项目运行<code>npm install</code>，等所有依赖都安装好后，将他们移动到顶层的<code>node_modules</code>。这会导致一个问题，如果多个子项目依赖同一个第三方库，但是需求的版本不同怎么办？比如我们三个子项目都依赖 antd，但是他们的版本不完全一样：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// @mono-repo/project_1</span></span><br><span class="line">"antd": "3.1.0"</span><br><span class="line"></span><br><span class="line"><span class="comment">// @mono-repo/project_2</span></span><br><span class="line">"antd": "3.1.0"</span><br><span class="line"></span><br><span class="line"><span class="comment">// @mono-repo/project_3</span></span><br><span class="line">"antd": "4.9.4"</span><br></pre></td></tr></table></figure>
+
+<p>这时候就需要介绍<code>yarn workspace</code>了，他可以解决前面说的版本不一致的问题，<code>lerna bootstrap --hoist</code>会把所有子项目用的最多的版本移动到顶层, 从而导致某些子项目依赖不正确，而<code>yarn workspace</code> 则会检查每个子项目里面依赖及其版本，如果版本不一样则会留在子项目自己的<code>node_modules</code>里面，只有完全一样的依赖才会提升到顶层。</p>
+<p>还是以上面这个<code>antd</code>为例，使用<code>yarn workspace</code>的话，会把<code>project1</code>和<code>project2</code>的 3.1.0 版本移动到顶层，而<code>project3</code>项目下会保留自己 4.9.4 的 antd，这样每个子项目都可以拿到自己需要的依赖了。</p>
+<p><code>yarn workspace</code>使用也很简单，<code>yarn 1.0</code>以上的版本默认就是开启<code>workspace</code>的，所以我们只需要在顶层的<code>package.json</code>加一个配置就行：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 顶层package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"workspaces"</span>: [<span class="string">"packages/*"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 lerna.json 里面指定<code>npmClient</code>为<code>yarn</code>，并将<code>useWorkspaces</code>设置为<code>true</code>，稍稍改动变成这样：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"independent"</span>,</span><br><span class="line">  <span class="attr">"npmClient"</span>: <span class="string">"yarn"</span>,</span><br><span class="line">  <span class="attr">"useWorkspaces"</span>: <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用了<code>yarn workspace</code>，我们就不用<code>lerna bootstrap</code>来安装依赖了，而是像以前一样<code>yarn install</code>就行了，他会自动帮我们提升依赖，这里的<code>yarn install</code>无论在顶层运行还是在任意一个子项目运行效果都是一样的。</p>
+<p>更多请参考</p>
+<ul>
+<li><a href="https://classic.yarnpkg.com/en/docs/workspaces/" target="_blank" rel="noopener">yarn workspace</a></li>
+<li><a href="https://yarnpkg.com/cli/workspace" target="_blank" rel="noopener">yarn workspace 命令</a></li>
+</ul>
+<h2 id="启动子项目"><a href="#启动子项目" class="headerlink" title="启动子项目"></a>启动子项目</h2><p>我们可以到子项目的目录运行 start 命令， 但是频繁切换文件是在太麻烦，lerna 提供了相应的命令以帮助我们直接在顶层运行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna run [script]</span><br></pre></td></tr></table></figure>
+
+<p>比如我们在顶层运行了 lerna run start，这相当于去每个子项目下面都去执行 yarn run start 或者 npm run start，具体是 yarn 还是 npm，取决于你在 lerna.json 里面的这个设置：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"npmClient": "yarn"</span><br></pre></td></tr></table></figure>
+
+<p>如果我只想在其中一个子项目运行命令，应该怎么办呢？加上<code>--scope</code>就行了，比如我就在顶层的<code>package.json</code>里面加了这么一行命令：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 顶层package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"scripts"</span>: &#123;</span><br><span class="line">    <span class="attr">"start:project1"</span>: <span class="string">"lerna --scope @mono-repo/project_1 run start"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意<code>scope</code>后面的项目名称不是目录名，而是子项目<code>package.json</code>的<code>name</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 子项目project_1的package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"name"</span>: <span class="string">"@mono-repo/project_1"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="引入公共组件"><a href="#引入公共组件" class="headerlink" title="引入公共组件"></a>引入公共组件</h2><p>当我们的<code>@mono-repo/project_2</code>要引用<code>@mono-repo/project_1</code>的组件，我们需要先在<code>@mono-repo/project_2</code>的<code>package.json</code>里面将依赖加上，我们可以去手动修改他，也可以使用<code>lerna</code>命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna add @mono-repo&#x2F;project_1 --scope @mono-repo&#x2F;project_2</span><br></pre></td></tr></table></figure>
+
+<p>这样我们可以在<code>project2</code>中引入<code>project1</code>的组件，但是需要注意多个项目引用时，要避免各个子项目之间的循环引用。</p>
+<p>组件库相关请参考<a href="">组件库构建与编写</a></p>
+<h2 id="发布"><a href="#发布" class="headerlink" title="发布"></a>发布</h2><p>发布直接使用 lerna publish，因为此前我们已经将 version 修改为 independent，所以在发布时，只会自动更新有变动的子项目以及依赖该子项目的子项目的版本号。</p>
+<p>更多发布命令参数及解释请参考<a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/publish.html" target="_blank" rel="noopener">lerna/publish</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" rel="tag"># 工程化</a>
+              <a href="/tags/%E6%9E%84%E5%BB%BA/" rel="tag"># 构建</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/git-repo-move.html" rel="prev" title="git仓库迁移方案">
+      <i class="fa fa-chevron-left"></i> git仓库迁移方案
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/zh-CN/%E4%BD%BF%E7%94%A8verdaccio%E6%90%AD%E5%BB%BA%E7%A7%81%E6%9C%89npm%E4%BB%93%E5%BA%93.html" rel="next" title="使用verdaccio搭建私有npm仓库">
+      使用verdaccio搭建私有npm仓库 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#初始化"><span class="nav-number">1.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建子项目"><span class="nav-number">2.</span> <span class="nav-text">创建子项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装依赖项"><span class="nav-number">3.</span> <span class="nav-text">安装依赖项</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#lerna-bootstrap"><span class="nav-number">3.0.1.</span> <span class="nav-text">lerna bootstrap</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#yarn-workspace"><span class="nav-number">3.0.2.</span> <span class="nav-text">yarn workspace</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启动子项目"><span class="nav-number">4.</span> <span class="nav-text">启动子项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#引入公共组件"><span class="nav-number">5.</span> <span class="nav-text">引入公共组件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#发布"><span class="nav-number">6.</span> <span class="nav-text">发布</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
