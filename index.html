@@ -164,6 +164,149 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%EF%BC%88Update%20the%20rendering%EF%BC%89%E7%9A%84%E6%97%B6%E6%9C%BA.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%EF%BC%88Update%20the%20rendering%EF%BC%89%E7%9A%84%E6%97%B6%E6%9C%BA.html" class="post-title-link" itemprop="url">EventLoop规范 - 更新渲染（Update the rendering）的时机验证</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-10-18 00:00:00" itemprop="dateCreated datePublished" datetime="2023-10-18T00:00:00+08:00">2023-10-18</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="event-loop-中的-Update-the-rendering（更新渲染）"><a href="#event-loop-中的-Update-the-rendering（更新渲染）" class="headerlink" title="event loop 中的 Update the rendering（更新渲染）"></a>event loop 中的 Update the rendering（更新渲染）</h2><p>这是 event loop 中很重要部分，在<a href="https://rile14929.github.io/zh-CN/eventloop.html">这篇文章处理流程（processing model）中第 3 步会进行 Update the rendering（更新渲染）</a>，规范允许浏览器自己选择是否更新视图。也就是说可能不是每轮事件循环都去更新视图，只在有必要的时候才更新视图。</p>
+<p>渲染的基本流程：</p>
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image.png)</p>
+<ol>
+<li>处理 HTML 标记并构建 DOM 树。</li>
+<li>处理 CSS 标记并构建 CSSOM 树， 将 DOM 与 CSSOM 合并成一个渲染树。</li>
+<li>根据渲染树来布局，以计算每个节点的几何信息。</li>
+<li>将各个节点绘制到屏幕上。</li>
+</ol>
+<p>Note: 可以看到渲染树的一个重要组成部分是 CSSOM 树，绘制会等待 css 样式全部加载完成才进行，所以 css 样式加载的快慢是首屏呈现快慢的关键点。</p>
+<p>下面讨论一下渲染的时机。规范定义在一次循环中，Update the rendering 会在 Microtasks: Perform a microtask checkpoint 后运行。</p>
+<h2 id="渲染时机"><a href="#渲染时机" class="headerlink" title="渲染时机"></a>渲染时机</h2><blockquote>
+<p>以下的例子中，用 chrome 的 Developer tools 的 Timeline 查看各部分运行的时间点。当我们点击这个 div 的时候，截取了部分时间线。</p>
+<p>黄色部分是脚本运行，紫色部分是更新 render 树、计算布局，绿色部分是绘制。</p>
+<p>绿色和紫色部分可以认为是 Update the rendering。</p>
+</blockquote>
+<h3 id="例子-1"><a href="#例子-1" class="headerlink" title="例子 1"></a>例子 1</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> t = <span class="number">0</span></span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = t</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-1.png)</p>
+<p>在这一轮事件循环中，setTimeout1 是作为 task 运行的，可以看到 paint 确实是在 task 运行完后才进行的。</p>
+<h3 id="例子-2"><a href="#例子-2" class="headerlink" title="例子 2"></a>例子 2</h3><p>现在换成一个 microtask 任务，看看有什么变化</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">Promise1</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line">      con.textContext = 0</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-2.png)</p>
+<p>和上一个例子很像，不同的是这一轮事件循环的 task 是 click 的回调函数，Promise1 则是 microtask，paint 同样是在他们之后完成。</p>
+<p>标准就是那么定义的，答案似乎显而易见，我们把例子变得稍微复杂一些。</p>
+<h3 id="例子-3"><a href="#例子-3" class="headerlink" title="例子 3"></a>例子 3</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="title">click1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-3.png)<br>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-4.png)</p>
+<p>经过多次测试，执行和渲染顺序可能会出现上图的两种情况，根据 timeline 可以看出，图 1 中 setTimeout 分别执行并且浏览器绘制了两次，图二中 setTimeout1 和 setTimeout2 中间并没有绘制, 而是最后绘制了一次，也基本符合规范，但是需要验证这两次 setTimeout 是否在两次 task 中。</p>
+<h3 id="例子-4"><a href="#例子-4" class="headerlink" title="例子 4"></a>例子 4</h3><p>在两个 setTimeout 中增加 microtask。再次确认 setTimeout 在两个 task 中</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line"><span class="javascript">      <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">Promise1</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">        <span class="built_in">console</span>.log(<span class="string">'Promise1'</span>)</span></span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line"><span class="javascript">      <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">Promise2</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">        <span class="built_in">console</span>.log(<span class="string">'Promise2'</span>)</span></span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-5.png)<br>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-9.png)</p>
+<p>从 run microtasks 中可以看出来，setTimeout1、setTimeout2 是运行在两次 event loop 中</p>
+<h3 id="例子-5"><a href="#例子-5" class="headerlink" title="例子 5"></a>例子 5</h3><p>将时间间隔加大一些。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="title">click1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line">    &#125;, 17)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>当间隔增大，大部分时候可以肉眼从看到先变成 0，再变成 1 的过程。但是有时也是会合并起来，只 paint 一次</p>
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-6.png)</p>
+<p>通过 timeline，可以看到 setTimeout1 后接着 paint，后执行了 setTimeout2 后也有 paint</p>
+<h3 id="例子-6"><a href="#例子-6" class="headerlink" title="例子 6"></a>例子 6</h3><p>我们在同一时间执行多个 setTimeout 来模拟执行间隔很短的 task。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 2</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 3</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 4</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 5</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 6</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-7.png)<br>图一中总共 paint 了一次</p>
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-8.png)</p>
+<p>图二中一共 paint 了两次，所以多次 task 的间隔很短，仍会进行绘制。</p>
+<h3 id="例子-7"><a href="#例子-7" class="headerlink" title="例子 7"></a>例子 7</h3><p>有说法是一轮 event loop 执行的 microtask 有数量限制，多余的 microtask 会放到下一轮执行。下面例子将 microtask 的数量增加到 25000。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">      con.textContent = <span class="string">'task1'</span></span></span><br><span class="line"><span class="actionscript">      <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">250000</span>; i++) &#123;</span></span><br><span class="line"><span class="javascript">        <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span></span><br><span class="line">          con.textContent = i</span><br><span class="line">        &#125;)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">      con.textContent = <span class="string">'task2'</span></span></span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-10.png)</p>
+<p>可以看到脚本的运行耗费大量的时间，并且阻塞了渲染。</p>
+<p>我们看 setTimeout2 的运行情况</p>
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-11.png)</p>
+<p>可以看到 setTimeout2 这轮 event loop 没有 run microtasks，microtasks 在 setTimeout1 被全部执行完了。</p>
+<p>25000 个 microtasks 不能说明 event loop 对 microtasks 数量没有限制，有可能这个限制数很高，远超 25000，但日常使用基本不会使用那么多了。</p>
+<p>对 microtasks 增加数量限制，一个很大的作用是防止脚本运行时间过长，阻塞渲染。</p>
+<h3 id="例子-8"><a href="#例子-8" class="headerlink" title="例子 8"></a>例子 8</h3><p>使用 requestAnimationFrame。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> i = <span class="number">0</span></span></span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> raf = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    requestAnimationFrame(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = i</span><br><span class="line"><span class="javascript">      <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span></span><br><span class="line">        i++</span><br><span class="line">        if (i &lt; 3) raf()</span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">    raf()</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>看下总体的 timeline<br>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-12.png)</p>
+<p>单看某一个 requestAnimationFrame<br>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-13.png)</p>
+<ul>
+<li>可以看出 requestAnimationFrame 是在更新渲染阶段的执行的，其执行顺序早于 paint，并且不会被合并执行，非常适合做动画</li>
+<li>在 requestAnimationFrame 回调内有新的 microtasks 进入时，也会执行完所有的 microtasks 才会进入到渲染阶段</li>
+</ul>
+<h3 id="例子-9"><a href="#例子-9" class="headerlink" title="例子 9"></a>例子 9</h3><p>验证 postMessage 是否是 task</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="actionscript">  setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">console</span>.log(<span class="string">'setTimeout1'</span>)</span></span><br><span class="line">  &#125;, 0)</span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> channel = <span class="keyword">new</span> MessageChannel()</span></span><br><span class="line"><span class="actionscript">  channel.port1.onmessage = <span class="function"><span class="keyword">function</span> <span class="title">onmessage1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">console</span>.log(<span class="string">'postMessage'</span>)</span></span><br><span class="line"><span class="javascript">    <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">promise1</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">      <span class="built_in">console</span>.log(<span class="string">'promise1'</span>)</span></span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">  channel.port2.postMessage(0)</span><br><span class="line"><span class="actionscript">  setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">console</span>.log(<span class="string">'setTimeout2'</span>)</span></span><br><span class="line">  &#125;, 0)</span><br><span class="line"><span class="javascript">  <span class="built_in">console</span>.log(<span class="string">'sync'</span>)</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>执行顺序：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sync</span><br><span class="line">setTimeout1</span><br><span class="line">postMessage</span><br><span class="line">promise1</span><br><span class="line">setTimeout2</span><br></pre></td></tr></table></figure>
+
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-14.png)</p>
+<p>第一个黄块是 setTimeout1，第二个是 onmessage1，第三个是 promise1，第四个是 setTimeout2。显而易见，postMessage 属于 task。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>结合规范和以上验证案例可以得出一些结论：</p>
+<ul>
+<li>event loop 的大致循环过程，可以用下边的图表示：</li>
+</ul>
+<p>![alt text](../images/EventLoop 验证更新渲染（Update the rendering）的时机/image-15.png)</p>
+<ul>
+<li>在一轮 event loop 中多次修改同一 dom，只有最后一次会进行绘制。</li>
+<li>例 3-例 6 这几个结果是非常不可控的，如果这两个 Task 之间正好遇到了浏览器认定的渲染机会，那么它会重绘，否则就不会。</li>
+<li>渲染更新（Update the rendering）会在 event loop 中的 tasks 和 microtasks 完成后进行，但并不是每轮 event loop 都会更新渲染，这里有一个 rendering opportunity 的概念，判断是否需要渲染，这取决于是否修改了 dom 和浏览器觉得是否有必要在此时立即将新状态呈现给用户，也要要根据屏幕刷新率、页面性能、页面是否在后台运行来共同决定。通常来说这个渲染间隔是固定的。（所以多个 task 很可能在一次渲染之间执行）</li>
+<li>事件循环不一定每轮都伴随着重渲染，但是如果有微任务，一定会伴随着微任务执行。</li>
+<li>如果希望在每轮 event loop 都即时呈现变动，可以使用 requestAnimationFrame。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/semantic-release.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -255,7 +398,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/zh-CN/eventloop.html" class="post-title-link" itemprop="url">EventLoop 规范和总结</a>
+            <a href="/zh-CN/eventloop.html" class="post-title-link" itemprop="url">EventLoop规范 阅读和总结</a>
         </h2>
 
         <div class="post-meta">
@@ -1306,140 +1449,11 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html" class="post-title-link" itemprop="url">lerna构建monorepo实战</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-11-26 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-26T00:00:00+08:00">2022-11-26</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>创建空文件夹，然后运行：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npx lerna init</span><br></pre></td></tr></table></figure>
-
-<p>这行命令会创建一个空的<code>packages</code>文件夹，一个<code>package.json</code> 和 <code>lerna.json</code></p>
-<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">|<span class="comment">-- mono-repo</span></span><br><span class="line">    |<span class="comment">-- packages</span></span><br><span class="line">    |<span class="comment">-- lerna.json</span></span><br><span class="line">    |<span class="comment">-- package.json</span></span><br></pre></td></tr></table></figure>
-
-<p><code>package.json</code>有一点需要注意，他的<code>private</code>必须设置为<code>true</code>，因为本身并不是一个项目，而是承载多个子项目的项目，所以他自己不能直接发布，发布的应该是 packages/下面的各个子项目。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"private": true</span><br></pre></td></tr></table></figure>
-
-<p>lerna.json 初始化长这样：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"0.0.0"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>packages</code>字段就是标记你子项目的位置，默认就是<code>packages/</code>文件夹，他是一个数组，所以是支持多个不同位置的。</p>
-<p>另外一个需要特别注意的是<code>version</code>字段，这个字段有两个类型的值，一个是像上面的<code>0.0.0</code>这样一个具体版本号，还可以是<code>independent</code>这个关键字。如果是具体版本号，那<code>lerna</code>管理的所有子项目都会有相同的版本号，如果你设置为<code>independent</code>，那各个子项目可以有自己的版本号。</p>
-<p>因为我们的组件都是需要独立版本号，所以直接将<code>version</code>设置为<code>independent</code></p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"independent"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="创建子项目"><a href="#创建子项目" class="headerlink" title="创建子项目"></a>创建子项目</h2><p>创建子项目可以使用 lerna 的命令来创建：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna create &lt;name&gt;</span><br></pre></td></tr></table></figure>
-
-<p>通过 create 创建的子项目目录：</p>
-<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">|<span class="comment">-- mono-repo</span></span><br><span class="line">    |<span class="comment">-- packages</span></span><br><span class="line">        |<span class="comment">-- @mono-repo/project_1 # 推荐使用 `@&lt;项目名&gt;/&lt;子项目名&gt;` 的方式命名</span></span><br><span class="line">            |<span class="comment">--  __test__</span></span><br><span class="line">            |<span class="comment">-- lib</span></span><br><span class="line">        |<span class="comment">-- @mono-repo/project_2</span></span><br><span class="line">            |<span class="comment">--  __test__</span></span><br><span class="line">            |<span class="comment">-- lib</span></span><br><span class="line">    |<span class="comment">-- lerna.json</span></span><br><span class="line">    |<span class="comment">-- package.json</span></span><br></pre></td></tr></table></figure>
-
-<p>这个是使用<code>lerna create</code>默认生成的目录结构，<code>__test__</code>文件夹下面放得是单元测试内容，<code>lib</code>下面放得是代码。实际使用过程中可以进行调整。</p>
-<h2 id="安装依赖项"><a href="#安装依赖项" class="headerlink" title="安装依赖项"></a>安装依赖项</h2><h4 id="lerna-bootstrap"><a href="#lerna-bootstrap" class="headerlink" title="lerna bootstrap"></a>lerna bootstrap</h4><p><code>packages/</code>下面的每个子项目有自己的依赖包，可使用命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">lerna bootstrap</span><br><span class="line">或</span><br><span class="line">lerna bootstrap --hoist</span><br></pre></td></tr></table></figure>
-
-<p>删除已经安装的子项目<code>node_modules</code>可以手动删除，也可以使用：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna clean</span><br></pre></td></tr></table></figure>
-
-<p>具体命令含义可参考</p>
-<ul>
-<li><a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/bootstrap.html" target="_blank" rel="noopener">lerna/bootstrap</a></li>
-<li><a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/clean.html" target="_blank" rel="noopener">lerna/clean</a></li>
-</ul>
-<hr>
-<h4 id="yarn-workspace"><a href="#yarn-workspace" class="headerlink" title="yarn workspace"></a>yarn workspace</h4><p><code>lerna bootstrap --hoist</code>虽然可以将子项目的依赖提升到顶层，但是他的方式比较粗暴：先在每个子项目运行<code>npm install</code>，等所有依赖都安装好后，将他们移动到顶层的<code>node_modules</code>。这会导致一个问题，如果多个子项目依赖同一个第三方库，但是需求的版本不同怎么办？比如我们三个子项目都依赖 antd，但是他们的版本不完全一样：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// @mono-repo/project_1</span></span><br><span class="line">"antd": "3.1.0"</span><br><span class="line"></span><br><span class="line"><span class="comment">// @mono-repo/project_2</span></span><br><span class="line">"antd": "3.1.0"</span><br><span class="line"></span><br><span class="line"><span class="comment">// @mono-repo/project_3</span></span><br><span class="line">"antd": "4.9.4"</span><br></pre></td></tr></table></figure>
-
-<p>这时候就需要介绍<code>yarn workspace</code>了，他可以解决前面说的版本不一致的问题，<code>lerna bootstrap --hoist</code>会把所有子项目用的最多的版本移动到顶层, 从而导致某些子项目依赖不正确，而<code>yarn workspace</code> 则会检查每个子项目里面依赖及其版本，如果版本不一样则会留在子项目自己的<code>node_modules</code>里面，只有完全一样的依赖才会提升到顶层。</p>
-<p>还是以上面这个<code>antd</code>为例，使用<code>yarn workspace</code>的话，会把<code>project1</code>和<code>project2</code>的 3.1.0 版本移动到顶层，而<code>project3</code>项目下会保留自己 4.9.4 的 antd，这样每个子项目都可以拿到自己需要的依赖了。</p>
-<p><code>yarn workspace</code>使用也很简单，<code>yarn 1.0</code>以上的版本默认就是开启<code>workspace</code>的，所以我们只需要在顶层的<code>package.json</code>加一个配置就行：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 顶层package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"workspaces"</span>: [<span class="string">"packages/*"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在 lerna.json 里面指定<code>npmClient</code>为<code>yarn</code>，并将<code>useWorkspaces</code>设置为<code>true</code>，稍稍改动变成这样：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"independent"</span>,</span><br><span class="line">  <span class="attr">"npmClient"</span>: <span class="string">"yarn"</span>,</span><br><span class="line">  <span class="attr">"useWorkspaces"</span>: <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用了<code>yarn workspace</code>，我们就不用<code>lerna bootstrap</code>来安装依赖了，而是像以前一样<code>yarn install</code>就行了，他会自动帮我们提升依赖，这里的<code>yarn install</code>无论在顶层运行还是在任意一个子项目运行效果都是一样的。</p>
-<p>更多请参考</p>
-<ul>
-<li><a href="https://classic.yarnpkg.com/en/docs/workspaces/" target="_blank" rel="noopener">yarn workspace</a></li>
-<li><a href="https://yarnpkg.com/cli/workspace" target="_blank" rel="noopener">yarn workspace 命令</a></li>
-</ul>
-<h2 id="启动子项目"><a href="#启动子项目" class="headerlink" title="启动子项目"></a>启动子项目</h2><p>我们可以到子项目的目录运行 start 命令， 但是频繁切换文件是在太麻烦，lerna 提供了相应的命令以帮助我们直接在顶层运行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna run [script]</span><br></pre></td></tr></table></figure>
-
-<p>比如我们在顶层运行了 lerna run start，这相当于去每个子项目下面都去执行 yarn run start 或者 npm run start，具体是 yarn 还是 npm，取决于你在 lerna.json 里面的这个设置：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"npmClient": "yarn"</span><br></pre></td></tr></table></figure>
-
-<p>如果我只想在其中一个子项目运行命令，应该怎么办呢？加上<code>--scope</code>就行了，比如我就在顶层的<code>package.json</code>里面加了这么一行命令：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 顶层package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"scripts"</span>: &#123;</span><br><span class="line">    <span class="attr">"start:project1"</span>: <span class="string">"lerna --scope @mono-repo/project_1 run start"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注意<code>scope</code>后面的项目名称不是目录名，而是子项目<code>package.json</code>的<code>name</code></p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 子项目project_1的package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"name"</span>: <span class="string">"@mono-repo/project_1"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="引入公共组件"><a href="#引入公共组件" class="headerlink" title="引入公共组件"></a>引入公共组件</h2><p>当我们的<code>@mono-repo/project_2</code>要引用<code>@mono-repo/project_1</code>的组件，我们需要先在<code>@mono-repo/project_2</code>的<code>package.json</code>里面将依赖加上，我们可以去手动修改他，也可以使用<code>lerna</code>命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna add @mono-repo&#x2F;project_1 --scope @mono-repo&#x2F;project_2</span><br></pre></td></tr></table></figure>
-
-<p>这样我们可以在<code>project2</code>中引入<code>project1</code>的组件，但是需要注意多个项目引用时，要避免各个子项目之间的循环引用。</p>
-<p>组件库相关请参考<a href="">组件库构建与编写</a></p>
-<h2 id="发布"><a href="#发布" class="headerlink" title="发布"></a>发布</h2><p>发布直接使用 lerna publish，因为此前我们已经将 version 修改为 independent，所以在发布时，只会自动更新有变动的子项目以及依赖该子项目的子项目的版本号。</p>
-<p>更多发布命令参数及解释请参考<a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/publish.html" target="_blank" rel="noopener">lerna/publish</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1507,7 +1521,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-count">21</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
