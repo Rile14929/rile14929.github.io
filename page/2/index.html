@@ -164,6 +164,161 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/%E4%BD%BF%E7%94%A8verdaccio%E6%90%AD%E5%BB%BA%E7%A7%81%E6%9C%89npm%E4%BB%93%E5%BA%93.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/%E4%BD%BF%E7%94%A8verdaccio%E6%90%AD%E5%BB%BA%E7%A7%81%E6%9C%89npm%E4%BB%93%E5%BA%93.html" class="post-title-link" itemprop="url">使用verdaccio搭建私有npm仓库</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-27 00:00:00" itemprop="dateCreated datePublished" datetime="2022-12-27T00:00:00+08:00">2022-12-27</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><ul>
+<li>公司内部开发的私有包,统一管理,方便开发和使用，尤其版本管理需要统一；</li>
+<li>安全性，既要保证组件的使用方便也要保证组件的私有性。</li>
+</ul>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>为什么选择 verdaccio？ <strong>免费</strong>！</p>
+<p>市面上付费的软件大概有下面几种：</p>
+<ul>
+<li>付费选择：MyGet (<a href="http://www.myget.org" target="_blank" rel="noopener">www.myget.org</a>) 团队版 40 美元/月，且只能有五个账号和 2GB 的存储空间。</li>
+<li>NPM Org (<a href="http://www.npmjs.com" target="_blank" rel="noopener">www.npmjs.com</a>) 每个账号每月 7 美元付费的我们就不考虑了，没这个必要，而且付费的也不是就更好。</li>
+</ul>
+<p>sinopia 搭建十分简单友好，不过这玩意儿已经停止维护了，最近的更新在几年前，但有一群人出了 sinopia 的一个分支，起了个名字叫 verdaccio，这个就是这次主要推荐的方案，这个库一直在积极维护中，github start 13000+，看来还是比较靠谱的，而且国内外各种资料参考下来，这个方案也是受到极力推荐的。</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>详细的<a href="https://verdaccio.org/docs/installation/" target="_blank" rel="noopener">安装教程</a>。如果是本地安装, 可以使用 npm、yarn 或 pnpm 全局安装即可。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">npm install --g verdaccio</span><br><span class="line">或</span><br><span class="line">yarn global add verdaccio</span><br><span class="line">或</span><br><span class="line">pnpm install -g verdaccio</span><br></pre></td></tr></table></figure>
+
+<h2 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h2><p>在命令行执行下方命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">verdaccio</span><br></pre></td></tr></table></figure>
+
+<p>启动后会输出配置文件地址和浏览器访问地址</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">warn --- config file  - xxx&#x2F;xxx&#x2F;config.yaml</span><br><span class="line">warn --- http address - http:&#x2F;&#x2F;localhost:4873&#x2F; - verdaccio&#x2F;5.14.0</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><h4 id="nrm"><a href="#nrm" class="headerlink" title="nrm"></a>nrm</h4><p>nrm 是一个 NPM 源管理器，可以使用 nrm 在不同的源切换。</p>
+<ul>
+<li>安装 nrm</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g nrm</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>查看源</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nrm ls</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">  npm ---------- https:&#x2F;&#x2F;registry.npmjs.org&#x2F;</span><br><span class="line">  yarn --------- https:&#x2F;&#x2F;registry.yarnpkg.com&#x2F;</span><br><span class="line">  tencent ------ https:&#x2F;&#x2F;mirrors.cloud.tencent.com&#x2F;npm&#x2F;</span><br><span class="line">  cnpm --------- https:&#x2F;&#x2F;r.cnpmjs.org&#x2F;</span><br><span class="line">  taobao ------- https:&#x2F;&#x2F;registry.npmmirror.com&#x2F;</span><br><span class="line">  npmMirror ---- https:&#x2F;&#x2F;skimdb.npmjs.com&#x2F;registry&#x2F;</span><br><span class="line">* fc ----------- http:&#x2F;&#x2F;localhost:4873&#x2F;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>添加或删除私有源</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">nrm add registry_name registry_url #添加源，registry_name为源的名称，registry_url为源的地址</span><br><span class="line">nrm del registry_name #删除源</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>使用私有源</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nrm use registry_name</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h4 id="登录私有源"><a href="#登录私有源" class="headerlink" title="登录私有源"></a>登录私有源</h4><ul>
+<li>添加用户</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm adduser</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>登录</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm login</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h4 id="发布包"><a href="#发布包" class="headerlink" title="发布包"></a>发布包</h4><p>在项目的根目录下执行 npm publish 就可以将包发布到私有源</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm publish</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="权限管理"><a href="#权限管理" class="headerlink" title="权限管理"></a>权限管理</h3><h4 id="权限配置"><a href="#权限配置" class="headerlink" title="权限配置"></a>权限配置</h4><p>一般团队或者公司的私有项目，会采用不同的权限控制，配置文件的 packages 是配置包的权限的</p>
+<ul>
+<li>匹配包名<ul>
+<li>‘@/‘ 表示带有@<em>/</em>的作用域包</li>
+<li>** 表示其他的所有包</li>
+<li>可以配置自己的包比如：’private-‘, ‘my-‘等等</li>
+</ul>
+</li>
+<li>操作权限<ul>
+<li>access 表示哪一类用户可以对匹配的项目进行安装(install)</li>
+<li>publish 表示哪一类用户可以对匹配的项目进行发布(publish)</li>
+<li>proxy 表示如果库中没有此包，此能过上面配置的 npmjs 去获取</li>
+</ul>
+</li>
+<li>用户权限：<ul>
+<li>$all 表示所有人都可以执行对应的操作</li>
+<li>$authenticated 表示只有通过验证的人可以执行对应操作</li>
+<li>$anonymous 表示只有匿名者可以进行对应操作（通常无用）</li>
+<li>这里可以写已经注册的用户名，做到精细化控制</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="实际配置场景"><a href="#实际配置场景" class="headerlink" title="实际配置场景"></a>实际配置场景</h4><p>公司里有两个前端团队 teamA 和 teamB，私有源上的所有包都可以安装，但是每个团队只能发布或移除自己团队的包。则可以使用以下配置。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># config.yaml</span></span><br><span class="line"><span class="attr">packages:</span></span><br><span class="line">  <span class="comment"># teamA</span></span><br><span class="line">  <span class="string">'@teamA/*'</span><span class="string">:</span></span><br><span class="line">    <span class="attr">access:</span> <span class="string">$all</span></span><br><span class="line">    <span class="attr">publish:</span> <span class="string">teamA-user1</span> <span class="string">teamA-user2</span> <span class="string">teamA-user3</span></span><br><span class="line">    <span class="attr">unpublish:</span> <span class="string">teamA-user1</span> <span class="string">teamA-user2</span> <span class="string">teamA-user3</span></span><br><span class="line">    <span class="attr">proxy:</span> <span class="string">npmjs</span></span><br><span class="line">  <span class="comment"># teamB</span></span><br><span class="line">  <span class="string">'@teamB/*'</span><span class="string">:</span></span><br><span class="line">    <span class="attr">access:</span> <span class="string">$all</span></span><br><span class="line">    <span class="attr">publish:</span> <span class="string">teamB-user1</span> <span class="string">teamB-user2</span> <span class="string">teamB-user3</span></span><br><span class="line">    <span class="attr">unpublish:</span> <span class="string">teamB-user1</span> <span class="string">teamB-user2</span> <span class="string">teamB-user3</span></span><br><span class="line">    <span class="attr">proxy:</span> <span class="string">npmjs</span></span><br><span class="line">  <span class="comment"># 其他所有包</span></span><br><span class="line">  <span class="string">'**'</span><span class="string">:</span></span><br><span class="line">    <span class="attr">access:</span> <span class="string">$all</span></span><br><span class="line">    <span class="attr">publish:</span> <span class="string">$authenticated</span></span><br><span class="line">    <span class="attr">unpublish:</span> <span class="string">$authenticated</span></span><br><span class="line">    <span class="attr">proxy:</span> <span class="string">npmjs</span></span><br></pre></td></tr></table></figure>
+
+<p>设置好 packages 后，我们还得更改 auth 的值，因为此时注册用户是没有限制的，也就是说如果你的私有 npm 库部署在外网环境的话，任何人都可以通过 npm adduser 命令注册用户。</p>
+<p>显然，这是不允许出现的情况，所以这里我们需要设置 auth 的 max_users 为 -1，它代表的是禁用注册用户：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">auth:</span></span><br><span class="line">  <span class="attr">max_users:</span> <span class="number">-1</span></span><br></pre></td></tr></table></figure>
+
+<p>如果需要添加用户这里介绍两种方法：</p>
+<ul>
+<li>可以通过安装 htpasswd-for-sinopia 来添加账号</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm install htpasswd-for-sinopia -g #全局安装htpasswd-for-sinopia</span><br><span class="line">sinopia-adduser # 在 htpasswd 目录下执行</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>可以通过官方提供的工具来生成  <a href="https://hostingcanada.org/htpasswd-generator/" target="_blank" rel="noopener">htpasswd-generator</a> ，将生成的段字符串添加到 htpasswd 中即可。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1323,136 +1478,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/hexo-github.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/hexo-github.html" class="post-title-link" itemprop="url">Mac下使用Hexo+Github搭建个人博客</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-24 00:00:00" itemprop="dateCreated datePublished" datetime="2020-04-24T00:00:00+08:00">2020-04-24</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h4 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h4><p>Hexo是一个快速、简洁且高效的博客框架，最近有搭建个人博客的想法，便动手尝试了。</p>
-<h4 id="二、初始化"><a href="#二、初始化" class="headerlink" title="二、初始化"></a>二、初始化</h4><h5 id="1-安装Node-js"><a href="#1-安装Node-js" class="headerlink" title="1.安装Node.js"></a>1.安装Node.js</h5><p>去<a href="https://nodejs.org/zh-cn/download/" target="_blank" rel="noopener">Node.js官网</a>下载相应的安装包，一路安装即可。</p>
-<h5 id="2-安装Git"><a href="#2-安装Git" class="headerlink" title="2.安装Git"></a>2.安装Git</h5><p>Mac下安装Xcode就自带Git。</p>
-<h5 id="3-注册Github账号并新建仓库"><a href="#3-注册Github账号并新建仓库" class="headerlink" title="3.注册Github账号并新建仓库"></a>3.注册Github账号并新建仓库</h5><p>注册过程就不多说了，注册完成之后需要新建一个仓库。需要注意的是新创建的仓库的名字，必须是username.github.io。例如我的username是rile，那么新创建的仓库的名字便是rile.github.io。</p>
-<h5 id="4-配置SSH-Key"><a href="#4-配置SSH-Key" class="headerlink" title="4.配置SSH Key"></a>4.配置SSH Key</h5><p>这一步不是必须的，配置SSH Key的话之后每次更新博客就不用都输入用户名和密码，可以方便一些。</p>
-<p>以下是详细配置过程。<br> (1)检查本机上是否已经存在SSH Key<br> 打开终端，输入如下命令</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> .ssh</span><br><span class="line">ls -la</span><br></pre></td></tr></table></figure>
-
-<p>检查终端输出的文件列表中是否已经存在id_rsa.pub 或 id_dsa.pub 文件，如果文件已经存在，则直接进入第三步。</p>
-<p>(2)创建一个SSH Key<br> 在终端输入如下命令</p>
-<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">ssh-keygen</span> <span class="selector-tag">-t</span> <span class="selector-tag">rsa</span> <span class="selector-tag">-C</span> "<span class="selector-tag">your_email</span><span class="keyword">@example</span>.com"</span><br></pre></td></tr></table></figure>
-
-<p>按下回车，让你输入文件名，直接回车会创建使用默认文件名的文件(推荐使用默认文件名)，然后会提示你输入两次密码，可以为空。</p>
-<p>(3)添加SSH Key到Github</p>
-<p>如果你没有指定文件名（也就是使用的默认文件名），那么你的.ssh文件夹下，应该有一个id_rsa.pub文件了，打开该文件，复制里面的文本。然后登录Github，点击右上角头像右边的三角图标，点击Settings，然后在左边菜单栏点击SSH and GPG keys，点击New SSH key，Title 随便填一个，在Key栏填入你复制的内容，点击Add SSH key，就添加成功了。</p>
-<p>(4)检验SSH Key是否配置成功<br> 在终端输入如下命令</p>
-<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">ssh</span> <span class="selector-tag">-T</span> <span class="selector-tag">git</span><span class="keyword">@github</span>.com</span><br></pre></td></tr></table></figure>
-
-<p>如果出现</p>
-<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Are you sure you want to <span class="keyword">continue</span> connecting (yes/no)?</span><br></pre></td></tr></table></figure>
-
-<p>请输入yes再按回车。</p>
-<p>如果最后出现</p>
-<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Hi username! You<span class="symbol">'ve</span> successfully authenticated, but GitHub does not provide shell access.</span><br></pre></td></tr></table></figure>
-
-<p>就说明你的SSH Key配置成功了。</p>
-<h5 id="5-安装Hexo"><a href="#5-安装Hexo" class="headerlink" title="5.安装Hexo"></a>5.安装Hexo</h5><p>前面我们已经安装了Node.js，这里我们使用npm命令来安装Hexo</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo</span><br></pre></td></tr></table></figure>
-
-<p>等待一会就会完成下载安装。</p>
-<p>接着在任意位置创建一个文件夹，如Blog，cd到该路径下执行以下命令</p>
-<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo <span class="keyword">init</span></span><br></pre></td></tr></table></figure>
-
-<p>该命令会在目标文件夹内建立网站所需要的所有文件。接下来是安装依赖包</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install</span><br></pre></td></tr></table></figure>
-
-<p>到这里本地博客就搭建好了。执行以下命令（在你博客的对应文件夹路径下）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hexo generate</span><br><span class="line">hexo server</span><br></pre></td></tr></table></figure>
-
-<p>在浏览器输入<a href="http://localhost:4000/" target="_blank" rel="noopener">http://localhost:4000/</a> 就可以进行查看了。<br> 当然这个博客是本地的，别人是无法访问的，之后我们需要部署到GitHub上。</p>
-<h5 id="6-同步本地博客到Github"><a href="#6-同步本地博客到Github" class="headerlink" title="6.同步本地博客到Github"></a>6.同步本地博客到Github</h5><p>编辑自己创建的本地博客文件夹中的_config.yml中的deploy节点</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  type: git</span><br><span class="line">  repo: git@github.com:username&#x2F;username.github.io.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
-
-<p>注意：repo为这种形式的是配置了SSH Key之后的，如果没有配置则使用Https形式的地址。</p>
-<p>为了能够使Hexo部署到GitHub上，需要安装一个插件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
-
-<p>然后输入以下命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo generate</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>在浏览器输入username.github.io就可以访问你的博客了。</p>
-<h4 id="三、配置主题"><a href="#三、配置主题" class="headerlink" title="三、配置主题"></a>三、配置主题</h4><p>Hexo主题在Github上有很多，如</p>
-<ul>
-<li><a href="https://github.com/iissnan/hexo-theme-next" target="_blank" rel="noopener">https://github.com/iissnan/hexo-theme-next</a></li>
-<li><a href="https://github.com/litten/hexo-theme-yilia" target="_blank" rel="noopener">https://github.com/litten/hexo-theme-yilia</a></li>
-<li><a href="https://github.com/viosey/hexo-theme-material" target="_blank" rel="noopener">https://github.com/viosey/hexo-theme-material</a></li>
-<li><a href="https://github.com/LouisBarranqueiro/hexo-theme-tranquilpeak" target="_blank" rel="noopener">https://github.com/LouisBarranqueiro/hexo-theme-tranquilpeak</a></li>
-<li><a href="https://github.com/pinggod/hexo-theme-apollo" target="_blank" rel="noopener">https://github.com/pinggod/hexo-theme-apollo</a></li>
-<li><a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">https://github.com/ppoffice/hexo-theme-icarus</a></li>
-</ul>
-<p>挑选自己喜欢的一款。当然，自己能够DIY也是极好的。</p>
-<h4 id="四、发布新文章"><a href="#四、发布新文章" class="headerlink" title="四、发布新文章"></a>四、发布新文章</h4><p>执行以下命令</p>
-<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo <span class="keyword">new</span> post <span class="string">'文章标题'</span></span><br></pre></td></tr></table></figure>
-
-<p>这样会在本地博客的source-&gt;_posts路径下看到新建的文章，是md格式的，推荐使用Typora进行编辑。</p>
-<p>编辑完成之后，与上面一样，执行以下命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo generate</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>即可更新到Github上。</p>
-<p>最后晒上我的博客地址：<a href="https://rile14929.github.io/">https://rile14929.github.io/</a><br> 祝大家也早日拥有自己的博客~</p>
-<h4 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h4><ul>
-<li><a href="https://www.jianshu.com/p/e5f95eb990ad" target="_blank" rel="noopener">https://www.jianshu.com/p/e5f95eb990ad</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1525,7 +1550,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-count">22</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
