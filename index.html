@@ -348,7 +348,7 @@
 
 <p>这里会做一个 if 判断，如果有参考元素 anchor，就执行 parent.insertBefore ，否则执行 parent.appendChild 来把 child 添加到 parent 下，完成节点的挂载。</p>
 <p>因为 insert 的执行是在处理子节点后，所以挂载的顺序是先子节点，后父节点，最终挂载到最外层的容器上。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><img src="../images/vue3%E6%B8%B2%E6%9F%93%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90/image-1.jpg" alt="image-1"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><img src="../images/vue3%E6%B8%B2%E6%9F%93%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90/image-1.png" alt="image-1"></p>
 <p>到这里，从我们创建实例到页面渲染，再到更新的全流程就讲完了，总结一下，大致就是:</p>
 <ol>
 <li><p>每个Vue组件都需要产出一份虚拟DOM，也就是组件的render函数的返回值，render函数你可以直接手写，也可以通过template传递模板字符串，由Vue内部来编译成渲染函数，平常我们开发时写的Vue单文件，最终也会编译成普通的Vue组件选项对象；</p>
