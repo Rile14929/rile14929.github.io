@@ -178,7 +178,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/zh-CN/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3.html" class="post-title-link" itemprop="url">vue3渲染组件前初始化详解</a>
+            <a href="/zh-CN/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3.html" class="post-title-link" itemprop="url">组件渲染前初始化详解</a>
         </h2>
 
         <div class="post-meta">
@@ -187,9 +187,8 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-03-13 21:19:33 / 修改时间：21:20:16" itemprop="dateCreated datePublished" datetime="2024-03-13T21:19:33+08:00">2024-03-13</time>
+              <time title="创建时间：2023-12-10 00:00:00" itemprop="dateCreated datePublished" datetime="2023-12-10T00:00:00+08:00">2023-12-10</time>
             </span>
 
           
@@ -203,7 +202,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="组件渲染前初始化详解"><a href="#组件渲染前初始化详解" class="headerlink" title="组件渲染前初始化详解"></a>组件渲染前初始化详解</h2><h3 id="创建和设置组件实例"><a href="#创建和设置组件实例" class="headerlink" title="创建和设置组件实例"></a>创建和设置组件实例</h3><p>首先，我们来回顾一下组件的渲染流程：创建 vnode 、渲染 vnode 和生成 DOM。</p>
+          <h3 id="创建和设置组件实例"><a href="#创建和设置组件实例" class="headerlink" title="创建和设置组件实例"></a>创建和设置组件实例</h3><p>首先，我们来回顾一下组件的渲染流程：创建 vnode 、渲染 vnode 和生成 DOM。</p>
 <p>其中渲染 vnode 的过程主要就是在挂载组件：</p>
 <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> mountComponent = <span class="function">(<span class="params">initialVNode, container, anchor, parentComponent, parentSuspense, isSVG, optimized</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="comment">// 创建组件实例</span></span><br><span class="line">  <span class="keyword">const</span> instance = (initialVNode.component = createComponentInstance(initialVNode, parentComponent, parentSuspense))</span><br><span class="line">  <span class="comment">// 设置组件实例</span></span><br><span class="line">  setupComponent(instance)</span><br><span class="line">  <span class="comment">// 设置并运行带副作用的渲染函数</span></span><br><span class="line">  setupRenderEffect(instance, initialVNode, container, anchor, parentSuspense, isSVG, optimized)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
