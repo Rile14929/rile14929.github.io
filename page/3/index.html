@@ -164,6 +164,155 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/week02.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/week02.html" class="post-title-link" itemprop="url">前端进阶训练营 - 第二周学习总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-08-09 00:00:00" itemprop="dateCreated datePublished" datetime="2020-08-09T00:00:00+08:00">2020-08-09</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="第二周-浏览器工作原理"><a href="#第二周-浏览器工作原理" class="headerlink" title="第二周 | 浏览器工作原理"></a>第二周 | 浏览器工作原理</h1><h2 id="1-浏览器工作原理总论"><a href="#1-浏览器工作原理总论" class="headerlink" title="1. 浏览器工作原理总论"></a>1. 浏览器工作原理总论</h2><p>我们看到的页面都是一个图片形式，专业点的说法叫做位图（Bitmap），然后经过显卡转换为我们可以识别的光信号。</p>
+<p>整个的过程就是从 URL 转换为 Bitmap 的过程，先发送请求到服务器，然后服务器返回 HTML，浏览器解析 HTML，然后构建 DOM 树，计算 CSS 属性，然后进行排版，最后渲染成位图，然后经过操作系统或硬件的 API 完成视图的显示</p>
+<h2 id="2-状态机"><a href="#2-状态机" class="headerlink" title="2. 状态机"></a>2. 状态机</h2><ul>
+<li>有限状态机<ul>
+<li>每一个状态都是一个机器<ul>
+<li>在每个机器里都可以做计算、存储、输出</li>
+<li>所有的机器接受的输入时一致的</li>
+<li>状态机的每一个机器本省没有状态，如果我们用函数来表示的话，应该是纯函数（无副作用）</li>
+</ul>
+</li>
+<li>每一个机器都知道下一个状态<ul>
+<li>每个机器都有确定的下一个状态（Moore）</li>
+<li>每个机器根据输入决定下一个状态（Mealy）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>之前看winter老师的课，讲到状态机，并没有怎么理解，但是通过这次winter老师的讲解以及使用和不适用状态机堆字符进行处理后，对状态机的概念和简单的运用都有了理解</li>
+</ul>
+<h2 id="3-HTTP"><a href="#3-HTTP" class="headerlink" title="3. HTTP"></a>3. HTTP</h2><ul>
+<li><p>HTTP协议解析</p>
+<ul>
+<li><p>ISO-OSI七层网络模型</p>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>对应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>应用层</td>
+<td>HTTP</td>
+</tr>
+<tr>
+<td>表示层</td>
+<td>HTTP</td>
+</tr>
+<tr>
+<td>会话层</td>
+<td>HTTP</td>
+</tr>
+<tr>
+<td>传输层</td>
+<td>TCP / UDP</td>
+</tr>
+<tr>
+<td>网络层</td>
+<td>Internet</td>
+</tr>
+<tr>
+<td>数据链路层</td>
+<td>4G/5G/Wi-Fi</td>
+</tr>
+<tr>
+<td>物理层</td>
+<td>4G/5G/Wi-Fi</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>HTTP请求的实现</p>
+<ul>
+<li>HTTP请求总结<ul>
+<li>设计一个HTTP请求的类</li>
+<li>content type 是一个必要字段 要有默认值</li>
+<li>body是key value 格式</li>
+<li>不同的content-type影响body的格式</li>
+</ul>
+</li>
+<li>发送请求 &amp;&amp; send函数的编写<ul>
+<li>设计支持已有的connection或者自己新建connection</li>
+<li>收到数据传递给parser</li>
+<li>根据parser的状态resolve Promise</li>
+</ul>
+</li>
+<li>response解析<ul>
+<li>Response必须分段构造，用ResponseParse来装配</li>
+<li>ResponseParse分段处理ResponseText，我们用状态机来分析文本的结构</li>
+</ul>
+</li>
+<li>response body 解析<ul>
+<li>Response的body可能根据content-type有不同的结构，采用子parser的结构来解决问题</li>
+<li>以TrunkedBodyParser为例，同样适用状态机来处理body的格式</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/hexo-github.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -432,7 +581,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">22</span>
+          <span class="site-state-item-count">23</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

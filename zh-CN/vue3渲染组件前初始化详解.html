@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="组件渲染前初始化详解创建和设置组件实例首先，我们来回顾一下组件的渲染流程：创建 vnode 、渲染 vnode 和生成 DOM。 其中渲染 vnode 的过程主要就是在挂载组件： 12345678const mountComponent &#x3D; (initialVNode, container, anchor, parentComponent, parentSuspense, isSVG, optim">
+<meta property="og:type" content="article">
+<meta property="og:title" content="vue3渲染组件前初始化详解">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="组件渲染前初始化详解创建和设置组件实例首先，我们来回顾一下组件的渲染流程：创建 vnode 、渲染 vnode 和生成 DOM。 其中渲染 vnode 的过程主要就是在挂载组件： 12345678const mountComponent &#x3D; (initialVNode, container, anchor, parentComponent, parentSuspense, isSVG, optim">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://rile14929.github.io/images/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3/image-1.png">
+<meta property="article:published_time" content="2024-03-13T13:19:33.536Z">
+<meta property="article:modified_time" content="2024-03-13T13:20:16.354Z">
+<meta property="article:author" content="rile">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://rile14929.github.io/images/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3/image-1.png">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>vue3渲染组件前初始化详解 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          vue3渲染组件前初始化详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-03-13 21:19:33 / 修改时间：21:20:16" itemprop="dateCreated datePublished" datetime="2024-03-13T21:19:33+08:00">2024-03-13</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="组件渲染前初始化详解"><a href="#组件渲染前初始化详解" class="headerlink" title="组件渲染前初始化详解"></a>组件渲染前初始化详解</h2><h3 id="创建和设置组件实例"><a href="#创建和设置组件实例" class="headerlink" title="创建和设置组件实例"></a>创建和设置组件实例</h3><p>首先，我们来回顾一下组件的渲染流程：创建 vnode 、渲染 vnode 和生成 DOM。</p>
+<p>其中渲染 vnode 的过程主要就是在挂载组件：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> mountComponent = <span class="function">(<span class="params">initialVNode, container, anchor, parentComponent, parentSuspense, isSVG, optimized</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="comment">// 创建组件实例</span></span><br><span class="line">  <span class="keyword">const</span> instance = (initialVNode.component = createComponentInstance(initialVNode, parentComponent, parentSuspense))</span><br><span class="line">  <span class="comment">// 设置组件实例</span></span><br><span class="line">  setupComponent(instance)</span><br><span class="line">  <span class="comment">// 设置并运行带副作用的渲染函数</span></span><br><span class="line">  setupRenderEffect(instance, initialVNode, container, anchor, parentSuspense, isSVG, optimized)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，这段挂载组件的代码主要做了三件事情：创建组件实例、设置组件实例和设置并运行带副作用的渲染函数。前面的文章没有仔细分析，所以我们重点分析前两个流程。</p>
+<p>先看创建组件实例的流程，我们要关注 createComponentInstance 方法的实现：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">createComponentInstance</span> (<span class="params">vnode, parent, suspense</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// 继承父组件实例上的 appContext，如果是根组件，则直接从根 vnode 中取。</span></span><br><span class="line">  <span class="keyword">const</span> appContext = (parent ? parent.appContext : vnode.appContext) || emptyAppContext;</span><br><span class="line">  <span class="keyword">const</span> instance = &#123;</span><br><span class="line">    <span class="comment">// 组件唯一 id</span></span><br><span class="line">    uid: uid++,</span><br><span class="line">    <span class="comment">// 组件 vnode</span></span><br><span class="line">    vnode,</span><br><span class="line">    <span class="comment">// 父组件实例</span></span><br><span class="line">    parent,</span><br><span class="line">    <span class="comment">// app 上下文</span></span><br><span class="line">    appContext,</span><br><span class="line">    <span class="comment">// vnode 节点类型</span></span><br><span class="line">    type: vnode.type,</span><br><span class="line">    <span class="comment">// 根组件实例</span></span><br><span class="line">    root: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 新的组件 vnode</span></span><br><span class="line">    next: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 子节点 vnode</span></span><br><span class="line">    subTree: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 带副作用更新函数</span></span><br><span class="line">    update: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 渲染函数</span></span><br><span class="line">    render: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 渲染上下文代理</span></span><br><span class="line">    proxy: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 带有 with 区块的渲染上下文代理</span></span><br><span class="line">    withProxy: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 响应式相关对象</span></span><br><span class="line">    effects: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 依赖注入相关</span></span><br><span class="line">    provides: parent ? parent.provides : <span class="built_in">Object</span>.create(appContext.provides),</span><br><span class="line">    <span class="comment">// 渲染代理的属性访问缓存</span></span><br><span class="line">    accessCache: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 渲染缓存</span></span><br><span class="line">    renderCache: [],</span><br><span class="line">    <span class="comment">// 渲染上下文</span></span><br><span class="line">    ctx: EMPTY_OBJ,</span><br><span class="line">    <span class="comment">// data 数据</span></span><br><span class="line">    data: EMPTY_OBJ,</span><br><span class="line">    <span class="comment">// props 数据</span></span><br><span class="line">    props: EMPTY_OBJ,</span><br><span class="line">    <span class="comment">// 普通属性</span></span><br><span class="line">    attrs: EMPTY_OBJ,</span><br><span class="line">    <span class="comment">// 插槽相关</span></span><br><span class="line">    slots: EMPTY_OBJ,</span><br><span class="line">    <span class="comment">// 组件或者 DOM 的 ref 引用</span></span><br><span class="line">    refs: EMPTY_OBJ,</span><br><span class="line">    <span class="comment">// setup 函数返回的响应式结果</span></span><br><span class="line">    setupState: EMPTY_OBJ,</span><br><span class="line">    <span class="comment">// setup 函数上下文数据</span></span><br><span class="line">    setupContext: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 注册的组件</span></span><br><span class="line">    components: <span class="built_in">Object</span>.create(appContext.components),</span><br><span class="line">    <span class="comment">// 注册的指令</span></span><br><span class="line">    directives: <span class="built_in">Object</span>.create(appContext.directives),</span><br><span class="line">    <span class="comment">// suspense 相关</span></span><br><span class="line">    suspense,</span><br><span class="line">    <span class="comment">// suspense 异步依赖</span></span><br><span class="line">    asyncDep: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// suspense 异步依赖是否都已处理</span></span><br><span class="line">    asyncResolved: <span class="literal">false</span>,</span><br><span class="line">    <span class="comment">// 是否挂载</span></span><br><span class="line">    isMounted: <span class="literal">false</span>,</span><br><span class="line">    <span class="comment">// 是否卸载</span></span><br><span class="line">    isUnmounted: <span class="literal">false</span>,</span><br><span class="line">    <span class="comment">// 是否激活</span></span><br><span class="line">    isDeactivated: <span class="literal">false</span>,</span><br><span class="line">    <span class="comment">// 生命周期，before create</span></span><br><span class="line">    bc: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期，created</span></span><br><span class="line">    c: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期，before mount</span></span><br><span class="line">    bm: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期，mounted</span></span><br><span class="line">    m: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期，before update</span></span><br><span class="line">    bu: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期，updated</span></span><br><span class="line">    u: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期，unmounted</span></span><br><span class="line">    um: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期，before unmount</span></span><br><span class="line">    bum: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期, deactivate</span></span><br><span class="line">    da: <span class="literal">null</span></span><br><span class="line">    <span class="comment">// 生命周期 activated</span></span><br><span class="line">    a: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期 render triggered</span></span><br><span class="line">    rtg: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期 render tracked</span></span><br><span class="line">    rtc: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 生命周期 error captured</span></span><br><span class="line">    ec: <span class="literal">null</span>,</span><br><span class="line">    <span class="comment">// 派发事件方法</span></span><br><span class="line">    emit: <span class="literal">null</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 初始化渲染上下文</span></span><br><span class="line">  instance.ctx = &#123; <span class="attr">_</span>: instance &#125;</span><br><span class="line">  <span class="comment">// 初始化根组件指针</span></span><br><span class="line">  instance.root = parent ? parent.root : instance</span><br><span class="line">  <span class="comment">// 初始化派发事件方法</span></span><br><span class="line">  instance.emit = emit.bind(<span class="literal">null</span>, instance)</span><br><span class="line">  <span class="keyword">return</span> instance</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>创建好 instance 实例后，接下来就是设置它的一些属性。目前已完成了组件的上下文、根组件指针以及派发事件方法的设置。</p>
+<p>接着是组件实例的设置流程，对 setup 函数的处理就在这里完成，我们来看一下 setupComponent 方法的实现：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">setupComponent</span> (<span class="params">instance, isSSR = false</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> &#123; props, children, shapeFlag &#125; = instance.vnode</span><br><span class="line">  <span class="comment">// 判断是否是一个有状态的组件</span></span><br><span class="line">  <span class="keyword">const</span> isStateful = shapeFlag &amp; <span class="number">4</span></span><br><span class="line">  <span class="comment">// 初始化 props</span></span><br><span class="line">  initProps(instance, props, isStateful, isSSR)</span><br><span class="line">  <span class="comment">// 初始化 插槽</span></span><br><span class="line">  initSlots(instance, children)</span><br><span class="line">  <span class="comment">// 设置有状态的组件实例</span></span><br><span class="line">  <span class="keyword">const</span> setupResult = isStateful</span><br><span class="line">    ? setupStatefulComponent(instance, isSSR)</span><br><span class="line">    : <span class="literal">undefined</span></span><br><span class="line">  <span class="keyword">return</span> setupResult</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，我们从组件 vnode 中获取了 props、children、shapeFlag 等属性，然后分别对 props 和插槽进行初始化。</p>
+<p>根据 shapeFlag 的值，我们可以判断这是不是一个有状态组件，如果是则要进一步去设置有状态组件的实例。</p>
+<p>接下来我们要关注到 setupStatefulComponent 函数，它主要做了三件事：创建渲染上下文代理、判断处理 setup 函数和完成组件实例设置。它代码如下所示：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">setupStatefulComponent</span> (<span class="params">instance, isSSR</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> Component = instance.type</span><br><span class="line">  <span class="comment">// 创建渲染代理的属性访问缓存</span></span><br><span class="line">  instance.accessCache = &#123;&#125;</span><br><span class="line">  <span class="comment">// 1.创建渲染上下文代理</span></span><br><span class="line">  instance.proxy = <span class="keyword">new</span> <span class="built_in">Proxy</span>(instance.ctx, PublicInstanceProxyHandlers)</span><br><span class="line">  <span class="comment">// 2.判断处理 setup 函数</span></span><br><span class="line">  <span class="keyword">const</span> &#123; setup &#125; = Component</span><br><span class="line">  <span class="keyword">if</span> (setup) &#123;</span><br><span class="line">    <span class="comment">// 如果 setup 函数带参数，则创建一个 setupContext</span></span><br><span class="line">    <span class="keyword">const</span> setupContext = (instance.setupContext =</span><br><span class="line">      setup.length &gt; <span class="number">1</span> ? createSetupContext(instance) : <span class="literal">null</span>)</span><br><span class="line">    <span class="comment">// 执行 setup 函数，获取结果</span></span><br><span class="line">    <span class="keyword">const</span> setupResult = callWithErrorHandling(setup, instance, <span class="number">0</span> <span class="comment">/* SETUP_FUNCTION */</span>, [instance.props, setupContext])</span><br><span class="line">    <span class="comment">// 处理 setup 执行结果</span></span><br><span class="line">    handleSetupResult(instance, setupResult)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 完成组件实例设置</span></span><br><span class="line">    finishComponentSetup(instance)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="创建渲染上下文代理"><a href="#创建渲染上下文代理" class="headerlink" title="创建渲染上下文代理"></a>创建渲染上下文代理</h3><p>首先是创建渲染上下文代理的流程，它主要对 instance.ctx 做了代理。</p>
+<p>在 Vue.js 2.x 中，也有类似的数据代理逻辑，比如 props 求值后的数据，实际上存储在 this._props 上，而 data 中定义的数据存储在 this._data 上。举个例子：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;template&gt;</span><br><span class="line">  &lt;p&gt;&#123;&#123; msg &#125;&#125;&lt;<span class="regexp">/p&gt;</span></span><br><span class="line"><span class="regexp">&lt;/</span>template&gt;</span><br><span class="line">&lt;script&gt;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> &#123;</span><br><span class="line">  data() &#123;</span><br><span class="line">    msg: <span class="number">1</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&lt;<span class="regexp">/script&gt;</span></span><br></pre></td></tr></table></figure>
+<p>在初始化组件的时候，data 中定义的 msg 在组件内部是存储在 this._data 上的，而模板渲染的时候访问 this.msg，实际上访问的是 this._data.msg，这是因为 Vue.js 2.x 在初始化 data 的时候，做了一层 proxy 代理。</p>
+<p>到了 Vue.js 3.0，为了方便维护，我们把组件中不同状态的数据存储到不同的属性中，比如存储到 setupState、ctx、data、props 中。我们在执行组件渲染函数的时候，为了方便用户使用，会直接访问渲染上下文 instance.ctx 中的属性，所以我们也要做一层 proxy，对渲染上下文 instance.ctx 属性的访问和修改，代理到对 setupState、ctx、data、props 中的数据的访问和修改。</p>
+<p>明确了代理的需求后，我们接下来就要分析 proxy 的几个方法： get、set 和 has。</p>
+<p>当我们访问 instance.ctx 渲染上下文中的属性时，就会进入 get 函数。我们来看一下它的实现：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> PublicInstanceProxyHandlers = &#123;</span><br><span class="line">  <span class="keyword">get</span> (&#123; _: instance &#125;, key) &#123;</span><br><span class="line">    <span class="keyword">const</span> &#123; ctx, setupState, data, props, accessCache, type, appContext &#125; = instance</span><br><span class="line">    <span class="keyword">if</span> (key[<span class="number">0</span>] !== <span class="string">'$'</span>) &#123;</span><br><span class="line">      <span class="comment">// setupState / data / props / ctx</span></span><br><span class="line">      <span class="comment">// 渲染代理的属性访问缓存中</span></span><br><span class="line">      <span class="keyword">const</span> n = accessCache[key]</span><br><span class="line">      <span class="keyword">if</span> (n !== <span class="literal">undefined</span>) &#123;</span><br><span class="line">        <span class="comment">// 从缓存中取</span></span><br><span class="line">        <span class="keyword">switch</span> (n) &#123;</span><br><span class="line">          <span class="keyword">case</span> <span class="number">0</span>: <span class="comment">/* SETUP */</span></span><br><span class="line">            <span class="keyword">return</span> setupState[key]</span><br><span class="line">          <span class="keyword">case</span> <span class="number">1</span> :<span class="comment">/* DATA */</span></span><br><span class="line">            <span class="keyword">return</span> data[key]</span><br><span class="line">          <span class="keyword">case</span> <span class="number">3</span> :<span class="comment">/* CONTEXT */</span></span><br><span class="line">            <span class="keyword">return</span> ctx[key]</span><br><span class="line">          <span class="keyword">case</span> <span class="number">2</span>: <span class="comment">/* PROPS */</span></span><br><span class="line">            <span class="keyword">return</span> props[key]</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> <span class="keyword">if</span> (setupState !== EMPTY_OBJ &amp;&amp; hasOwn(setupState, key)) &#123;</span><br><span class="line">        accessCache[key] = <span class="number">0</span></span><br><span class="line">        <span class="comment">// 从 setupState 中取数据</span></span><br><span class="line">        <span class="keyword">return</span> setupState[key]</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> <span class="keyword">if</span> (data !== EMPTY_OBJ &amp;&amp; hasOwn(data, key)) &#123;</span><br><span class="line">        accessCache[key] = <span class="number">1</span></span><br><span class="line">        <span class="comment">// 从 data 中取数据</span></span><br><span class="line">        <span class="keyword">return</span> data[key]</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> <span class="keyword">if</span> (</span><br><span class="line">        type.props &amp;&amp;</span><br><span class="line">        hasOwn(normalizePropsOptions(type.props)[<span class="number">0</span>], key)) &#123;</span><br><span class="line">        accessCache[key] = <span class="number">2</span></span><br><span class="line">        <span class="comment">// 从 props 中取数据</span></span><br><span class="line">        <span class="keyword">return</span> props[key]</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> <span class="keyword">if</span> (ctx !== EMPTY_OBJ &amp;&amp; hasOwn(ctx, key)) &#123;</span><br><span class="line">        accessCache[key] = <span class="number">3</span></span><br><span class="line">        <span class="comment">// 从 ctx 中取数据</span></span><br><span class="line">        <span class="keyword">return</span> ctx[key]</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 都取不到</span></span><br><span class="line">        accessCache[key] = <span class="number">4</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">const</span> publicGetter = publicPropertiesMap[key]</span><br><span class="line">    <span class="keyword">let</span> cssModule, globalProperties</span><br><span class="line">    <span class="comment">// 公开的 $xxx 属性或方法</span></span><br><span class="line">    <span class="keyword">if</span> (publicGetter) &#123;</span><br><span class="line">      <span class="keyword">return</span> publicGetter(instance)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (</span><br><span class="line">      <span class="comment">// css 模块，通过 vue-loader 编译的时候注入</span></span><br><span class="line">      (cssModule = type.__cssModules) &amp;&amp;</span><br><span class="line">      (cssModule = cssModule[key])) &#123;</span><br><span class="line">      <span class="keyword">return</span> cssModule</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (ctx !== EMPTY_OBJ &amp;&amp; hasOwn(ctx, key)) &#123;</span><br><span class="line">      <span class="comment">// 用户自定义的属性，也用 `$` 开头</span></span><br><span class="line">      accessCache[key] = <span class="number">3</span></span><br><span class="line">      <span class="keyword">return</span> ctx[key]</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (</span><br><span class="line">      <span class="comment">// 全局定义的属性</span></span><br><span class="line">      ((globalProperties = appContext.config.globalProperties),</span><br><span class="line">        hasOwn(globalProperties, key))) &#123;</span><br><span class="line">      <span class="keyword">return</span> globalProperties[key]</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> ((process.env.NODE_ENV !== <span class="string">'production'</span>) &amp;&amp;</span><br><span class="line">      currentRenderingInstance &amp;&amp; key.indexOf(<span class="string">'__v'</span>) !== <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (data !== EMPTY_OBJ &amp;&amp; key[<span class="number">0</span>] === <span class="string">'$'</span> &amp;&amp; hasOwn(data, key)) &#123;</span><br><span class="line">        <span class="comment">// 如果在 data 中定义的数据以 $ 开头，会报警告，因为 $ 是保留字符，不会做代理</span></span><br><span class="line">        warn(<span class="string">`Property <span class="subst">$&#123;<span class="built_in">JSON</span>.stringify(key)&#125;</span> must be accessed via $data because it starts with a reserved `</span> +</span><br><span class="line">          <span class="string">`character and is not proxied on the render context.`</span>)</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 在模板中使用的变量如果没有定义，报警告</span></span><br><span class="line">        warn(<span class="string">`Property <span class="subst">$&#123;<span class="built_in">JSON</span>.stringify(key)&#125;</span> was accessed during render `</span> +</span><br><span class="line">          <span class="string">`but is not defined on instance.`</span>)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，函数首先判断 key 不以 $ 开头的情况，这部分数据可能是 setupState、data、props、ctx 中的一种，setupState 就是 setup 函数返回的数据，ctx 包括了计算属性、组件方法和用户自定义的一些数据。</p>
+<p>如果 key 不以 $ 开头，那么就依次判断 setupState、data、props、ctx 中是否包含这个 key，如果包含就返回对应值。注意这个判断顺序很重要，在 key 相同时它会决定数据获取的优先级。</p>
+<p>再回到 get 函数中，我们可以看到这里定义了 accessCache 作为渲染代理的属性访问缓存，它具体是干什么的呢？组件在渲染时会经常访问数据进而触发 get 函数，这其中最昂贵的部分就是多次调用 hasOwn 去判断 key 在不在某个类型的数据中，但是在普通对象上执行简单的属性访问相对要快得多。所以在第一次获取 key 对应的数据后，我们利用 accessCache[key] 去缓存数据，下一次再次根据 key 查找数据，我们就可以直接通过 accessCache[key] 获取对应的值，就不需要依次调用 hasOwn 去判断了。这也是一个性能优化的小技巧。</p>
+<p>如果 key 以 $ 开头，那么接下来又会有一系列的判断，首先判断是不是 Vue.js 内部公开的 $xxx 属性或方法（比如 $parent）；然后判断是不是 vue-loader 编译注入的 css 模块内部的 key；接着判断是不是用户自定义以 $ 开头的 key；最后判断是不是全局属性。如果都不满足，就剩两种情况了，即在非生产环境下就会报两种类型的警告，第一种是在 data 中定义的数据以 $ 开头的警告，因为 $ 是保留字符，不会做代理；第二种是在模板中使用的变量没有定义的警告。</p>
+<p>接下来是 set 代理过程，当我们修改 instance.ctx 渲染上下文中的属性的时候，就会进入 set 函数。我们来看一下 set 函数的实现：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> PublicInstanceProxyHandlers = &#123;</span><br><span class="line">  <span class="keyword">set</span> (&#123; _: instance &#125;, key, value) &#123;</span><br><span class="line">    <span class="keyword">const</span> &#123; data, setupState, ctx &#125; = instance</span><br><span class="line">    <span class="keyword">if</span> (setupState !== EMPTY_OBJ &amp;&amp; hasOwn(setupState, key)) &#123;</span><br><span class="line">      <span class="comment">// 给 setupState 赋值</span></span><br><span class="line">      setupState[key] = value</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (data !== EMPTY_OBJ &amp;&amp; hasOwn(data, key)) &#123;</span><br><span class="line">      <span class="comment">// 给 data 赋值</span></span><br><span class="line">      data[key] = value</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (key <span class="keyword">in</span> instance.props) &#123;</span><br><span class="line">      <span class="comment">// 不能直接给 props 赋值</span></span><br><span class="line">      (process.env.NODE_ENV !== <span class="string">'production'</span>) &amp;&amp;</span><br><span class="line">      warn(<span class="string">`Attempting to mutate prop "<span class="subst">$&#123;key&#125;</span>". Props are readonly.`</span>, instance)</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (key[<span class="number">0</span>] === <span class="string">'$'</span> &amp;&amp; key.slice(<span class="number">1</span>) <span class="keyword">in</span> instance) &#123;</span><br><span class="line">      <span class="comment">// 不能给 Vue 内部以 $ 开头的保留属性赋值</span></span><br><span class="line">      (process.env.NODE_ENV !== <span class="string">'production'</span>) &amp;&amp;</span><br><span class="line">      warn(<span class="string">`Attempting to mutate public property "<span class="subst">$&#123;key&#125;</span>". `</span> +</span><br><span class="line">        <span class="string">`Properties starting with $ are reserved and readonly.`</span>, instance)</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 用户自定义数据赋值</span></span><br><span class="line">      ctx[key] = value</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结合代码来看，函数主要做的事情就是对渲染上下文 instance.ctx 中的属性赋值，它实际上是代理到对应的数据类型中去完成赋值操作的。这里仍然要注意顺序问题，和 get 一样，优先判断 setupState，然后是 data，接着是 props。</p>
+<p>最后是 has 代理过程，当我们判断属性是否存在于 instance.ctx 渲染上下文中时，就会进入 has 函数，这个在平时项目中用的比较少，同样来举个例子，当执行 created 钩子函数中的 ‘msg’ in this 时，就会触发 has 函数。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> PublicInstanceProxyHandlers = &#123;</span><br><span class="line">  has</span><br><span class="line">    (&#123; <span class="attr">_</span>: &#123; data, setupState, accessCache, ctx, type, appContext &#125; &#125;, key) &#123;</span><br><span class="line">    <span class="comment">// 依次判断</span></span><br><span class="line">    <span class="keyword">return</span> (accessCache[key] !== <span class="literal">undefined</span> ||</span><br><span class="line">      (data !== EMPTY_OBJ &amp;&amp; hasOwn(data, key)) ||</span><br><span class="line">      (setupState !== EMPTY_OBJ &amp;&amp; hasOwn(setupState, key)) ||</span><br><span class="line">      (type.props &amp;&amp; hasOwn(normalizePropsOptions(type.props)[<span class="number">0</span>], key)) ||</span><br><span class="line">      hasOwn(ctx, key) ||</span><br><span class="line">      hasOwn(publicPropertiesMap, key) ||</span><br><span class="line">      hasOwn(appContext.config.globalProperties, key))</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数的实现很简单，依次判断 key 是否存在于 accessCache、data、setupState、props 、用户数据、公开属性以及全局属性中，然后返回结果。</p>
+<p>至此，我们就分析完创建上下文代理的过程，让我们回到 setupStatefulComponent 函数中，接下来分析第二个流程——判断处理 setup 函数。</p>
+<h3 id="判断处理-setup-函数"><a href="#判断处理-setup-函数" class="headerlink" title="判断处理 setup 函数"></a>判断处理 setup 函数</h3><p>我们看一下整个逻辑涉及的代码：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 判断处理 setup 函数</span></span><br><span class="line"><span class="keyword">const</span> &#123; setup &#125; = Component</span><br><span class="line"><span class="keyword">if</span> (setup) &#123;</span><br><span class="line">  <span class="comment">// 如果 setup 函数带参数，则创建一个 setupContext</span></span><br><span class="line">  <span class="keyword">const</span> setupContext = (instance.setupContext =</span><br><span class="line">    setup.length &gt; <span class="number">1</span> ? createSetupContext(instance) : <span class="literal">null</span>)</span><br><span class="line">  <span class="comment">// 执行 setup 函数获取结果</span></span><br><span class="line">  <span class="keyword">const</span> setupResult = callWithErrorHandling(setup, instance, <span class="number">0</span> <span class="comment">/* SETUP_FUNCTION */</span>, [instance.props, setupContext])</span><br><span class="line">  <span class="comment">// 处理 setup 执行结果</span></span><br><span class="line">  handleSetupResult(instance, setupResult)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果我们在组件中定义了 setup 函数，接下来就是处理 setup 函数的流程，主要是三个步骤：创建 setup 函数上下文、执行 setup 函数并获取结果和处理 setup 函数的执行结果。接下来我们就逐个来分析。</p>
+<p>首先判断 setup 函数的参数长度，如果大于 1，则创建 setupContext 上下文。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">createSetupContext</span>(<span class="params">instance</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="keyword">get</span> attrs() &#123;</span><br><span class="line">            <span class="keyword">return</span> getAttrsProxy(instance)</span><br><span class="line">        &#125;,</span><br><span class="line">        slots: instance.slots,</span><br><span class="line">        emit: instance.emit,</span><br><span class="line">        expose,</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里返回了一个对象，包括 attrs、slots 和 emit 三个属性。setupContext 让我们在 setup 函数内部可以获取到组件的属性、插槽以及派发事件的方法 emit。</p>
+<p>可以预见的是，这个 setupContext 对应的就是 setup 函数第二个参数，我们接下来看一下 setup 函数具体是如何执行的。</p>
+<p>我们通过callWithErrorHandling来执行 setup 函数并获取结果，具体来看一下 callWithErrorHandling 函数的实现：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">callWithErrorHandling</span> (<span class="params">fn, instance, type, args</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">let</span> res</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    res = args ? fn(...args) : fn()</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (err) &#123;</span><br><span class="line">    handleError(err, instance, type)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> res</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，它其实就是对 fn 做的一层包装，内部还是执行了 fn，并在有参数的时候传入参数，所以 setup 的第一个参数是 instance.props，第二个参数是 setupContext。函数执行过程中如果有 JavaScript 执行错误就会捕获错误，并执行 handleError 函数来处理。</p>
+<p>执行 setup 函数并拿到了返回的结果，那么接下来就要用 handleSetupResult 函数来处理结果。</p>
+<p>我们详细看一下 handleSetupResult 函数的实现：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">handleSetupResult</span>(<span class="params">instance, setupResult</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (isFunction(setupResult)) &#123;</span><br><span class="line">    <span class="comment">// setup 返回渲染函数</span></span><br><span class="line">    instance.render = setupResult</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span> (isObject(setupResult)) &#123;</span><br><span class="line">    <span class="comment">// 把 setup 返回结果变成响应式</span></span><br><span class="line">    instance.setupState = reactive(setupResult)</span><br><span class="line">  &#125;</span><br><span class="line">  finishComponentSetup(instance)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，当 setupResult 是一个对象的时候，我们把它变成了响应式并赋值给 instance.setupState，这样在模板渲染的时候，依据前面的代理规则，instance.ctx 就可以从 instance.setupState 上获取到对应的数据，这就在 setup 函数与模板渲染间建立了联系。</p>
+<p>另外 setup 不仅仅支持返回一个对象，也可以返回一个函数作为组件的渲染函数。</p>
+<p>在 handleSetupResult 的最后，会执行 finishComponentSetup 函数完成组件实例的设置，其实这个函数和 setup 函数的执行结果已经没什么关系了，提取到外面放在 handleSetupResult 函数后面执行更合理一些。</p>
+<p>另外当组件没有定义的 setup 的时候，也会执行 finishComponentSetup 函数去完成组件实例的设置。</p>
+<h3 id="完成组件实例设置"><a href="#完成组件实例设置" class="headerlink" title="完成组件实例设置"></a>完成组件实例设置</h3><p>接下来我们来看一下 finishComponentSetup 函数的实现：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">finishComponentSetup</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  instance: ComponentInternalInstance,</span></span></span><br><span class="line"><span class="function"><span class="params">  isSSR: boolean,</span></span></span><br><span class="line"><span class="function"><span class="params">  skipOptions?: boolean,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> Component = instance.type <span class="keyword">as</span> ComponentOptions</span><br><span class="line"></span><br><span class="line">  <span class="comment">// template / render function normalization</span></span><br><span class="line">  <span class="comment">// could be already set when returned from setup()</span></span><br><span class="line">  <span class="keyword">if</span> (!instance.render) &#123;</span><br><span class="line">    <span class="comment">// only do on-the-fly compile if not in SSR - SSR on-the-fly compilation</span></span><br><span class="line">    <span class="comment">// is done by server-renderer</span></span><br><span class="line">    <span class="keyword">if</span> (!isSSR &amp;&amp; compile &amp;&amp; !Component.render) &#123;</span><br><span class="line">      <span class="comment">// 获取模板</span></span><br><span class="line">      <span class="keyword">const</span> template =</span><br><span class="line">        (__COMPAT__ &amp;&amp;</span><br><span class="line">          instance.vnode.props &amp;&amp;</span><br><span class="line">          instance.vnode.props[<span class="string">'inline-template'</span>]) ||</span><br><span class="line">        Component.template ||</span><br><span class="line">        resolveMergedOptions(instance).template</span><br><span class="line">      <span class="keyword">if</span> (template) &#123;</span><br><span class="line">        <span class="keyword">const</span> &#123; isCustomElement, compilerOptions &#125; = instance.appContext.config</span><br><span class="line">        <span class="keyword">const</span> &#123; delimiters, <span class="attr">compilerOptions</span>: componentCompilerOptions &#125; =</span><br><span class="line">          Component</span><br><span class="line">        <span class="comment">// 合并最终编译选项</span></span><br><span class="line">        <span class="keyword">const</span> finalCompilerOptions: CompilerOptions = extend(</span><br><span class="line">          extend(</span><br><span class="line">            &#123;</span><br><span class="line">              isCustomElement,</span><br><span class="line">              delimiters,</span><br><span class="line">            &#125;,</span><br><span class="line">            compilerOptions,</span><br><span class="line">          ),</span><br><span class="line">          componentCompilerOptions,</span><br><span class="line">        )</span><br><span class="line">        <span class="comment">// 编译模板，生成render</span></span><br><span class="line">        Component.render = compile(template, finalCompilerOptions)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 对于使用 with 块运行时编译的渲染函数，配置渲染上下文的代理RuntimeCompiledPublicInstanceProxyHandlers，是在之前渲染上下文代理 PublicInstanceProxyHandlers 的基础上进行的扩展，主要对has做处理优化。</span></span><br><span class="line">    <span class="keyword">if</span> (installWithProxy) &#123;</span><br><span class="line">      installWithProxy(instance)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// support for 2.x options</span></span><br><span class="line">  <span class="keyword">if</span> (__FEATURE_OPTIONS_API__ &amp;&amp; !(__COMPAT__ &amp;&amp; skipOptions)) &#123;</span><br><span class="line">    <span class="keyword">const</span> reset = setCurrentInstance(instance)</span><br><span class="line">    pauseTracking()</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      applyOptions(instance)</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      resetTracking()</span><br><span class="line">      reset()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>组件最终通过运行 render 函数生成子树 vnode，但是我们很少直接去编写 render 函数，通常会使用两种方式开发组件。</p>
+<p>一个是通过编写组件的 template 模板去描述一个组件的 DOM 结构，或者是使用直接在组件的 render 方法内调用 h 方法来创建 vnode。</p>
+<p>所以这里首先判断了组件的 render 函数是否存在，如果不存在说明使用的是 template 模版。</p>
+<p>对于使用 with 块运行时编译的渲染函数，配置渲染上下文的代理RuntimeCompiledPublicInstanceProxyHandlers，基于PublicInstanceProxyHandlers，主要对has做处理</p>
+<p>组件实例设置的最后一个流程——兼容 Vue.js 2.x 的 Options API。我们知道 Vue.js 2.x 是通过组件对象的方式去描述一个组件，Vue.js 3.0 仍然支持 Vue.js 2.x Options API 的写法，这主要就是通过 applyOptions方法实现的。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><img src="../images/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3/image-1.png" alt="alt text"></p>
+<p>这次主要详细分析了组件的初始化流程，主要包括创建组件实例和设置组件实例。通过进一步细节的深入，我们也了解了渲染上下文的代理过程；了解了 Composition API 中的 setup 启动函数执行的时机，以及如何建立 setup 返回结果和模板渲染之间的联系；了解了组件定义的模板或者渲染函数的标准化过程；了解了如何兼容 Vue.js 2.x 的 Options API。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/vue3%E6%B8%B2%E6%9F%93%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90.html" rel="prev" title="vue3初始化渲染流程分析">
+      <i class="fa fa-chevron-left"></i> vue3初始化渲染流程分析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#组件渲染前初始化详解"><span class="nav-number">1.</span> <span class="nav-text">组件渲染前初始化详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建和设置组件实例"><span class="nav-number">1.1.</span> <span class="nav-text">创建和设置组件实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建渲染上下文代理"><span class="nav-number">1.2.</span> <span class="nav-text">创建渲染上下文代理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#判断处理-setup-函数"><span class="nav-number">1.3.</span> <span class="nav-text">判断处理 setup 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#完成组件实例设置"><span class="nav-number">1.4.</span> <span class="nav-text">完成组件实例设置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">2.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
