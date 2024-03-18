@@ -164,6 +164,211 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/webpack-rollup.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/webpack-rollup.html" class="post-title-link" itemprop="url">webpack 和 rollup 对比</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-15 00:00:00" itemprop="dateCreated datePublished" datetime="2023-04-15T00:00:00+08:00">2023-04-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="诞生背景"><a href="#诞生背景" class="headerlink" title="诞生背景"></a>诞生背景</h2><p>在打包工具出现之前，在浏览器中运行 Javascript 中有两种写法：</p>
+<ul>
+<li>第一种方式，引用一些脚本(script 标签)来存放每个功能；此解决方案很难扩展，因为加载太多脚本会导致网络瓶颈。</li>
+<li>第二种方式，使用一个包含所有项目代码的大型  .js  文件，但是这会导致作用域、文件大小、可读性和可维护性方面的问题。</li>
+</ul>
+<p>历史的解决方案：</p>
+<ul>
+<li>iife</li>
+<li>commonjs（最大的问题是浏览器不支持 commonjs，因为 commonjs 是运行时 动态加载的，是同步的，浏览器同步的话，太慢了）</li>
+<li>ESM<ul>
+<li>未来的官方标准和主流。但是浏览器的版本需要比较高，比如 chorme 都需要 63 版本以上</li>
+<li>esm 是静态的，可以在编译的时候就分析出对应的依赖关系，不用像 commonjs 一样，运行时加载</li>
+</ul>
+</li>
+</ul>
+<p>背景总结：</p>
+<ol>
+<li>commonjs 很好，推出 npm 管理 JavaScript 模块包，但浏览器不支持</li>
+<li>esm 更好，浏览器也支持，但只有很新的浏览器才支持。 你可以源代码内写 esm 模块，webpack 可以帮忙打包，让不兼容 esm 的浏览器，也能兼容</li>
+</ol>
+<h2 id="打包原理"><a href="#打包原理" class="headerlink" title="打包原理"></a>打包原理</h2><p>在了解了背景之后，理解打包原理就很简单了。</p>
+<h3 id="webpack"><a href="#webpack" class="headerlink" title="webpack"></a>webpack</h3><h4 id="所有内容打包到一个-chunk-包内（单-chunk-包）"><a href="#所有内容打包到一个-chunk-包内（单-chunk-包）" class="headerlink" title="所有内容打包到一个 chunk 包内（单 chunk 包）"></a>所有内容打包到一个 chunk 包内（单 chunk 包）</h4><blockquote>
+<p>无额外配置，webpack 一般会把所有 js 打成一个包。实现步骤</p>
+</blockquote>
+<ul>
+<li>读文件，扫描代码，按模块加载顺序，排列模块，分为模块 1，模块 2，…，模块 n 。放到一个作用域内，用 modules 保存，modules 是一个数组，所有模块按加载顺序，索引排序</li>
+<li>webpack 自己实现对应的 api（比如自己实现 require），让浏览器支持源代码内的模块化的写法（比如：module.export, require, esm 稍微有些不同 见下方）打包外部依赖也是一样的</li>
+</ul>
+<h5 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h5><ul>
+<li><strong>纯 commonjs</strong><ul>
+<li><strong>所有的 js 依赖，打包到一个文件内，然后自己实现一套 require 和 module.exports，让浏览器可以执行源代码</strong></li>
+<li>源代码的 require 会被换成  <strong>webpack_require</strong></li>
+<li>源代码的 module.exports 不变，会由 webpack 作为函数的参数传给源代码</li>
+</ul>
+</li>
+<li><strong>纯 esm</strong><ul>
+<li>webpack 会做 tree shaking，最终的产物，会和 rollup 的产物比较接近，不会有过多的 webpack 注入的兼容代码</li>
+<li>实现思路类似 rollup，<strong>通过 esm 的静态特性，可以在编译的时候，就分析出对应的依赖关系</strong></li>
+</ul>
+</li>
+<li><strong>esm + commonjs 混用</strong><ul>
+<li>webpack 很强大，他是支持混用的！！</li>
+<li>你可以 module.exports 导出， import xx from xx 导入</li>
+<li>也可以 exports { } 导出，require 引入</li>
+<li>实现的思路和上面的模拟 module.exports 和提供<strong>webpack_require</strong>替代 require 的思路类似，<strong>webpack 会去模拟 esm 的 exports 对象</strong> 让浏览器支持</li>
+</ul>
+</li>
+</ul>
+<h4 id="多个-chunk-包"><a href="#多个-chunk-包" class="headerlink" title="多个 chunk 包"></a>多个 chunk 包</h4><h5 id="多个打包入口"><a href="#多个打包入口" class="headerlink" title="多个打包入口"></a>多个打包入口</h5><ul>
+<li>多个入口分离多个包，然后生成多个 script 标签（按入口的顺序</li>
+<li>分离出来的多个包，都包含同样多的模拟代码（webpack 注入的代码）</li>
+</ul>
+<h5 id="分离公共依赖"><a href="#分离公共依赖" class="headerlink" title="分离公共依赖"></a>分离公共依赖</h5><ul>
+<li>先加载 venders 包（第三方公共依赖），此加载不是解析代码，只是把第三方依赖的模块，以 webpack 能解析的格式，存到全局对象 window[“webpackJsonp”]内，方便后续的代码能访问到</li>
+<li>只需要把 window[“webpackJsonp”]内的 venders 内的模块，放到 main 代码作用域内的 modules 里面，后面就和单 chunk 解析是一样的了</li>
+</ul>
+<h5 id="import-动态加载（懒加载）"><a href="#import-动态加载（懒加载）" class="headerlink" title="import() 动态加载（懒加载）"></a>import() 动态加载（懒加载）</h5><ul>
+<li><p>先执行 main 模块的内容，从上到下执行，关注 import(‘xx’).then()行。打包后，import()会被替换成 webpack 的 api（<strong>webpack_require</strong>.e(/_ import() _/ 1).then(<strong>webpack_require</strong>.bind(null, 1)).then()）</p>
+</li>
+<li><p>替换后的 api 做了几件事</p>
+<ul>
+<li>生成 script 标签，并 appendChild 到 ducument.head 内</li>
+<li>return 一个 Promise 对象，状态是 pending（pending 状态不会往后执行.then(<strong>webpack_require</strong>.bind(null, 1)).then()，但不会阻塞主程序，因为是异步的，不懂的可以了解一下 promise）</li>
+<li>（异步）等了一段时间后，需求懒加载的模块通过 script 标签，被下载到浏览器后会直接解析执行，触发 window[“webpackJsonp”].push（此方法被改写了，和生成同步多 chunk 有点不一样，会触发 webpackJsonpCallback 函数</li>
+<li>webpackJsonpCallback 函数的作用<ul>
+<li>懒加载的模块 内容 会被加入到 main 的 mudules 的模块列表内去（等效 push 的作用）</li>
+<li>会把 Promise 的状态从 pending 改成 fulfilled，因为要懒加载的模块，通过 script 标签，已经解析完成了，所以.then()可以往后了</li>
+</ul>
+</li>
+<li>后面就是正常解析包，和单 chunk 解析多模块是一样的了</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="rollup"><a href="#rollup" class="headerlink" title="rollup"></a>rollup</h3><p>浏览器环境使用的话：</p>
+<ol>
+<li>无需考虑浏览器兼容问题的话：<ul>
+<li>开发者写 esm 代码 -&gt; rollup 通过入口，递归识别 esm 模块 -&gt; 最终打包成一个或多个 bundle.js -&gt; 浏览器直接可以支持引入<script type="module"></script></li>
+</ul>
+</li>
+<li>需考虑浏览器兼容问题的话<ul>
+<li>可能会比较复杂，需要用额外的 polyfill 库，或结合 webpack 使用</li>
+</ul>
+</li>
+</ol>
+<p>打包成 npm 包的话：</p>
+<ul>
+<li>开发者写 esm 代码 -&gt; rollup 通过入口，递归识别 esm 模块 -&gt; （可以支持配置输出多种格式的模块，如 esm、cjs、umd、amd）最终打包成一个或多个 bundle.js<ul>
+<li>（开发者要写 cjs 也可以，需要插件@rollup/plugin-commonjs） 初步看来</li>
+</ul>
+</li>
+<li>很明显，rollup 比较适合打包 js 库（react、vue2 等的源代码库都是 rollup 打包的）或 高版本无需往下兼容的浏览器应用程序</li>
+<li>这样打包出来的库，可以充分使用上 esm 的 tree shaking，使源库体积最小</li>
+</ul>
+<h4 id="单-chunk-包"><a href="#单-chunk-包" class="headerlink" title="单 chunk 包"></a>单 chunk 包</h4><p>无额外配置，一般会把所有 js 打成一个包。打包外部依赖（第三方）也是一样的</p>
+<h4 id="多-chunk-包"><a href="#多-chunk-包" class="headerlink" title="多 chunk 包"></a>多 chunk 包</h4><ul>
+<li>配置多个入口，此法比较简单，可自行测试</li>
+<li>代码分离 （动态 import，懒加载， import(xxx).then(module =&gt; {}) ）<ul>
+<li><a href="https://rollupjs.org/repl/?version=1.6.0&shareable=JTdCJTIybW9kdWxlcyUyMiUzQSU1QiU3QiUyMm5hbWUlMjIlM0ElMjJtYWluLmpzJTIyJTJDJTIyY29kZSUyMiUzQSUyMiUyRiolMjBEWU5BTUlDJTIwSU1QT1JUUyU1Q24lMjAlMjAlMjBSb2xsdXAlMjBzdXBwb3J0cyUyMGF1dG9tYXRpYyUyMGNodW5raW5nJTIwYW5kJTIwbGF6eS1sb2FkaW5nJTVDbiUyMCUyMCUyMHZpYSUyMGR5bmFtaWMlMjBpbXBvcnRzJTIwdXRpbGl6aW5nJTIwdGhlJTIwaW1wb3J0JTIwbWVjaGFuaXNtJTVDbiUyMCUyMCUyMG9mJTIwdGhlJTIwaG9zdCUyMHN5c3RlbS4lMjAqJTJGJTVDbmlmJTIwKGRpc3BsYXlNYXRoKSUyMCU3QiU1Q24lNUN0aW1wb3J0KCcuJTJGbWF0aHMuanMnKS50aGVuKGZ1bmN0aW9uJTIwKG1hdGhzKSUyMCU3QiU1Q24lNUN0JTVDdGNvbnNvbGUubG9nKG1hdGhzLnNxdWFyZSg1KSklM0IlNUNuJTVDdCU1Q3Rjb25zb2xlLmxvZyhtYXRocy5jdWJlKDUpKSUzQiU1Q24lNUN0JTdEKSUzQiU1Q24lN0QlMjIlMkMlMjJpc0VudHJ5JTIyJTNBdHJ1ZSU3RCUyQyU3QiUyMm5hbWUlMjIlM0ElMjJtYXRocy5qcyUyMiUyQyUyMmNvZGUlMjIlM0ElMjJpbXBvcnQlMjBzcXVhcmUlMjBmcm9tJTIwJy4lMkZzcXVhcmUuanMnJTNCJTVDbiU1Q25leHBvcnQlMjAlN0JkZWZhdWx0JTIwYXMlMjBzcXVhcmUlN0QlMjBmcm9tJTIwJy4lMkZzcXVhcmUuanMnJTNCJTVDbiU1Q25leHBvcnQlMjBmdW5jdGlvbiUyMGN1YmUlMjAoeCUyMCklMjAlN0IlNUNuJTVDdHJldHVybiUyMHNxdWFyZSh4KSUyMColMjB4JTNCJTVDbiU3RCUyMiUyQyUyMmlzRW50cnklMjIlM0FmYWxzZSU3RCUyQyU3QiUyMm5hbWUlMjIlM0ElMjJzcXVhcmUuanMlMjIlMkMlMjJjb2RlJTIyJTNBJTIyZXhwb3J0JTIwZGVmYXVsdCUyMGZ1bmN0aW9uJTIwc3F1YXJlJTIwKCUyMHglMjApJTIwJTdCJTVDbiU1Q3RyZXR1cm4lMjB4JTIwKiUyMHglM0IlNUNuJTdEJTIyJTJDJTIyaXNFbnRyeSUyMiUzQWZhbHNlJTdEJTVEJTJDJTIyb3B0aW9ucyUyMiUzQSU3QiUyMmZvcm1hdCUyMiUzQSUyMmNqcyUyMiUyQyUyMm5hbWUlMjIlM0ElMjJteUJ1bmRsZSUyMiUyQyUyMmFtZCUyMiUzQSU3QiUyMmlkJTIyJTNBJTIyJTIyJTdEJTJDJTIyZ2xvYmFscyUyMiUzQSU3QiU3RCU3RCUyQyUyMmV4YW1wbGUlMjIlM0FudWxsJTdE" target="_blank" rel="noopener">此处有一个官方的例子，再清楚不过了</a></li>
+<li>对于代码分割，还有一种方法可以通过  output.manualChunks  选项显式告诉 Rollup 哪些模块要分割成单独的块。</li>
+</ul>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="webpack-1"><a href="#webpack-1" class="headerlink" title="webpack"></a>webpack</h3><blockquote>
+<p><code>webpack</code> 诞生在 <code>esm</code> 标准出来前，<code>commonjs</code> 出来后</p>
+</blockquote>
+<ul>
+<li><p>当时的浏览器只能通过 script 标签加载模块</p>
+<ul>
+<li><strong>script 标签加载代码是没有作用域的，只能在代码内 用 iife 的方式 实现作用域效果</strong><ul>
+<li>这就是 webpack 打包出来的代码 大结构都是 iife 的原因</li>
+<li>并且<strong>每个模块都要装到 function 里面</strong>，才能保证互相之间作用域不干扰。</li>
+<li>这就是为什么 webpack 打包的代码为什么乍看会感觉乱，找不到自己写的代码的真正原因</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>关于 webpack 的代码注入问题，是因为<strong>浏览器不支持 cjs</strong>，所以 webpack 要去<strong>自己实现 require 和 module.exports 方法</strong>（才有很多注入）</p>
+<ul>
+<li>这么多年了，甚至到现在 2022 年，<strong>浏览器为什么不支持 cjs</strong>？<ul>
+<li><strong>cjs 是同步的，运行时的，node 环境用 cjs，node 本身运行在服务器，无需等待网络握手，所以同步处理是很快的</strong></li>
+<li><strong>浏览器是 客户端，访问的是服务端资源，中间需要等待网络握手，可能会很慢，所以不能 同步的 卡在那里等服务器返回的，体验太差</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>后续出来 esm 后，webpack 为了兼容以前发在 npm 上的老包</strong>（并且当时心还不够决绝，导致这种“丑结构的包”越来越多，以后就更不可能改这种“丑结构了”），所以保留这个 iife 的结构和代码注入，<strong>导致现在看 webpack 打包的产物，乍看结构比较乱且有很多的代码注入，自己写的代码都找不到</strong></p>
+</li>
+</ul>
+<h3 id="rollup-1"><a href="#rollup-1" class="headerlink" title="rollup"></a>rollup</h3><blockquote>
+<p>rollup 诞生在 esm 标准出来后</p>
+</blockquote>
+<ul>
+<li><strong>出发点就是希望开发者去写 esm 模块</strong>，这样适合做代码静态分析，可以做 tree shaking 减少代码体积，也是浏览器除了 script 标签外，真正让 JavaScript 拥有模块化能力。是 js 语言的未来</li>
+<li><strong>rollup 完全依赖高版本浏览器原生去支持 esm 模块，所以无额外代码注入，打包后的代码结构也是清晰的</strong>（不用像 webpack 那样 iife）<ul>
+<li>目前浏览器支持模块化只有 3 种方法：<ul>
+<li>script 标签（缺点没有作用域的概念</li>
+<li>script 标签 + iife + window + 函数作用域（可以解决作用域问题。webpack 的打包的产物就这样</li>
+<li>esm （什么都好，唯一缺点 需要高版本浏览器）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="最终使用推荐"><a href="#最终使用推荐" class="headerlink" title="最终使用推荐"></a>最终使用推荐</h2><ol>
+<li>打包<strong>开源库</strong>：rollup 会是更好的选择</li>
+<li>打包应用程序：看是否需要<strong>兼容老浏览器</strong><br>如果不考虑兼容老浏览器，建议用 <code>vite</code> 开发应用程序，<code>vite</code>打包实际使用的就是<code>rollup</code>，开发体验很棒，打的生产包比用<code>webpack</code>小很多，有不错的性能提升<br>如果需要考虑兼容，则选择<code>webpack</code></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/tsconfig.json%E6%96%87%E4%BB%B6%E5%85%A8%E8%A7%A3%E6%9E%90.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1284,73 +1489,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/browser_api.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/browser_api.html" class="post-title-link" itemprop="url">Web 标准规范和组织介绍</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-07-30 00:00:00" itemprop="dateCreated datePublished" datetime="2021-07-30T00:00:00+08:00">2021-07-30</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Web 标准是由各大标准组织制定，由浏览器和其他 Web 底层框架或工具来实现，再提供给开发者能以最小成本开发适用于多平台的 Web 应用，这些标准是我们能访问无数网站的前提。</p>
-<h2 id="Web-标准计划"><a href="#Web-标准计划" class="headerlink" title="Web 标准计划"></a>Web 标准计划</h2><p>在 Web 发展的早期，浏览器各自为政，技术无一致实现，这直接损害了设计师、开发者、用户和行业的利益。为了解决这些问题，Web 标准计划 (Web Standards Project, WaSP) 于 1998 年成立，目标便是促进核心的 Web 标准的推广，鼓励浏览器对标准的支持，为大家寻求一条简单而便利之路。<br>得益于前人努力，如今的现代浏览器表现已经越来越一致，进而催生出更多标准，有了这些标准我们可以开发出体验更好的 Web 应用。<br>这个是所有浏览器相关的技术标准： The Web platform: Browser technologies，从中能了解到健全发展的 Web 技术生态。</p>
-<h2 id="Web-标准组织"><a href="#Web-标准组织" class="headerlink" title="Web 标准组织"></a>Web 标准组织</h2><h3 id="W3C"><a href="#W3C" class="headerlink" title="W3C"></a>W3C</h3><p>W3C 组织为 Web 开发领域提出了很多建议，比如为 XHTML、XML、DOM、CSS 和 Web API 等技术实现提出了建议。你可能会注意到为什么说是提出建议，而不是标准呢？那是因为 W3C 自认为不是标准组织，他们只是组织了 Web 相关领域的专家，这些专家组成一支工作小组，工作小组就如何实现 Web 技术提出建议。尽管 W3C 对其建议的实现方案没有任何强制权力，但他们大多数的建议都被视为事实上的标准。<br>W3C 组织关注 DOM、CSS、HTTP、媒体、性能、安全、图形学、可访问性和用户隐私等方方面面的技术，在这里可以搜索相关技术： All Standards and Drafts。<br>从 W3C 组织成员的工作手册可以看到，一项技术从提出到成为标准，需要经过 4 个阶段。</p>
-<p>WD (Working Drafts)：草案阶段<br>CR (Candidate Recommendation)：候选阶段<br>PR (Proposed Recommendation)：提议阶段<br>REC (W3C Recommendation)：正式建议阶段</p>
-<h3 id="WHATWG"><a href="#WHATWG" class="headerlink" title="WHATWG"></a>WHATWG</h3><p>WHATWG 工作小组成立于 2004 年，起因是 W3C 组织对 HTML 不再感兴趣，转而关注 XHTML 技术，部分 W3C 成员对此行为不满，因此他们决定建立一个新组织推动 HTML 发展，制定相关标准。如今 HTML5 技术能发展起来，也是得助于 WHATWG 小组。<br>WHATWG 小组因 HTML 而生，负责的 Web 标准主要是 HTML 相关技术，也涉猎一些 Web API，比如： HTML、DOM、浏览器兼容性、XHR、Fetch、Storage 和 URL 等标准<br>WHATWG 组织没有明确说明，一项技术成为标准要经过哪些阶段，他们实行的是现行标准 (Living Standard)，标准由相关负责人维护升级，并由开发者或浏览器厂商提议将新功能加入标准，这一协作过程通过 Github 的 Issues 来讨论。<br>WHATWG 和 W3C 制定的标准会有一些重叠，比如 DOM 标准。有一些标准会在开头说明：“该标准已经不由我们来维护，请查看某某组织的最新标准”。</p>
-<h3 id="ECMA"><a href="#ECMA" class="headerlink" title="ECMA"></a>ECMA</h3><p>ECMA 组织负责很多与信息化相关的技术标准，其中应用最广的就是 TC39 委员会负责的 ECMAScript 标准，这标准的实现就是 JavaScript。</p>
-<p>对 ECMAScript 标准的更新，需要经过 5 个阶段。<br>Strawman (Stage 0)：提案纳入考虑中Proposal (Stage 1)：明确提案的好处，以及可能带来的风险<br>Draft (Stage 2)：使用正式的规范语言描述语法和语义<br>Candidate (Stage 3)：根据使用者反馈进行改良<br>Finished (Stage 4)：准备正式加入 ECMAScript 标准</p>
-<h3 id="khronos"><a href="#khronos" class="headerlink" title="khronos"></a>khronos</h3><p>khronos 是一个由成员资助的，专注于制定开放标准（Open standard）的行业协会，重点制定免费的API，使在各种平台和设备上创作或播放的多媒体可以得到硬件加速<br>主要负责OpenGL，WebGL等方面标准的指定</p>
-<h3 id="IETF"><a href="#IETF" class="headerlink" title="IETF"></a>IETF</h3><p>IETF (The Internet Engineering Task Force) 组织主要负责制定互联网基础架构的标准，比如 TCP/IP 和 FTP 协议。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>对一般 Web 开发来说，我们用不上晦涩难懂的标准文档。但学习标准我们可以收获很多，也可以获取到第一手的学习资源，了解技术的发展前沿，全面深入地理解相关技术。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1423,7 +1561,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-count">25</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

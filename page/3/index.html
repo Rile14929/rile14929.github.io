@@ -164,6 +164,73 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/browser_api.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/browser_api.html" class="post-title-link" itemprop="url">Web 标准规范和组织介绍</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-07-30 00:00:00" itemprop="dateCreated datePublished" datetime="2021-07-30T00:00:00+08:00">2021-07-30</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Web 标准是由各大标准组织制定，由浏览器和其他 Web 底层框架或工具来实现，再提供给开发者能以最小成本开发适用于多平台的 Web 应用，这些标准是我们能访问无数网站的前提。</p>
+<h2 id="Web-标准计划"><a href="#Web-标准计划" class="headerlink" title="Web 标准计划"></a>Web 标准计划</h2><p>在 Web 发展的早期，浏览器各自为政，技术无一致实现，这直接损害了设计师、开发者、用户和行业的利益。为了解决这些问题，Web 标准计划 (Web Standards Project, WaSP) 于 1998 年成立，目标便是促进核心的 Web 标准的推广，鼓励浏览器对标准的支持，为大家寻求一条简单而便利之路。<br>得益于前人努力，如今的现代浏览器表现已经越来越一致，进而催生出更多标准，有了这些标准我们可以开发出体验更好的 Web 应用。<br>这个是所有浏览器相关的技术标准： The Web platform: Browser technologies，从中能了解到健全发展的 Web 技术生态。</p>
+<h2 id="Web-标准组织"><a href="#Web-标准组织" class="headerlink" title="Web 标准组织"></a>Web 标准组织</h2><h3 id="W3C"><a href="#W3C" class="headerlink" title="W3C"></a>W3C</h3><p>W3C 组织为 Web 开发领域提出了很多建议，比如为 XHTML、XML、DOM、CSS 和 Web API 等技术实现提出了建议。你可能会注意到为什么说是提出建议，而不是标准呢？那是因为 W3C 自认为不是标准组织，他们只是组织了 Web 相关领域的专家，这些专家组成一支工作小组，工作小组就如何实现 Web 技术提出建议。尽管 W3C 对其建议的实现方案没有任何强制权力，但他们大多数的建议都被视为事实上的标准。<br>W3C 组织关注 DOM、CSS、HTTP、媒体、性能、安全、图形学、可访问性和用户隐私等方方面面的技术，在这里可以搜索相关技术： All Standards and Drafts。<br>从 W3C 组织成员的工作手册可以看到，一项技术从提出到成为标准，需要经过 4 个阶段。</p>
+<p>WD (Working Drafts)：草案阶段<br>CR (Candidate Recommendation)：候选阶段<br>PR (Proposed Recommendation)：提议阶段<br>REC (W3C Recommendation)：正式建议阶段</p>
+<h3 id="WHATWG"><a href="#WHATWG" class="headerlink" title="WHATWG"></a>WHATWG</h3><p>WHATWG 工作小组成立于 2004 年，起因是 W3C 组织对 HTML 不再感兴趣，转而关注 XHTML 技术，部分 W3C 成员对此行为不满，因此他们决定建立一个新组织推动 HTML 发展，制定相关标准。如今 HTML5 技术能发展起来，也是得助于 WHATWG 小组。<br>WHATWG 小组因 HTML 而生，负责的 Web 标准主要是 HTML 相关技术，也涉猎一些 Web API，比如： HTML、DOM、浏览器兼容性、XHR、Fetch、Storage 和 URL 等标准<br>WHATWG 组织没有明确说明，一项技术成为标准要经过哪些阶段，他们实行的是现行标准 (Living Standard)，标准由相关负责人维护升级，并由开发者或浏览器厂商提议将新功能加入标准，这一协作过程通过 Github 的 Issues 来讨论。<br>WHATWG 和 W3C 制定的标准会有一些重叠，比如 DOM 标准。有一些标准会在开头说明：“该标准已经不由我们来维护，请查看某某组织的最新标准”。</p>
+<h3 id="ECMA"><a href="#ECMA" class="headerlink" title="ECMA"></a>ECMA</h3><p>ECMA 组织负责很多与信息化相关的技术标准，其中应用最广的就是 TC39 委员会负责的 ECMAScript 标准，这标准的实现就是 JavaScript。</p>
+<p>对 ECMAScript 标准的更新，需要经过 5 个阶段。<br>Strawman (Stage 0)：提案纳入考虑中Proposal (Stage 1)：明确提案的好处，以及可能带来的风险<br>Draft (Stage 2)：使用正式的规范语言描述语法和语义<br>Candidate (Stage 3)：根据使用者反馈进行改良<br>Finished (Stage 4)：准备正式加入 ECMAScript 标准</p>
+<h3 id="khronos"><a href="#khronos" class="headerlink" title="khronos"></a>khronos</h3><p>khronos 是一个由成员资助的，专注于制定开放标准（Open standard）的行业协会，重点制定免费的API，使在各种平台和设备上创作或播放的多媒体可以得到硬件加速<br>主要负责OpenGL，WebGL等方面标准的指定</p>
+<h3 id="IETF"><a href="#IETF" class="headerlink" title="IETF"></a>IETF</h3><p>IETF (The Internet Engineering Task Force) 组织主要负责制定互联网基础架构的标准，比如 TCP/IP 和 FTP 协议。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>对一般 Web 开发来说，我们用不上晦涩难懂的标准文档。但学习标准我们可以收获很多，也可以获取到第一手的学习资源，了解技术的发展前沿，全面深入地理解相关技术。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/xss_csrf.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -764,7 +831,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-count">25</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
