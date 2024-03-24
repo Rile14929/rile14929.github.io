@@ -164,6 +164,82 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3%E7%BB%84%E4%BB%B6%E5%BC%82%E6%AD%A5%E6%9B%B4%E6%96%B0%E5%92%8CNextTick%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/vue3%E7%BB%84%E4%BB%B6%E5%BC%82%E6%AD%A5%E6%9B%B4%E6%96%B0%E5%92%8CNextTick%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6.html" class="post-title-link" itemprop="url">vue3组件异步更新和NextTick的运行机制</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-02-09 00:00:00" itemprop="dateCreated datePublished" datetime="2024-02-09T00:00:00+08:00">2024-02-09</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="组件的异步更新"><a href="#组件的异步更新" class="headerlink" title="组件的异步更新"></a>组件的异步更新</h2><h3 id="effect"><a href="#effect" class="headerlink" title="effect"></a>effect</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// create reactive effect for rendering</span></span><br><span class="line"><span class="keyword">const</span> effect = (instance.effect = <span class="keyword">new</span> ReactiveEffect(</span><br><span class="line">  componentUpdateFn, <span class="comment">// fn：组件更新实际执行函数</span></span><br><span class="line">  NOOP,</span><br><span class="line">  () =&gt; queueJob(update), <span class="comment">//scheduler： update: () =&gt; effect.run() ，相当于执行componentUpdateFn</span></span><br><span class="line">  instance.scope, <span class="comment">// track it in component's effect scope</span></span><br><span class="line">))</span><br></pre></td></tr></table></figure>
+
+<h3 id="queueJob"><a href="#queueJob" class="headerlink" title="queueJob"></a>queueJob</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> queue: SchedulerJob[] = []</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> resolvedPromise = <span class="comment">/*#__PURE__*/</span> <span class="built_in">Promise</span>.resolve() <span class="keyword">as</span> <span class="built_in">Promise</span>&lt;any&gt;</span><br><span class="line"><span class="keyword">let</span> currentFlushPromise: <span class="built_in">Promise</span>&lt;<span class="keyword">void</span>&gt; | <span class="literal">null</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">queueJob</span>(<span class="params">job: SchedulerJob</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (</span><br><span class="line">    !queue.length ||</span><br><span class="line">    !queue.includes( <span class="comment">// queue中是否已经存在相同job</span></span><br><span class="line">      job,</span><br><span class="line">      isFlushing &amp;&amp; job.allowRecurse ? flushIndex + <span class="number">1</span> : flushIndex,</span><br><span class="line">    )</span><br><span class="line">  ) &#123;</span><br><span class="line">    <span class="keyword">if</span> (job.id == <span class="literal">null</span>) &#123;</span><br><span class="line">      queue.push(job)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      queue.splice(findInsertionIndex(job.id), <span class="number">0</span>, job)</span><br><span class="line">    &#125;</span><br><span class="line">    queueFlush()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>queueJob 执行主要是将 scheduler 添加到 queue 队列中，然后执行 queueFlush 函数。</p>
+<h3 id="queueFlush"><a href="#queueFlush" class="headerlink" title="queueFlush"></a>queueFlush</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">queueFlush</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="comment">// isFlushing和isflushPending初始值都是false</span></span><br><span class="line">	<span class="comment">// 说明当前没有flush任务在执行，也没有flush任务在等待执行</span></span><br><span class="line">  <span class="keyword">if</span> (!isFlushing &amp;&amp; !isFlushPending) &#123;</span><br><span class="line">    <span class="comment">// 初次执行queueFlush将isFlushPending设置为true，表示有flush任务在等待执行</span></span><br><span class="line">    isFlushPending = <span class="literal">true</span></span><br><span class="line">    currentFlushPromise = resolvedPromise.then(flushJobs)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>resolvedPromise 就是 promise.resolve()，flushJobs 被放到微任务队列中，等待所有同步任务执行完毕后执行，这样就可以保证flushJobs在一次组件更新中只执行一次。最后，更新 currentFlushPromise 以供 nextTick 使用。</p>
+<h3 id="flushJobs"><a href="#flushJobs" class="headerlink" title="flushJobs"></a>flushJobs</h3><p>当所有的同步scheduler执行完毕后，就会去处理微任务队列的任务，就会执行flushJobs回调函数。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">flushJobs</span>(<span class="params">seen?: CountMap</span>) </span>&#123;</span><br><span class="line">  isFlushPending = <span class="literal">false</span></span><br><span class="line">  isFlushing = <span class="literal">true</span></span><br><span class="line">  <span class="keyword">if</span> (__DEV__) &#123;</span><br><span class="line">    seen = seen || <span class="keyword">new</span> <span class="built_in">Map</span>()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Sort queue before flush.</span></span><br><span class="line">  <span class="comment">// This ensures that:</span></span><br><span class="line">  <span class="comment">// 1. Components are updated from parent to child. (because parent is always</span></span><br><span class="line">  <span class="comment">//    created before the child so its render effect will have smaller</span></span><br><span class="line">  <span class="comment">//    priority number)</span></span><br><span class="line">  <span class="comment">// 2. If a component is unmounted during a parent component's update,</span></span><br><span class="line">  <span class="comment">//    its update can be skipped.</span></span><br><span class="line">  <span class="comment">// 组件更新的顺序是从父到子 因为父组件总是在子组件之前创建 所以它的渲染效果将具有更小的优先级</span></span><br><span class="line">  <span class="comment">// 如果一个组件在父组件更新期间被卸载 则可以跳过它的更新</span></span><br><span class="line">  queue.sort(comparator)</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">  <span class="comment">// 先执行queue中的job 然后执行pendingPostFlushCbs中的job</span></span><br><span class="line">  <span class="comment">// 这里可以实现watch中的 postFlush</span></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (flushIndex = <span class="number">0</span>; flushIndex &lt; queue.length; flushIndex++) &#123;</span><br><span class="line">      <span class="keyword">const</span> job = queue[flushIndex]</span><br><span class="line">      <span class="keyword">if</span> (job &amp;&amp; job.active !== <span class="literal">false</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (__DEV__ &amp;&amp; check(job)) &#123;</span><br><span class="line">          <span class="keyword">continue</span></span><br><span class="line">        &#125;</span><br><span class="line">        callWithErrorHandling(job, <span class="literal">null</span>, ErrorCodes.SCHEDULER)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="comment">// job执行完毕后清空队列</span></span><br><span class="line">    flushIndex = <span class="number">0</span></span><br><span class="line">    queue.length = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行flushPostFlushCbs 此时组件已经更新完毕</span></span><br><span class="line">    flushPostFlushCbs(seen)</span><br><span class="line"></span><br><span class="line">    isFlushing = <span class="literal">false</span></span><br><span class="line">    currentFlushPromise = <span class="literal">null</span></span><br><span class="line">    <span class="comment">// some postFlushCb queued jobs!</span></span><br><span class="line">    <span class="comment">// keep flushing until it drains.</span></span><br><span class="line">    <span class="keyword">if</span> (queue.length || pendingPostFlushCbs.length) &#123;</span><br><span class="line">      flushJobs(seen)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="NextTick"><a href="#NextTick" class="headerlink" title="NextTick"></a>NextTick</h2><p>vue3中的nextTick实现非常简单：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">nextTick</span>&lt;<span class="title">T</span> = <span class="title">void</span>, <span class="title">R</span> = <span class="title">void</span>&gt;(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  this: T,</span></span></span><br><span class="line"><span class="function"><span class="params">  fn?: (this: T</span>) =&gt; <span class="title">R</span>,</span></span><br><span class="line"><span class="function">): <span class="title">Promise</span>&lt;<span class="title">Awaited</span>&lt;<span class="title">R</span>&gt;&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> p = currentFlushPromise || resolvedPromise</span><br><span class="line">  <span class="keyword">return</span> fn ? p.then(<span class="keyword">this</span> ? fn.bind(<span class="keyword">this</span>) : fn) : p</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的关键就是 currentFlushPromise，我们仔细看其实发现 currentFlushPromise 在 queueFlush 中就被赋值，它正是把执行组件更新函数的任务放入微队列中的promise，所以在此我们拿到 currentFlushPromise 正好把 nextTick 接收到的函数回调fn放到微队列中 flushJobs 的后面，等到 flushJobs 执行完成后组件也已经更新完毕，此时正是我们希望去执行 nextTick 回调的时机。</p>
+<p>注意：我们知道在一个eventloop中，执行完微任务后才进行渲染更新，那nextTick能拿到最新的dom吗？答案是可以的，执行nextTick回调时候，dom已经被修改，只是还没渲染。我们运行下面的例子便可得到答案。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;div id=<span class="string">"count"</span>&gt;&#123;&#123; count &#125;&#125;&lt;<span class="regexp">/div&gt;</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">const count = ref(0);</span></span><br><span class="line"><span class="regexp">count.value++;</span></span><br><span class="line"><span class="regexp">nextTick(() =&gt; &#123;</span></span><br><span class="line"><span class="regexp">    /</span><span class="regexp">/ 执行回调时候，虽然dom还没渲染，但dom已经被修改可以获取最新值</span></span><br><span class="line"><span class="regexp">    console.log('count', document.getElementById('count').innerText); /</span><span class="regexp">/ 1</span></span><br><span class="line"><span class="regexp">&#125;);</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>组件内当修改响应式数据后，组件更新函数会被放到queue中，然后注册一个微任务，这个微任务负责执行queue中的所有job，所以这时就算我们同步修改多次/多个响应式数据，同一个组件的更新函数只会被放入一次到queue中，nextTick的回调也会放入到微队列中 flushJobs 的后面，等到同步操作结束后才会去执行注册的微任务，组件更新函数才会被执行（nextTick在此后执行也会获取到最新的dom值），组件也会被更新。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3-computed%E5%92%8Cwatch%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -188,14 +264,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2024-03-23 00:00:00" itemprop="dateCreated datePublished" datetime="2024-03-23T00:00:00+08:00">2024-03-23</time>
+              <time title="创建时间：2024-02-03 00:00:00" itemprop="dateCreated datePublished" datetime="2024-02-03T00:00:00+08:00">2024-02-03</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-03-23 00:00:00" itemprop="dateModified" datetime="2023-03-23T00:00:00+08:00">2023-03-23</time>
+                <time title="修改时间：2023-02-03 00:00:00" itemprop="dateModified" datetime="2023-02-03T00:00:00+08:00">2023-02-03</time>
               </span>
 
           
@@ -258,82 +334,6 @@
 
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>以上就是计算属性computed和侦听器watch的实现原理，总的来说就是侦听器更适合用于在数据变化后执行某段逻辑的场景，而计算属性则用于一个数据依赖另外一些数据计算而来的场景。</p>
 <p>文章里面涉及到<a href="https://rile14929.github.io/zh-CN/vue3%E7%BB%84%E4%BB%B6%E5%BC%82%E6%AD%A5%E6%9B%B4%E6%96%B0%E5%92%8CNextTick%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6.html">任务队列异步更新的原理</a>在这。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3%E7%BB%84%E4%BB%B6%E5%BC%82%E6%AD%A5%E6%9B%B4%E6%96%B0%E5%92%8CNextTick%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/vue3%E7%BB%84%E4%BB%B6%E5%BC%82%E6%AD%A5%E6%9B%B4%E6%96%B0%E5%92%8CNextTick%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6.html" class="post-title-link" itemprop="url">vue3组件异步更新和NextTick的运行机制</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-02-09 00:00:00" itemprop="dateCreated datePublished" datetime="2024-02-09T00:00:00+08:00">2024-02-09</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="组件的异步更新"><a href="#组件的异步更新" class="headerlink" title="组件的异步更新"></a>组件的异步更新</h2><h3 id="effect"><a href="#effect" class="headerlink" title="effect"></a>effect</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// create reactive effect for rendering</span></span><br><span class="line"><span class="keyword">const</span> effect = (instance.effect = <span class="keyword">new</span> ReactiveEffect(</span><br><span class="line">  componentUpdateFn, <span class="comment">// fn：组件更新实际执行函数</span></span><br><span class="line">  NOOP,</span><br><span class="line">  () =&gt; queueJob(update), <span class="comment">//scheduler： update: () =&gt; effect.run() ，相当于执行componentUpdateFn</span></span><br><span class="line">  instance.scope, <span class="comment">// track it in component's effect scope</span></span><br><span class="line">))</span><br></pre></td></tr></table></figure>
-
-<h3 id="queueJob"><a href="#queueJob" class="headerlink" title="queueJob"></a>queueJob</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> queue: SchedulerJob[] = []</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> resolvedPromise = <span class="comment">/*#__PURE__*/</span> <span class="built_in">Promise</span>.resolve() <span class="keyword">as</span> <span class="built_in">Promise</span>&lt;any&gt;</span><br><span class="line"><span class="keyword">let</span> currentFlushPromise: <span class="built_in">Promise</span>&lt;<span class="keyword">void</span>&gt; | <span class="literal">null</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">queueJob</span>(<span class="params">job: SchedulerJob</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (</span><br><span class="line">    !queue.length ||</span><br><span class="line">    !queue.includes( <span class="comment">// queue中是否已经存在相同job</span></span><br><span class="line">      job,</span><br><span class="line">      isFlushing &amp;&amp; job.allowRecurse ? flushIndex + <span class="number">1</span> : flushIndex,</span><br><span class="line">    )</span><br><span class="line">  ) &#123;</span><br><span class="line">    <span class="keyword">if</span> (job.id == <span class="literal">null</span>) &#123;</span><br><span class="line">      queue.push(job)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      queue.splice(findInsertionIndex(job.id), <span class="number">0</span>, job)</span><br><span class="line">    &#125;</span><br><span class="line">    queueFlush()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>queueJob 执行主要是将 scheduler 添加到 queue 队列中，然后执行 queueFlush 函数。</p>
-<h3 id="queueFlush"><a href="#queueFlush" class="headerlink" title="queueFlush"></a>queueFlush</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">queueFlush</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="comment">// isFlushing和isflushPending初始值都是false</span></span><br><span class="line">	<span class="comment">// 说明当前没有flush任务在执行，也没有flush任务在等待执行</span></span><br><span class="line">  <span class="keyword">if</span> (!isFlushing &amp;&amp; !isFlushPending) &#123;</span><br><span class="line">    <span class="comment">// 初次执行queueFlush将isFlushPending设置为true，表示有flush任务在等待执行</span></span><br><span class="line">    isFlushPending = <span class="literal">true</span></span><br><span class="line">    currentFlushPromise = resolvedPromise.then(flushJobs)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>resolvedPromise 就是 promise.resolve()，flushJobs 被放到微任务队列中，等待所有同步任务执行完毕后执行，这样就可以保证flushJobs在一次组件更新中只执行一次。最后，更新 currentFlushPromise 以供 nextTick 使用。</p>
-<h3 id="flushJobs"><a href="#flushJobs" class="headerlink" title="flushJobs"></a>flushJobs</h3><p>当所有的同步scheduler执行完毕后，就会去处理微任务队列的任务，就会执行flushJobs回调函数。</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">flushJobs</span>(<span class="params">seen?: CountMap</span>) </span>&#123;</span><br><span class="line">  isFlushPending = <span class="literal">false</span></span><br><span class="line">  isFlushing = <span class="literal">true</span></span><br><span class="line">  <span class="keyword">if</span> (__DEV__) &#123;</span><br><span class="line">    seen = seen || <span class="keyword">new</span> <span class="built_in">Map</span>()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Sort queue before flush.</span></span><br><span class="line">  <span class="comment">// This ensures that:</span></span><br><span class="line">  <span class="comment">// 1. Components are updated from parent to child. (because parent is always</span></span><br><span class="line">  <span class="comment">//    created before the child so its render effect will have smaller</span></span><br><span class="line">  <span class="comment">//    priority number)</span></span><br><span class="line">  <span class="comment">// 2. If a component is unmounted during a parent component's update,</span></span><br><span class="line">  <span class="comment">//    its update can be skipped.</span></span><br><span class="line">  <span class="comment">// 组件更新的顺序是从父到子 因为父组件总是在子组件之前创建 所以它的渲染效果将具有更小的优先级</span></span><br><span class="line">  <span class="comment">// 如果一个组件在父组件更新期间被卸载 则可以跳过它的更新</span></span><br><span class="line">  queue.sort(comparator)</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">  <span class="comment">// 先执行queue中的job 然后执行pendingPostFlushCbs中的job</span></span><br><span class="line">  <span class="comment">// 这里可以实现watch中的 postFlush</span></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (flushIndex = <span class="number">0</span>; flushIndex &lt; queue.length; flushIndex++) &#123;</span><br><span class="line">      <span class="keyword">const</span> job = queue[flushIndex]</span><br><span class="line">      <span class="keyword">if</span> (job &amp;&amp; job.active !== <span class="literal">false</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (__DEV__ &amp;&amp; check(job)) &#123;</span><br><span class="line">          <span class="keyword">continue</span></span><br><span class="line">        &#125;</span><br><span class="line">        callWithErrorHandling(job, <span class="literal">null</span>, ErrorCodes.SCHEDULER)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="comment">// job执行完毕后清空队列</span></span><br><span class="line">    flushIndex = <span class="number">0</span></span><br><span class="line">    queue.length = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行flushPostFlushCbs 此时组件已经更新完毕</span></span><br><span class="line">    flushPostFlushCbs(seen)</span><br><span class="line"></span><br><span class="line">    isFlushing = <span class="literal">false</span></span><br><span class="line">    currentFlushPromise = <span class="literal">null</span></span><br><span class="line">    <span class="comment">// some postFlushCb queued jobs!</span></span><br><span class="line">    <span class="comment">// keep flushing until it drains.</span></span><br><span class="line">    <span class="keyword">if</span> (queue.length || pendingPostFlushCbs.length) &#123;</span><br><span class="line">      flushJobs(seen)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="NextTick"><a href="#NextTick" class="headerlink" title="NextTick"></a>NextTick</h2><p>vue3中的nextTick实现非常简单：</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">nextTick</span>&lt;<span class="title">T</span> = <span class="title">void</span>, <span class="title">R</span> = <span class="title">void</span>&gt;(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  this: T,</span></span></span><br><span class="line"><span class="function"><span class="params">  fn?: (this: T</span>) =&gt; <span class="title">R</span>,</span></span><br><span class="line"><span class="function">): <span class="title">Promise</span>&lt;<span class="title">Awaited</span>&lt;<span class="title">R</span>&gt;&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> p = currentFlushPromise || resolvedPromise</span><br><span class="line">  <span class="keyword">return</span> fn ? p.then(<span class="keyword">this</span> ? fn.bind(<span class="keyword">this</span>) : fn) : p</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里的关键就是 currentFlushPromise，我们仔细看其实发现 currentFlushPromise 在 queueFlush 中就被赋值，它正是把执行组件更新函数的任务放入微队列中的promise，所以在此我们拿到 currentFlushPromise 正好把 nextTick 接收到的函数回调fn放到微队列中 flushJobs 的后面，等到 flushJobs 执行完成后组件也已经更新完毕，此时正是我们希望去执行 nextTick 回调的时机。</p>
-<p>注意：我们知道在一个eventloop中，执行完微任务后才进行渲染更新，那nextTick能拿到最新的dom吗？答案是可以的，执行nextTick回调时候，dom已经被修改，只是还没渲染。我们运行下面的例子便可得到答案。</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;div id=<span class="string">"count"</span>&gt;&#123;&#123; count &#125;&#125;&lt;<span class="regexp">/div&gt;</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">const count = ref(0);</span></span><br><span class="line"><span class="regexp">count.value++;</span></span><br><span class="line"><span class="regexp">nextTick(() =&gt; &#123;</span></span><br><span class="line"><span class="regexp">    /</span><span class="regexp">/ 执行回调时候，虽然dom还没渲染，但dom已经被修改可以获取最新值</span></span><br><span class="line"><span class="regexp">    console.log('count', document.getElementById('count').innerText); /</span><span class="regexp">/ 1</span></span><br><span class="line"><span class="regexp">&#125;);</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>组件内当修改响应式数据后，组件更新函数会被放到queue中，然后注册一个微任务，这个微任务负责执行queue中的所有job，所以这时就算我们同步修改多次/多个响应式数据，同一个组件的更新函数只会被放入一次到queue中，nextTick的回调也会放入到微队列中 flushJobs 的后面，等到同步操作结束后才会去执行注册的微任务，组件更新函数才会被执行（nextTick在此后执行也会获取到最新的dom值），组件也会被更新。</p>
 
       
     </div>
