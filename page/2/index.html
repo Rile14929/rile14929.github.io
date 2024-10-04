@@ -164,6 +164,643 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%EF%BC%88Update%20the%20rendering%EF%BC%89%E7%9A%84%E6%97%B6%E6%9C%BA.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%EF%BC%88Update%20the%20rendering%EF%BC%89%E7%9A%84%E6%97%B6%E6%9C%BA.html" class="post-title-link" itemprop="url">EventLoop规范 - 更新渲染（Update the rendering）的时机验证</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-10-18 00:00:00" itemprop="dateCreated datePublished" datetime="2023-10-18T00:00:00+08:00">2023-10-18</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="event-loop-中的-Update-the-rendering（更新渲染）"><a href="#event-loop-中的-Update-the-rendering（更新渲染）" class="headerlink" title="event loop 中的 Update the rendering（更新渲染）"></a>event loop 中的 Update the rendering（更新渲染）</h2><p>这是 event loop 中很重要部分，在<a href="https://rile14929.github.io/zh-CN/eventloop.html">这篇文章处理流程（processing model）中第 3 步会进行 Update the rendering（更新渲染）</a>，规范允许浏览器自己选择是否更新视图。也就是说可能不是每轮事件循环都去更新视图，只在有必要的时候才更新视图。</p>
+<p>渲染的基本流程：</p>
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image.png" alt="alt text"></p>
+<ol>
+<li>处理 HTML 标记并构建 DOM 树。</li>
+<li>处理 CSS 标记并构建 CSSOM 树， 将 DOM 与 CSSOM 合并成一个渲染树。</li>
+<li>根据渲染树来布局，以计算每个节点的几何信息。</li>
+<li>将各个节点绘制到屏幕上。</li>
+</ol>
+<p>Note: 可以看到渲染树的一个重要组成部分是 CSSOM 树，绘制会等待 css 样式全部加载完成才进行，所以 css 样式加载的快慢是首屏呈现快慢的关键点。</p>
+<p>下面讨论一下渲染的时机。规范定义在一次循环中，Update the rendering 会在 Microtasks: Perform a microtask checkpoint 后运行。</p>
+<h2 id="渲染时机"><a href="#渲染时机" class="headerlink" title="渲染时机"></a>渲染时机</h2><blockquote>
+<p>以下的例子中，用 chrome 的 Developer tools 的 Timeline 查看各部分运行的时间点。当我们点击这个 div 的时候，截取了部分时间线。</p>
+<p>黄色部分是脚本运行，紫色部分是更新 render 树、计算布局，绿色部分是绘制。</p>
+<p>绿色和紫色部分可以认为是 Update the rendering。</p>
+</blockquote>
+<h3 id="例子-1"><a href="#例子-1" class="headerlink" title="例子 1"></a>例子 1</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> t = <span class="number">0</span></span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = t</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-1.png" alt="alt text"></p>
+<p>在这一轮事件循环中，setTimeout1 是作为 task 运行的，可以看到 paint 确实是在 task 运行完后才进行的。</p>
+<h3 id="例子-2"><a href="#例子-2" class="headerlink" title="例子 2"></a>例子 2</h3><p>现在换成一个 microtask 任务，看看有什么变化</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">Promise1</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line">      con.textContext = 0</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-2.png" alt="alt text"></p>
+<p>和上一个例子很像，不同的是这一轮事件循环的 task 是 click 的回调函数，Promise1 则是 microtask，paint 同样是在他们之后完成。</p>
+<p>标准就是那么定义的，答案似乎显而易见，我们把例子变得稍微复杂一些。</p>
+<h3 id="例子-3"><a href="#例子-3" class="headerlink" title="例子 3"></a>例子 3</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="title">click1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-3.png" alt="alt text"><br><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-4.png" alt="alt text"></p>
+<p>经过多次测试，执行和渲染顺序可能会出现上图的两种情况，根据 timeline 可以看出，图 1 中 setTimeout 分别执行并且浏览器绘制了两次，图二中 setTimeout1 和 setTimeout2 中间并没有绘制, 而是最后绘制了一次，也基本符合规范，但是需要验证这两次 setTimeout 是否在两次 task 中。</p>
+<h3 id="例子-4"><a href="#例子-4" class="headerlink" title="例子 4"></a>例子 4</h3><p>在两个 setTimeout 中增加 microtask。再次确认 setTimeout 在两个 task 中</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line"><span class="javascript">      <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">Promise1</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">        <span class="built_in">console</span>.log(<span class="string">'Promise1'</span>)</span></span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line"><span class="javascript">      <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">Promise2</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">        <span class="built_in">console</span>.log(<span class="string">'Promise2'</span>)</span></span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-5.png" alt="alt text"><br><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-9.png" alt="alt text"></p>
+<p>从 run microtasks 中可以看出来，setTimeout1、setTimeout2 是运行在两次 event loop 中</p>
+<h3 id="例子-5"><a href="#例子-5" class="headerlink" title="例子 5"></a>例子 5</h3><p>将时间间隔加大一些。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="title">click1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line">    &#125;, 17)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>当间隔增大，大部分时候可以肉眼从看到先变成 0，再变成 1 的过程。但是有时也是会合并起来，只 paint 一次</p>
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-6.png" alt="alt text"></p>
+<p>通过 timeline，可以看到 setTimeout1 后接着 paint，后执行了 setTimeout2 后也有 paint</p>
+<h3 id="例子-6"><a href="#例子-6" class="headerlink" title="例子 6"></a>例子 6</h3><p>我们在同一时间执行多个 setTimeout 来模拟执行间隔很短的 task。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 0</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 1</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 2</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 3</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 4</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 5</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = 6</span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-7.png" alt="alt text"><br>图一中总共 paint 了一次</p>
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-8.png" alt="alt text"></p>
+<p>图二中一共 paint 了两次，所以多次 task 的间隔很短，仍会进行绘制。</p>
+<h3 id="例子-7"><a href="#例子-7" class="headerlink" title="例子 7"></a>例子 7</h3><p>有说法是一轮 event loop 执行的 microtask 有数量限制，多余的 microtask 会放到下一轮执行。下面例子将 microtask 的数量增加到 25000。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">      con.textContent = <span class="string">'task1'</span></span></span><br><span class="line"><span class="actionscript">      <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">250000</span>; i++) &#123;</span></span><br><span class="line"><span class="javascript">        <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span></span><br><span class="line">          con.textContent = i</span><br><span class="line">        &#125;)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;, 0)</span><br><span class="line"><span class="actionscript">    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">      con.textContent = <span class="string">'task2'</span></span></span><br><span class="line">    &#125;, 0)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-10.png" alt="alt text"></p>
+<p>可以看到脚本的运行耗费大量的时间，并且阻塞了渲染。</p>
+<p>我们看 setTimeout2 的运行情况</p>
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-11.png" alt="alt text"></p>
+<p>可以看到 setTimeout2 这轮 event loop 没有 run microtasks，microtasks 在 setTimeout1 被全部执行完了。</p>
+<p>25000 个 microtasks 不能说明 event loop 对 microtasks 数量没有限制，有可能这个限制数很高，远超 25000，但日常使用基本不会使用那么多了。</p>
+<p>对 microtasks 增加数量限制，一个很大的作用是防止脚本运行时间过长，阻塞渲染。</p>
+<h3 id="例子-8"><a href="#例子-8" class="headerlink" title="例子 8"></a>例子 8</h3><p>使用 requestAnimationFrame。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"con"</span>&gt;</span>this is con<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="javascript">  <span class="keyword">var</span> con = <span class="built_in">document</span>.getElementById(<span class="string">'con'</span>)</span></span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> i = <span class="number">0</span></span></span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> raf = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="actionscript">    requestAnimationFrame(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">      con.textContent = i</span><br><span class="line"><span class="javascript">      <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span></span><br><span class="line">        i++</span><br><span class="line">        if (i &lt; 3) raf()</span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line"><span class="actionscript">  con.onclick = <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span></span><br><span class="line">    raf()</span><br><span class="line">  &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>看下总体的 timeline<br><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-12.png" alt="alt text"></p>
+<p>单看某一个 requestAnimationFrame<br><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-13.png" alt="alt text"></p>
+<ul>
+<li>可以看出 requestAnimationFrame 是在更新渲染阶段的执行的，其执行顺序早于 paint，并且不会被合并执行，非常适合做动画</li>
+<li>在 requestAnimationFrame 回调内有新的 microtasks 进入时，也会执行完所有的 microtasks 才会进入到渲染阶段</li>
+</ul>
+<h3 id="例子-9"><a href="#例子-9" class="headerlink" title="例子 9"></a>例子 9</h3><p>验证 postMessage 是否是 task</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="actionscript">  setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">console</span>.log(<span class="string">'setTimeout1'</span>)</span></span><br><span class="line">  &#125;, 0)</span><br><span class="line"><span class="actionscript">  <span class="keyword">var</span> channel = <span class="keyword">new</span> MessageChannel()</span></span><br><span class="line"><span class="actionscript">  channel.port1.onmessage = <span class="function"><span class="keyword">function</span> <span class="title">onmessage1</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">console</span>.log(<span class="string">'postMessage'</span>)</span></span><br><span class="line"><span class="javascript">    <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">promise1</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">      <span class="built_in">console</span>.log(<span class="string">'promise1'</span>)</span></span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">  channel.port2.postMessage(0)</span><br><span class="line"><span class="actionscript">  setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span><span class="params">()</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="built_in">console</span>.log(<span class="string">'setTimeout2'</span>)</span></span><br><span class="line">  &#125;, 0)</span><br><span class="line"><span class="javascript">  <span class="built_in">console</span>.log(<span class="string">'sync'</span>)</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>执行顺序：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sync</span><br><span class="line">setTimeout1</span><br><span class="line">postMessage</span><br><span class="line">promise1</span><br><span class="line">setTimeout2</span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-14.png" alt="alt text"></p>
+<p>第一个黄块是 setTimeout1，第二个是 onmessage1，第三个是 promise1，第四个是 setTimeout2。显而易见，postMessage 属于 task。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>结合规范和以上验证案例可以得出一些结论：</p>
+<ul>
+<li>event loop 的大致循环过程，可以用下边的图表示：</li>
+</ul>
+<p><img src="../images/EventLoop%E9%AA%8C%E8%AF%81%E6%9B%B4%E6%96%B0%E6%B8%B2%E6%9F%93%E7%9A%84%E6%97%B6%E6%9C%BA/image-15.png" alt="alt text"></p>
+<ul>
+<li>在一轮 event loop 中多次修改同一 dom，只有最后一次会进行绘制。</li>
+<li>例 3-例 6 这几个结果是非常不可控的，如果这两个 Task 之间正好遇到了浏览器认定的渲染机会，那么它会重绘，否则就不会。</li>
+<li>渲染更新（Update the rendering）会在 event loop 中的 tasks 和 microtasks 完成后进行，但并不是每轮 event loop 都会更新渲染，这里有一个 rendering opportunity 的概念，判断是否需要渲染，这取决于是否修改了 dom 和浏览器觉得是否有必要在此时立即将新状态呈现给用户，也要要根据屏幕刷新率、页面性能、页面是否在后台运行来共同决定。通常来说这个渲染间隔是固定的。（所以多个 task 很可能在一次渲染之间执行）</li>
+<li>事件循环不一定每轮都伴随着重渲染，但是如果有微任务，一定会伴随着微任务执行。</li>
+<li>如果希望在每轮 event loop 都即时呈现变动，可以使用 requestAnimationFrame。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/semantic-release.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/semantic-release.html" class="post-title-link" itemprop="url">团队敏捷实践 —— 使用 semantic-release 实现自动化发布</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-09-01 00:00:00" itemprop="dateCreated datePublished" datetime="2023-09-01T00:00:00+08:00">2023-09-01</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在之前的分享中，我们团队已经成功运用了 Gitlab CI，并且已经结构化提交 git commit 记录，我们希望更进一步，自动管理发布版本，自动生成更新日志，自动发布 NPM 包，因此我们引入了 semantic-release 进一步自动化管理我们的发布流程。</p>
+<h2 id="semantic-release-概述"><a href="#semantic-release-概述" class="headerlink" title="semantic-release 概述"></a>semantic-release 概述</h2><p>有关<a href="https://semantic-release.gitbook.io/semantic-release/" target="_blank" rel="noopener">semantic-release</a>的详细介绍可以阅读官方文档，这里只做一些概述性的总结。和 standard-version 相比，semantic-release 更适合在 CI 环境中运行，它自带支持各种 git server 的认证支持，如 Github，Gitlab，Bitbucket 等等，此外，还支持插件，以便完成其他后续的流程步骤，比如自动生成 git tag 和 release note 之后再 push 回中央仓库，自动发布 npm 包等等。</p>
+<p>semantic-release 会根据规范化的 commit 信息生成发布日志，默认使用 angular 规则，其他规则可以配置插件完成。</p>
+<p>semantic-release 大致的工作流如下:</p>
+<ul>
+<li>提交到特定的分支触发 release 流程</li>
+<li>验证 commit 信息，生成 release note，打 git tag</li>
+<li>其他后续流程，如生成 CHANGELOG.md，npm publish 等等（通过插件完成）</li>
+</ul>
+<p><strong>由 CI 自动执行之后的效果就像这样，在 Git tag 页面可以看到 tag 信息，同时包含更新记录:</strong><br><img src="/images/semantic-release.resources/4AC0ED82-F6DB-47DF-BF40-55D3D102E62E.png" alt="86f880f284d3072ec2179cbc46c32396"></p>
+<p><strong>如果启用了@semantic-release/git 插件，还会将生成的 CHANGELOG.md  反向 push 回中央仓库:</strong><br><img src="/images/semantic-release.resources/0ECB644A-F473-44BD-B48D-88C694133D7C.png" alt="6cfc655f89c58bc6a2faa5e3aee6eea1"></p>
+<p><strong>commit history 的实际效果如下</strong><br><img src="/images/semantic-release.resources/6FB7CB34-8D1F-46EB-98EA-801CABF7D39F.png" alt="c15015e5517056c98eca17829d479a12"></p>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><p>在项目工程中添加 release.config.js 配置如下:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br></pre></td><td class="code"><pre><span class="line">parserOpts = &#123;</span><br><span class="line">  mergePattern: <span class="regexp">/^Merge pull request #(\d+) from (.*)$/</span>,</span><br><span class="line">  mergeCorrespondence: [<span class="string">'id'</span>, <span class="string">'source'</span>],</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Copied from https://github.com/conventional-changelog/conventional-changelog/blob/master/packages/conventional-changelog-angular/writer-opts.js#L27</span></span><br><span class="line"><span class="comment">// and modified to support adding all commit types to the release notes</span></span><br><span class="line">customTransform = <span class="function">(<span class="params">commit, context</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="keyword">const</span> issues = []</span><br><span class="line">  commit.notes.forEach(<span class="function">(<span class="params">note</span>) =&gt;</span> &#123;</span><br><span class="line">    note.title = <span class="string">`BREAKING CHANGES`</span></span><br><span class="line">  &#125;)</span><br><span class="line">  <span class="keyword">if</span> (commit.type === <span class="string">`feat`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`✨ Features`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`fix`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🐞 Bug Fixes`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`perf`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🎈 Performance Improvements`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`revert`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`Reverts`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`docs`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`📃 Documentation`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`style`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🌈 Styles`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`refactor`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🦄 Code Refactoring`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`test`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🧪 Tests`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`build`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🔧 Build System`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`ci`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🐎 Continuous Integration`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (commit.scope === <span class="string">`*`</span>) &#123;</span><br><span class="line">    commit.scope = <span class="string">``</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> commit.hash === <span class="string">`string`</span>) &#123;</span><br><span class="line">    commit.shortHash = commit.hash.substring(<span class="number">0</span>, <span class="number">7</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> commit.subject === <span class="string">`string`</span>) &#123;</span><br><span class="line">    commit.subject = commit.subject.substring(<span class="number">2</span>)</span><br><span class="line">    <span class="keyword">let</span> url = context.repository</span><br><span class="line">      ? <span class="string">`<span class="subst">$&#123;context.host&#125;</span>/<span class="subst">$&#123;context.owner&#125;</span>/<span class="subst">$&#123;context.repository&#125;</span>`</span></span><br><span class="line">      : context.repoUrl</span><br><span class="line">    <span class="keyword">if</span> (url) &#123;</span><br><span class="line">      url = <span class="string">`<span class="subst">$&#123;url&#125;</span>/issues/`</span> <span class="comment">// Issue URLs.</span></span><br><span class="line">      commit.subject = commit.subject.replace(<span class="regexp">/#([0-9]+)/g</span>, (_, issue) =&gt; &#123;</span><br><span class="line">        issues.push(issue)</span><br><span class="line">        <span class="keyword">return</span> <span class="string">`[#<span class="subst">$&#123;issue&#125;</span>](<span class="subst">$&#123;url&#125;</span><span class="subst">$&#123;issue&#125;</span>)`</span></span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (context.host) &#123;</span><br><span class="line">      <span class="comment">// User URLs.</span></span><br><span class="line">      commit.subject = commit.subject.replace(</span><br><span class="line">        /\B@([a-z0<span class="number">-9</span>](?:-?[a-z0<span class="number">-9</span>/])&#123;<span class="number">0</span>,<span class="number">38</span>&#125;)/g,</span><br><span class="line">        (_, username) =&gt; &#123;</span><br><span class="line">          <span class="keyword">if</span> (username.includes(<span class="string">'/'</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">`@<span class="subst">$&#123;username&#125;</span>`</span></span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">return</span> <span class="string">`[@<span class="subst">$&#123;username&#125;</span>](<span class="subst">$&#123;context.host&#125;</span>/<span class="subst">$&#123;username&#125;</span>)`</span></span><br><span class="line">        &#125;</span><br><span class="line">      )</span><br><span class="line">    &#125;</span><br><span class="line">    commit.subject = <span class="string">`<span class="subst">$&#123;commit.subject&#125;</span> (by @<span class="subst">$&#123;commit.committer.name&#125;</span>)`</span></span><br><span class="line">  &#125; <span class="comment">// remove references that already appear in the subject</span></span><br><span class="line">  commit.references = commit.references.filter(<span class="function">(<span class="params">reference</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (issues.indexOf(reference.issue) === <span class="number">-1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">  &#125;)</span><br><span class="line">  <span class="keyword">return</span> commit</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">module</span>.exports = &#123;</span><br><span class="line">  branches: <span class="string">'master'</span>,</span><br><span class="line">  parserOpts,</span><br><span class="line">  writerOpts: &#123; <span class="attr">transform</span>: customTransform &#125;,</span><br><span class="line">  plugins: [</span><br><span class="line">    [</span><br><span class="line">      <span class="string">'@semantic-release/commit-analyzer'</span>,</span><br><span class="line">      &#123;</span><br><span class="line">        preset: <span class="string">'angular'</span>,</span><br><span class="line">        releaseRules: [</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'docs'</span>, <span class="attr">scope</span>: <span class="string">'README'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'refactor'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'style'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'test'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'build'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'ci'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">        ],</span><br><span class="line">      &#125;,</span><br><span class="line">    ],</span><br><span class="line">    <span class="string">'@semantic-release/release-notes-generator'</span>,</span><br><span class="line">    [<span class="string">'@semantic-release/changelog'</span>, &#123; <span class="attr">changelogFile</span>: <span class="string">'CHANGELOG.md'</span> &#125;],</span><br><span class="line">    <span class="string">'@semantic-release/npm'</span>,</span><br><span class="line">    [</span><br><span class="line">      <span class="string">'@semantic-release/git'</span>,</span><br><span class="line">      &#123;</span><br><span class="line">        assets: [<span class="string">'package.json'</span>, <span class="string">'CHANGELOG.md'</span>],</span><br><span class="line">      &#125;,</span><br><span class="line">    ],</span><br><span class="line">    [</span><br><span class="line">      <span class="string">'@semantic-release/gitlab'</span>,</span><br><span class="line">      &#123;</span><br><span class="line">        gitlabUrl: <span class="string">'http://git.example.com'</span>,</span><br><span class="line">        assets: [],</span><br><span class="line">      &#125;,</span><br><span class="line">    ],</span><br><span class="line">  ],</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>完成  .gitlab-ci.yml  配置如下（仅部分关键的配置片段）:</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">stages:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">lint</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">release</span></span><br><span class="line"><span class="attr">commitlint:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">lint</span></span><br><span class="line">    <span class="attr">rules:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">'$CI_COMMIT_TITLE =~ /^chore\(release\)/'</span></span><br><span class="line">          <span class="attr">when:</span> <span class="string">never</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">'$CI_COMMIT_TITLE =~ /^Merge branch/'</span></span><br><span class="line">          <span class="attr">when:</span> <span class="string">never</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">$CI_COMMIT_BRANCH</span> <span class="string">==</span> <span class="string">$CI_DEFAULT_BRANCH</span> <span class="comment"># 一般当分支master有 push 或 merge 时才会执行该工作</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">sh</span> <span class="string">bin/commitlint-gitlab-ci.sh</span></span><br><span class="line"><span class="attr">release:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">release</span></span><br><span class="line">    <span class="attr">rules:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">$CI_COMMIT_BRANCH</span> <span class="string">==</span> <span class="string">$CI_DEFAULT_BRANCH</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">semantic-release</span></span><br></pre></td></tr></table></figure>
+
+<p>commitlint 脚本请参考<a href="https://gitlab.com/dmoonfire/commitlint-gitlab-ci/-/blob/main/bin/commitlint-gitlab-ci.sh" target="_blank" rel="noopener">commitlint-gitlab-ci.sh</a></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>至此，我们完成了通过 CI 自动管理版本号和发布日志的需求，大大节省了人力，同时，还留下了发布痕迹，方便追溯历史版本。<br>另外，需要注意的是上述的配置并不会修改源码部分的版本号配置内容（如 build.gradle 或 package.json 等），如果需要自动管理这些地方的版本，与 git tag 版本保持一致，可以引入@semantic-release/exec 插件，自己写脚本，通过脚本自动化修改这些地方的版本号。<br>还需要注意的是 semantic-release 默认产生的 commit 记录为了避免不必要的 CI 流程，会在 commit 记录加上[skip ci]（见上面的截图）来跳过 CI，如果你的流水线需要由 git tag 触发，可以配置@semantic-release/git 插件，自定义 commit 记录，去掉[skip ci]。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/eventloop.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/eventloop.html" class="post-title-link" itemprop="url">EventLoop规范 阅读和总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-08-07 00:00:00" itemprop="dateCreated datePublished" datetime="2023-08-07T00:00:00+08:00">2023-08-07</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="异步的思考"><a href="#异步的思考" class="headerlink" title="异步的思考"></a>异步的思考</h2><p>提起异步，相信每个人都知道。异步背后的“靠山”就是 event loops。这里的异步准确的说应该叫浏览器的 event loops 或者说是 javaScript 运行环境的 event loops，因为<a href="https://tc39.es/ecma262/" target="_blank" rel="noopener">ECMAScript</a>中没有 event loops，event loops 是在<a href="https://html.spec.whatwg.org/#event-loops" target="_blank" rel="noopener">HTML Standard</a>定义的。</p>
+<h4 id="（1）单线程的-JavaScript"><a href="#（1）单线程的-JavaScript" class="headerlink" title="（1）单线程的 JavaScript"></a>（1）单线程的 JavaScript</h4><p>我们知道，JavaScript 是一种单线程语言，它主要用来与用户互动，以及操作 DOM。<br>JavaScript 有同步和异步的概念，这就解决了代码阻塞的问题：</p>
+<pre><code>- 同步：如果在一个函数返回的时候，调用者就能够得到预期结果，那么这个函数就是同步的；
+- 异步：如果在函数返回的时候，调用者还不能够得到预期结果，而是需要在将来通过一定的手段得到，那么这个函数就是异步的。</code></pre><h5 id="那单线程有什么好处呢？"><a href="#那单线程有什么好处呢？" class="headerlink" title="那单线程有什么好处呢？"></a>那单线程有什么好处呢？</h5><pre><code>在 JS 运行的时候可能会阻止 UI 渲染，这说明了两个线程是互斥的。这是因为 JS 可以修改 DOM，如果在 JS 执行的时候 UI 线程还在工作，就可能导致不能安全的渲染 UI。
+得益于 JS 是单线程运行的，可以达到节省内存，节约上下文切换时间的好处。</code></pre><h4 id="（2）多线程的浏览器"><a href="#（2）多线程的浏览器" class="headerlink" title="（2）多线程的浏览器"></a>（2）多线程的浏览器</h4><p>JS 是单线程的，在同一个时间只能做一件事情，那为什么浏览器可以同时执行异步任务呢？</p>
+<p>这是因为浏览器是多线程的，当 JS 需要执行异步任务时，浏览器会另外启动一个线程去执行该任务。也就是说，JavaScript 是单线程的指的是执行 JavaScript 代码的线程只有一个，是浏览器提供的 JavaScript 引擎线程（主线程）。除此之外，浏览器中还有定时器线程、 HTTP 请求线程等线程，这些线程主要不是来执行 JS 代码的。</p>
+<p>比如主线程中需要发送数据请求，就会把这个任务交给异步 HTTP 请求线程去执行，等请求数据返回之后，再将 callback 里需要执行的 JS 回调交给 JS 引擎线程去执行。也就是说，浏览器才是真正执行发送请求这个任务的角色，而 JS 只是负责执行最后的回调处理。所以这里的异步不是 JS 自身实现的，而是浏览器为其提供的能力。</p>
+<p><img src="../images/eventloop/image.png" alt="alt text"></p>
+<p>可以看到，Chrome 不仅拥有多个进程，还有多个线程。以渲染进程为例，就包含 GUI 渲染线程、JS 引擎线程、事件触发线程、定时器触发线程、异步 HTTP 请求线程。这些线程为 JS 在浏览器中完成异步任务提供了基础。</p>
+<h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>我们来看看 event loop 在 <a href="https://html.spec.whatwg.org/multipage/webappapis.html#event-loop" target="_blank" rel="noopener">HTML Standard</a> 中的定义章节:</p>
+<p>第一句话：</p>
+<blockquote>
+<p>为了协调事件，用户交互，脚本，渲染，网络等，用户代理必须使用本节所述的 event loop。</p>
+</blockquote>
+<p><strong>事件</strong>，<strong>用户交互</strong>，<strong>脚本</strong>，<strong>渲染</strong>，<strong>网络</strong>这些都是我们所熟悉的东西，他们都是由 event loop 协调的。触发一个 click 事件，进行一次 ajax 请求，背后都有 event loop 在运作。</p>
+<h3 id="task-queues"><a href="#task-queues" class="headerlink" title="task queues"></a>task queues</h3><blockquote>
+<p>一个 event loop 有一个或者多个 task 队列。</p>
+</blockquote>
+<blockquote>
+<p>当用户代理安排一个任务，必须将该任务增加到相应的 event loop 的一个 tsak 队列中。</p>
+</blockquote>
+<blockquote>
+<p>每一个 task 都来源于指定的任务源，比如可以为鼠标、键盘事件提供一个 task 队列，其他事件又是一个单独的队列。可以为鼠标、键盘事件分配更多的时间，保证交互的流畅。</p>
+</blockquote>
+<h3 id="哪些是-task-任务源呢？"><a href="#哪些是-task-任务源呢？" class="headerlink" title="哪些是 task 任务源呢？"></a>哪些是 task 任务源呢？</h3><p>规范在<a href="https://html.spec.whatwg.org/multipage/webappapis.html#generic-task-sources" target="_blank" rel="noopener">Generic task sources</a>中有提及：</p>
+<blockquote>
+<p>DOM 操作任务源：<br>此任务源被用来相应 dom 操作，例如一个元素以非阻塞的方式插入文档。</p>
+</blockquote>
+<blockquote>
+<p>用户交互任务源：<br>此任务源用于对用户交互作出反应，例如键盘或鼠标输入。响应用户操作的事件（例如 click）必须使用 task 队列。</p>
+</blockquote>
+<blockquote>
+<p>网络任务源：<br>网络任务源被用来响应网络活动。</p>
+</blockquote>
+<blockquote>
+<p>history traversal 任务源：<br>当调用 history.back()等类似的 api 时，将任务插进 task 队列。</p>
+</blockquote>
+<p>task 任务源非常宽泛，比如 ajax 的 onload，click 事件，基本上我们经常绑定的各种事件都是 task 任务源，还有数据库操作（IndexedDB ），需要注意的是 setTimeout、setInterval、setImmediate 也是 task 任务源。总结来说 task 任务源：</p>
+<ul>
+<li>setTimeout</li>
+<li>setInterval</li>
+<li>setImmediate</li>
+<li>I/O</li>
+<li>UI rendering</li>
+</ul>
+<h3 id="microtask"><a href="#microtask" class="headerlink" title="microtask"></a>microtask</h3><blockquote>
+<p>微任务队列不是任务队列。</p>
+</blockquote>
+<blockquote>
+<p>每个事件循环都有一个微任务队列，这是一个微任务队列，最初是空的。微任务是一种口语化的方式，指的是通过微任务算法队列创建的任务。</p>
+</blockquote>
+<blockquote>
+<p>如果在初期执行时，<a href="https://html.spec.whatwg.org/multipage/webappapis.html#spin-the-event-loop" target="_blank" rel="noopener">spin the event loop</a>，microtasks 有可能被移动到常规的 task 队列，在这种情况下，microtasks 任务源会被 task 任务源所用。通常情况，task 任务源和 microtasks 是不相关的。</p>
+</blockquote>
+<p>microtask 队列和 task 队列有些相似，都是先进先出的队列，由指定的任务源去提供任务，不同的是一个 event loop 里只有一个 microtask 队列。</p>
+<p>HTML Standard 没有具体指明哪些是 microtask 任务源，通常认为是 microtask 任务源有：</p>
+<ul>
+<li>process.nextTick</li>
+<li>promises</li>
+<li>Object.observe</li>
+<li>MutationObserver</li>
+</ul>
+<h2 id="处理流程（processing-model）"><a href="#处理流程（processing-model）" class="headerlink" title="处理流程（processing model）"></a><a href="https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model" target="_blank" rel="noopener">处理流程（processing model）</a></h2><ol>
+<li><p>在 tasks 队列中选择最老的一个 task，用户代理可以选择任何 task 队列，如果没有可选的任务，则跳到下边的 microtasks 步骤。(从任务队列中取出一个宏任务并执行)</p>
+<p>1.1 将上边选择的 task 设置为正在运行的 task</p>
+<p>1.2 Run: 运行被选择的 task。</p>
+<p>1.3 将 event loop 的 currently running task 变为 null。</p>
+<p>1.4 从 task 队列里移除前边运行的 task。</p>
+</li>
+<li><p>Microtasks: 执行 <a href="https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint" target="_blank" rel="noopener">microtasks 任务检查点</a>。（检查微任务队列，执行并清空微任务队列，如果在微任务的执行中又加入了新的微任务，也会在这一步一起执行。）</p>
+</li>
+<li><p>进入更新渲染阶段，判断是否需要渲染，这里有一个 rendering opportunity 的概念，也就是说不一定每一轮 event loop 都会对应一次浏览 器渲染，要根据屏幕刷新率、页面性能、页面是否在后台运行来共同决定，通常来说这个渲染间隔是固定的。（所以多个 task 很可能在一次渲染之间执行）</p>
+<ul>
+<li>浏览器会尽可能的保持帧率稳定，例如页面性能无法维持 60fps（每 16.66ms 渲染一次）的话，那么浏览器就会选择 30fps 的更新速率，而不是偶尔丢帧。</li>
+<li>如果浏览器上下文不可见，那么页面会降低到 4fps 左右甚至更低。</li>
+<li>如果满足以下条件，也会跳过渲染：<ul>
+<li>浏览器判断更新渲染不会带来视觉上的改变。</li>
+<li>map of animation frame callbacks 为空，也就是帧动画回调为空，可以通过 requestAnimationFrame 来请求帧动画。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>如果上述的判断决定本轮不需要渲染，那么下面的几步也不会继续运行：</p>
+</li>
+</ol>
+<blockquote>
+<p>This step enables the user agent to prevent the steps below from running for other reasons, for example, to ensure certain tasks are executed immediately after each other, with only microtask checkpoints interleaved (and without, e.g., animation frame callbacks interleaved). Concretely, a user agent might wish to coalesce timer callbacks together, with no intermediate rendering updates.<br>有时候浏览器希望两次「定时器任务」是合并的，他们之间只会穿插着 microTask 的执行，而不会穿插屏幕渲染相关的流程</p>
+</blockquote>
+<ol start="5">
+<li><p>对于需要渲染的文档，如果窗口的大小发生了变化，执行监听的 resize 方法。</p>
+</li>
+<li><p>对于需要渲染的文档，如果页面发生了滚动，执行 scroll 方法。</p>
+</li>
+<li><p>对于需要渲染的文档，执行帧动画回调，也就是 requestAnimationFrame 的回调。（后文会详解）</p>
+</li>
+<li><p>对于需要渲染的文档， 执行 IntersectionObserver 的回调。</p>
+</li>
+<li><p>对于需要渲染的文档，重新渲染绘制用户界面。</p>
+</li>
+<li><p>判断 task 队列和 microTask 队列是否都为空，如果是的话，则进行 Idle 空闲周期的算法，判断是否要执行 requestIdleCallback 的回调函数。（后文会详解）</p>
+</li>
+</ol>
+<p>对于 resize 和 scroll 来说，并不是到了这一步才去执行滚动和缩放，那岂不是要延迟很多？浏览器当然会立刻帮你滚动视图，根据 CSSOM 规范所讲，浏览器会保存一个 pending scroll event targets，等到事件循环中的 scroll 这一步，去派发一个事件到对应的目标上，驱动它去执行监听的回调函数而已。resize 也是同理。</p>
+<h2 id="microtasks-检查点（microtask-checkpoint）"><a href="#microtasks-检查点（microtask-checkpoint）" class="headerlink" title="microtasks 检查点（microtask checkpoint）"></a>microtasks 检查点（microtask checkpoint）</h2><p>上文 event loop 处理流程第 2 步，执行了一个 microtask checkpoint，看看规范如何描述 microtask checkpoint：</p>
+<p>当用户代理去执行一个 microtask checkpoint，如果 microtask checkpoint 的 flag（标识）为 false，用户代理必须运行下面的步骤：</p>
+<ol>
+<li>将 microtask checkpoint 的 flag 设为 true。</li>
+<li>Microtask queue handling: 如果 event loop 的 microtask 队列为空，直接跳到第八步（Done）。</li>
+<li>在 microtask 队列中选择最老的一个任务。</li>
+<li>将上一步选择的任务设为 event loop 的 currently running task。</li>
+<li>运行选择的任务。</li>
+<li>将 event loop 的 currently running task 变为 null。</li>
+<li>将前面运行的 microtask 从 microtask 队列中删除，然后返回到第二步（Microtask queue handling）。</li>
+<li>Done: 每一个 environment settings object 它们的 responsible event loop 就是当前的 event loop，会给 environment settings object 发一个 rejected promises 的通知。</li>
+<li>清理 IndexedDB 的事务。</li>
+<li>将 microtask checkpoint 的 flag 设为 flase。</li>
+</ol>
+<p>microtask checkpoint 所做的就是执行 microtask 队列里的任务。什么时候会调用 microtask checkpoint 呢?</p>
+<ul>
+<li>当上下文执行栈为空时，执行一个 microtask checkpoint。</li>
+<li>在 event loop 的第六步（Microtasks: Perform a microtask checkpoint）执行 checkpoint，也就是在运行 task 之后，更新渲染之前。</li>
+</ul>
+<h2 id="多任务队列"><a href="#多任务队列" class="headerlink" title="多任务队列"></a>多任务队列</h2><p>上文也提到了，每一个 task 都来源于指定的任务源， 所以 task 队列并不是我们想象中的那样只有一个，根据规范里的描述：</p>
+<blockquote>
+<p>An event loop has one or more task queues. For example, a user agent could have one task queue for mouse and key events (to which the user interaction task source is associated), and another to which all other task sources are associated. Then, using the freedom granted in the initial step of the event loop processing model, it could give keyboard and mouse events preference over other tasks three-quarters of the time, keeping the interface responsive but not starving other task queues. Note that in this setup, the processing model still enforces that the user agent would never process events from any one task source out of order.</p>
+</blockquote>
+<p>事件循环中可能会有一个或多个任务队列，这些队列分别为了处理：</p>
+<ol>
+<li>鼠标和键盘事件</li>
+<li>其他的一些 Task</li>
+</ol>
+<p>浏览器会在保持任务顺序的前提下，可能分配四分之三的优先权给鼠标和键盘事件，保证用户的输入得到最高优先级的响应，而剩下的优先级交给其他 Task，并且保证不会“饿死”它们。</p>
+<p>这个规范也导致 vue 的这个<a href="https://github.com/vuejs/vue/issues/3771" target="_blank" rel="noopener">Issue</a>。简单描述一下就是采用了 task 实现的 nextTick，在用户持续滚动的情况下 nextTick 任务被延后了很久才去执行，导致动画跟不上滚动了。</p>
+<p>迫于无奈，尤大还是改回了 microTask 去实现 nextTick，目前来说 promise.then 微任务已经很稳定并且 vue3 就是这样实现的，并且 Chrome 也已经实现了 queueMicroTask 这个官方 API。我们想要调用微任务队列的话，也可以节省掉实例化 Promise 在开销了。</p>
+<p>从这个 Issue 的例子中我们可以看出，稍微去深入了解一下规范还是比较有好处的，以免在遇到这种比较复杂的 Bug 的时候一脸懵逼。</p>
+<h2 id="执行栈（JavaScript-execution-context-stack）"><a href="#执行栈（JavaScript-execution-context-stack）" class="headerlink" title="执行栈（JavaScript execution context stack）"></a>执行栈（JavaScript execution context stack）</h2><p>task 和 microtask 都是推入栈中执行的，要完整了解 event loops 还需要认识 JavaScript execution context stack，它的规范位于<a href="https://tc39.github.io/ecma262/#execution-context-stack。" target="_blank" rel="noopener">https://tc39.github.io/ecma262/#execution-context-stack。</a></p>
+<p>javaScript 是单线程，也就是说只有一个主线程，主线程有一个栈，每一个函数执行的时候，都会生成新的 execution context（执行上下文），执行上下文会包含一些当前函数的参数、局部变量之类的信息，它会被推入栈中， running execution context（正在执行的上下文）始终处于栈的顶部。当函数执行完后，它的执行上下文会从栈弹出。</p>
+<p><img src="../images/eventloop/image-1.png" alt="alt text"></p>
+<p>举个简单的例子：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">bar</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'bar'</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'foo'</span>)</span><br><span class="line">  bar()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">foo()</span><br></pre></td></tr></table></figure>
+
+<p>执行过程中栈的变化：<br><img src="../images/eventloop/image-2.png" alt="alt text"></p>
+<h4 id="完整异步过程"><a href="#完整异步过程" class="headerlink" title="完整异步过程"></a>完整异步过程</h4><p>主线程类似一个加工厂，它只有一条流水线，待执行的任务就是流水线上的原料，只有前一个加工完，后一个才能进行。event loops 就是把原料放上流水线的工人。只要已经放在流水线上的，它们会被依次处理，称为同步任务。一些待处理的原料，工人会按照它们的种类排序，在适当的时机放上流水线，这些称为异步任务。</p>
+<p><img src="../images/eventloop/image-3.png" alt="alt text"></p>
+<p>举个简单的例子，假设一个 script 标签的代码如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">promise1</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'promise1'</span>)</span><br><span class="line">&#125;)</span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'setTimeout1'</span>)</span><br><span class="line">  <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">promise2</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'promise2'</span>)</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'setTimeout2'</span>)</span><br><span class="line">&#125;, <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+<p>运行过程：</p>
+<p>script 里的代码被列为一个 task，放入 task 队列。</p>
+<ul>
+<li><p><strong>循环 1</strong>：</p>
+</li>
+<li><p>【task 队列：script ；microtask 队列：】</p>
+<ul>
+<li>1.从 task 队列中取出 script 任务，推入栈中执行。</li>
+<li>2.promise1 列为 microtask，setTimeout1 列为 task，setTimeout2 列为 task。</li>
+</ul>
+</li>
+<li><p>task 队列：setTimeout1 setTimeout2；microtask 队列：promise1】</p>
+<ul>
+<li>3.script 任务执行完毕，执行 microtask checkpoint，取出 microtask 队列的 promise1 执行。</li>
+</ul>
+</li>
+<li><p><strong>循环 2</strong>：</p>
+</li>
+<li><p>【task 队列：setTimeout1 setTimeout2；microtask 队列：】</p>
+<ul>
+<li>4.从 task 队列中取出 setTimeout1，推入栈中执行，将 promise2 列为 microtask。</li>
+</ul>
+</li>
+<li><p>【task 队列：setTimeout2；microtask 队列：promise2】</p>
+<ul>
+<li>5.执行 microtask checkpoint，取出 microtask 队列的 promise2 执行。</li>
+</ul>
+</li>
+<li><p><strong>循环 3</strong>：</p>
+</li>
+<li><p>【task 队列：setTimeout2；microtask 队列：】</p>
+<ul>
+<li>6.从 task 队列中取出 setTimeout2，推入栈中执行。</li>
+<li>7.setTimeout2 任务执行完毕，执行 microtask checkpoint。</li>
+</ul>
+</li>
+<li><p>【task 队列：；microtask 队列：】</p>
+</li>
+</ul>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>以上就是对 event loop 规范 和一些运行的流程做的总结。但是包括 requestAnimationFrame，requestIdleCallback 和 浏览器中 js 的执行机制等细节的总结将会单独写文章进行归纳总结。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/Gitlab%20CI_CD%20%E5%AE%9E%E8%B7%B5.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/Gitlab%20CI_CD%20%E5%AE%9E%E8%B7%B5.html" class="post-title-link" itemprop="url">Gitlab CI/CD 实践</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-07-20 00:00:00" itemprop="dateCreated datePublished" datetime="2023-07-20T00:00:00+08:00">2023-07-20</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>GitLab CI/CD 是一个内置在 GitLab 中的工具，用于通过持续方法进行软件开发：</p>
+<h5 id="Continuous-Integration（持续集成）"><a href="#Continuous-Integration（持续集成）" class="headerlink" title="Continuous Integration（持续集成）"></a>Continuous Integration（持续集成）</h5><p>假设一个应用程序，其代码存储在 GitLab 的 Git 仓库中。开发人员每天都要多次推送代码更改。对于每次向仓库的推送，你都可以创建一组脚本来自动构建和测试你的应用程序，从而减少了向应用程序引入错误的机会。这种做法称为持续集成，对于提交给应用程序（甚至是开发分支）的每项更改，它都会自动连续进行构建和测试，以确保所引入的更改通过你为应用程序建立的所有测试，准则和代码合规性标准。</p>
+<h5 id="Continuous-Delivery（持续交付）"><a href="#Continuous-Delivery（持续交付）" class="headerlink" title="Continuous Delivery（持续交付）"></a>Continuous Delivery（持续交付）</h5><p>持续交付是超越持续集成的更进一步的操作。应用程序不仅会在推送到代码库的每次代码更改时进行构建和测试，而且，尽管部署是手动触发的，但作为一个附加步骤，它也可以连续部署。此方法可确保自动检查代码，但需要人工干预才能从策略上手动触发以必输此次变更。</p>
+<h5 id="Continuous-Deployment（持续部署）"><a href="#Continuous-Deployment（持续部署）" class="headerlink" title="Continuous Deployment（持续部署）"></a>Continuous Deployment（持续部署）</h5><p>与持续交付类似，但不同之处在于，你无需将其手动部署，而是将其设置为自动部署。完全不需要人工干预即可部署你的应用程序。</p>
+<h2 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h2><p>为了使用 GitLab CI/CD，你需要一个托管在 GitLab 上的应用程序代码库，并且在根目录中的.gitlab-ci.yml 文件中指定构建、测试和部署的脚本。</p>
+<p>在这个文件中，你可以定义要运行的脚本，定义包含的依赖项，选择要按顺序运行的命令和要并行运行的命令，定义要在何处部署应用程序，以及指定是否 要自动运行脚本或手动触发脚本。</p>
+<p>为了可视化处理过程，假设添加到配置文件中的所有脚本与在计算机的终端上运行的命令相同。</p>
+<p>一旦你已经添加了.gitlab-ci.yml 到仓库中，GitLab 将检测到该文件，并使用名为 GitLab Runner 的工具运行你的脚本。该工具的操作与终端类似。</p>
+<p>这些脚本被分组到 jobs，它们共同组成一个 pipeline。一个最简单的.gitlab-ci.yml 文件可能是这样的：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">before_script:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">apt-get</span> <span class="string">install</span> <span class="string">rubygems</span> <span class="string">ruby-dev</span> <span class="string">-y</span></span><br><span class="line"></span><br><span class="line"><span class="attr">run-test:</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">ruby</span> <span class="string">--version</span> <span class="number">6</span></span><br></pre></td></tr></table></figure>
+
+<p>before_script 属性将在运行任何内容之前为你的应用安装依赖，一个名为 run-test 的 job（作业）将打印当前系统的 Ruby 版本。二者共同构成了在每次推送到仓库的任何分支时都会被触发的 pipeline（管道）。</p>
+<p>GitLab CI/CD 不仅可以执行你设置的 job，还可以显示执行期间发生的情况，正如你在终端看到的那样：<br><img src="/images/GitlabCI_CD.resources/2551D6FD-98FB-42FB-B217-232C6028B2AC.png" alt="74b8f022354a48a2a663a996ae2c1dd8"></p>
+<h4 id="通过-GitLab-UI-所有的步骤都是可视化的"><a href="#通过-GitLab-UI-所有的步骤都是可视化的" class="headerlink" title="通过 GitLab UI 所有的步骤都是可视化的"></a>通过 GitLab UI 所有的步骤都是可视化的</h4><p><img src="/images/GitlabCI_CD.resources/E239A99B-76CC-4F14-9DA2-4286A51588B9.png" alt="aae548d462b9c6b5e8bab016b96c5512"></p>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h4 id="创建一个-gitlab-ci-yml-文件"><a href="#创建一个-gitlab-ci-yml-文件" class="headerlink" title="创建一个.gitlab-ci.yml 文件"></a>创建一个.gitlab-ci.yml 文件</h4><figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">stages:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">lint</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">release</span></span><br><span class="line"><span class="attr">commitlint:</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">lint</span></span><br><span class="line">  <span class="attr">rules:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">'$CI_COMMIT_TITLE =~ /^chore\(release\)/'</span></span><br><span class="line">      <span class="attr">when:</span> <span class="string">never</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">'$CI_COMMIT_TITLE =~ /^Merge branch/'</span></span><br><span class="line">      <span class="attr">when:</span> <span class="string">never</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">$CI_COMMIT_BRANCH</span> <span class="string">==</span> <span class="string">$CI_DEFAULT_BRANCH</span> <span class="comment"># 一般当分支master有 push 或 merge 时才会执行该工作</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">sh</span> <span class="string">bin/commitlint-gitlab-ci.sh</span></span><br><span class="line"><span class="attr">release:</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">release</span></span><br><span class="line">  <span class="attr">rules:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">$CI_COMMIT_BRANCH</span> <span class="string">==</span> <span class="string">$CI_DEFAULT_BRANCH</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">semantic-release</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="配置一个-Runner"><a href="#配置一个-Runner" class="headerlink" title="配置一个 Runner"></a>配置一个 Runner</h4><p>在 GitLab 中，Runner 运行你定义在.gitlab-ci.yml 中的作业（job）<br>一个 Runner 可以是一个虚拟机、物理机、docker 容器，或者一个容器集群 GitLab 与 Runner 之间通过 API 进行通信，因此只需要 Runner 所在的机器有网络并且可以访问 GitLab 服务器即可<br>你可以去  <strong>Settings ➔ CI/CD</strong>  看是否已经有 Runner 关联到你的项目，设置 Runner 简单又直接<br><img src="/images/GitlabCI_CD.resources/A9EF490C-2A96-495A-AEBC-135E32A9FAE1.png" alt="7b99f010133b6b0689a1dc90c2893831"></p>
+<h4 id="查看-pipeline-和-jobs-状态"><a href="#查看-pipeline-和-jobs-状态" class="headerlink" title="查看 pipeline 和 jobs 状态"></a>查看 pipeline 和 jobs 状态</h4><p><img src="/images/GitlabCI_CD.resources/159D77C9-7C89-4B37-8A6A-9DB90473D0ED.png" alt="e57d2652f09e520231cae9358ac69e10"></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>团队计划使用 semantic-release 自动管理发布版本，结合 Gitlab CI/CD 是一个很不错的选择，具体的实践过程和心得会在后面分享。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/chrome%20performance%E9%9D%A2%E6%9D%BF.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/chrome%20performance%E9%9D%A2%E6%9D%BF.html" class="post-title-link" itemprop="url">chrome performance 面板解析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-15 00:00:00" itemprop="dateCreated datePublished" datetime="2023-06-15T00:00:00+08:00">2023-06-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="概况图"><a href="#概况图" class="headerlink" title="概况图"></a>概况图</h2><p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/B31D1703-5E66-4F19-8D12-448E4D283BC9.png" alt="71d6a82a01519413ca2a1be4b957c544"></p>
+<h4 id="无痕模式"><a href="#无痕模式" class="headerlink" title="无痕模式"></a>无痕模式</h4><p>无痕模式可以保证 Chrome 在一个相对干净的环境下运行，避免 chrome 上安装的插件影响性能分析结果。<br>文件—&gt;打开新的无痕式窗口，或使用快捷键 ctrl + shift + N 打开无痕模式下的 chrome 新标签页</p>
+<h4 id="性能记录"><a href="#性能记录" class="headerlink" title="性能记录"></a>性能记录</h4><p>点击面板里的 ○，可以记录运行时的性能记录，如下图：<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8B1B5662-14CE-47BA-A799-07447D14021C.png" alt="0b82ba7820c6d3ec5b21fe563191a08d"></p>
+<p>再次点击 Record 或者点击 Stop 停止记录。</p>
+<h4 id="加载时性能记录录制"><a href="#加载时性能记录录制" class="headerlink" title="加载时性能记录录制"></a>加载时性能记录录制</h4><p>若要分析页面记载时性能需要录制加载时性能。</p>
+<ol>
+<li>打开待分析性能的页面。</li>
+<li>打开 Devtools 中 Performance 窗口。</li>
+<li>点击左上角重新加载按钮。DevTools 会自动记录页面加载是各项性能指标，加载完成几秒后自动停止记录。<br>Devtools 记录会自动增加<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8BE55FF4-23D8-4373-9700-6FC306487719.png" alt="bcc3faa215dab1b20aefba15f42fa29d"></li>
+</ol>
+<p>页面加载时记录<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/2E1306AE-F26B-4DE5-8E02-96106AA7CA11.png" alt="8faf902b1637f885df323e7791713c33"></p>
+<h4 id="清除记录"><a href="#清除记录" class="headerlink" title="清除记录"></a>清除记录</h4><p>清除 Performance 窗口中的记录数据。</p>
+<h4 id="抓取运行时屏幕快照"><a href="#抓取运行时屏幕快照" class="headerlink" title="抓取运行时屏幕快照"></a>抓取运行时屏幕快照</h4><p>点选 Screenshots 选项开启为每一帧记录屏幕快照功能。</p>
+<h4 id="查看内存度量值"><a href="#查看内存度量值" class="headerlink" title="查看内存度量值"></a>查看内存度量值</h4><p>点选 Memory 选项打开内存度量功能。<br>DevTools 在 Summary 面板上侧显示一个新的 Memory 图表。在 NET 图表下边也显示一个 HEAP 图表。HEAP 图表提供的信息同 Memory 面板中 JS Heap 提供的信息相同。</p>
+<h4 id="开启加速渲染工具"><a href="#开启加速渲染工具" class="headerlink" title="开启加速渲染工具"></a>开启加速渲染工具</h4><p>点选 Enable advanced paint instrumentation 选项（会带来大量的性能开销）</p>
+<h4 id="控制录制过程中-CPU-工作频率"><a href="#控制录制过程中-CPU-工作频率" class="headerlink" title="控制录制过程中 CPU 工作频率"></a>控制录制过程中 CPU 工作频率</h4><p>将 CPU 设置为需要的运算速度模式。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9DD1F5C8-9131-4F02-BDA0-8D5DCB6095A3.png" alt="886c6b4d80132d8e286af2d6ed89cdb9"></p>
+<p>CPU 工作频率的控制结果跟实际使用的机器能力有关。例如，4x slowdown 选项会使你本地 CPU 运算速率比正常情况下降低 4 倍。不同设备由于设计架构不同，Devtools 不能精确模拟移动端设备的 CPU 运算模式。</p>
+<h4 id="保存记录"><a href="#保存记录" class="headerlink" title="保存记录"></a>保存记录</h4><p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/F4D6D133-2769-4173-9090-79276AFC56D4.png" alt="da01643afd3f94a7927b96b2ddd7a044"><br>会生成 JSON 文件</p>
+<h4 id="加载记录"><a href="#加载记录" class="headerlink" title="加载记录"></a>加载记录</h4><p>单击鼠标右键选择 Load Profile 加载记录</p>
+<h2 id="分析性能记录"><a href="#分析性能记录" class="headerlink" title="分析性能记录"></a>分析性能记录</h2><p>运行时或者加载时性能录制结束后，在 Performance 窗口中会显示相关数据，从而对于记录过程中的情况进行分析。</p>
+<h4 id="选择记录中的一部分"><a href="#选择记录中的一部分" class="headerlink" title="选择记录中的一部分"></a>选择记录中的一部分</h4><p>在 Overview 窗口中，可以选中记录的某一部分。 Overview 窗口指的是包含 FPS, CPU 和 NET 图表部分。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/7D7EC5FB-7086-4767-99DB-4BCB7AE4E430.png" alt="3c66d685cee9f55228ca867b5a07a88e"></p>
+<h4 id="查看主线程活动"><a href="#查看主线程活动" class="headerlink" title="查看主线程活动"></a>查看主线程活动</h4><p>利用 Main 区域查看页面主线程加载时的主要活动。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/A2BE4509-9F3E-4AAC-90D2-E0F68820471A.png" alt="26247567fd6f9281d4a16d8fcbcba32f"></p>
+<p>点击某一函数在 Summary 窗口中查看更多详细信息。如图中所示 DevTools 选中_getRequestData 事件。<br>DevTools 采用随机的颜色标识脚本信息，如上面图中浅绿色标识函数调用，深黄色标识脚本活动。<br>若想隐藏火焰图中的 JavaScript 中调用的详细信息，请查看前面介绍的禁用 JavaScript 样例功能。若禁用 JavaScript 样例功能，你只可以看到初始调用事件。比如，图中标识的 Timer fired 和 Function Call 。</p>
+<h4 id="在表格中查看活动"><a href="#在表格中查看活动" class="headerlink" title="在表格中查看活动"></a>在表格中查看活动</h4><p>录制结束后，利用 Main 窗口中信息不是分析数据的唯一方式。DevTools 另外提供了三种表格式分析活动方式，每种方式都是从不同的角度出发:<br>若想分析那些活动占用时间更多时，可以利用 Bottom-Up 窗口。<br>若想分析导致更多活动的根活动时，可以采用 Call Tree。<br>若想按顺序分析记录中发生的活动时，可以利用 Event Log 窗口。</p>
+<h4 id="根活动"><a href="#根活动" class="headerlink" title="根活动"></a>根活动</h4><p>根活动指的是浏览器触发的一系列流程。例如，当你点击页面内容，浏览器触发一个 Event 作为根活动，该 Event 可能回调一个事件处理事件。<br>在 Main 面板中的火焰图中，根活动展示在上部，在 Call Tree 和 Event Log 面板中，根活动展示在顶层。</p>
+<h4 id="Call-Tree-标签页"><a href="#Call-Tree-标签页" class="headerlink" title="Call Tree 标签页"></a>Call Tree 标签页</h4><p>Call Tree 标签页中展示记录中被选中部分的活动信息。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9E98C9B1-90D8-4D50-A6BC-FDCB4EB51B0F.png" alt="6f4e0500bac02ec6143b950c159c63ae"></p>
+<p>图中 Activity 列中显示的 Timer fired、 Paint、Recalculate Style 和 Layout 代表根活动。层级嵌套表示代表回调栈。如图中 Function Call 调用 u，再调用 getImageUrl，继续调用 getLinkUrl 等等。<br>Self Time 表示对应活动消耗的时间，Total Time 表示对应活动以及子活动共同消耗的时间。<br>点击 Self Time，Total Time 或者 Activity 表头区域，可按对应列排序。<br>利用 Filter 输入框区域，输入活动名过滤事件。<br>Grouping 分组菜单默认为 No Grouping，利用该功能可以根据不同的分类将活动进行分组。<br>点击右侧 Show Heaviest Stack，在右侧展示当前选中活动中占用时间最多的子活动信息。</p>
+<p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/BBFE6629-C9A4-4901-A79C-3E850194B322.png" alt="6562aca6f7e21ca7a5746f1cff491455"></p>
+<h4 id="Bottom-Up-标签页"><a href="#Bottom-Up-标签页" class="headerlink" title="Bottom-Up 标签页"></a>Bottom-Up 标签页</h4><p>利用 Bottom-Up 标签查看占用最多时间的活动。<br>Self Time 表示对应活动消耗的时间。<br>Total Time 表示对应活动以及子活动共同消耗的时间。</p>
+<h4 id="Event-Log-标签页"><a href="#Event-Log-标签页" class="headerlink" title="Event Log 标签页"></a>Event Log 标签页</h4><p>Event Log 标签页按顺序展示记录中发生的活动。<br>Start Time 列表示该项活动的开始时间，该时间相对于记录开始时间计算。例如图中选中项开始时间为 1566.2 ms，代表该活动在记录开始之后 1566.2 ms 后开始。<br>Self Time 表示对应活动消耗的时间。<br>Total Time 表示对应活动以及子活动共同消耗的时间。<br>点击 Start Time 、Self Time、Total Time 表头区域，可按对应列排序。<br>利用 Filter 输入框区域，输入活动名过滤事件。<br>利用 Duration 下拉菜单过滤&gt;=1ms 或者&gt;=15ms 的活动。该菜单默认选中 All 选项，展示所有活动。<br>利用 Loading、Experience、Scripting、Rendering、Painting 选项进行分类过滤。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9278865D-99FC-4945-A7DA-55264A743F15.png" alt="58c29a0d627c26c7d9fc1afd80a348ef"></p>
+<h4 id="分析每秒传输帧数（FPS）"><a href="#分析每秒传输帧数（FPS）" class="headerlink" title="分析每秒传输帧数（FPS）"></a>分析每秒传输帧数（FPS）</h4><ul>
+<li>查看 FPS 图表了解整个记录中 FPS 的概况。</li>
+<li>Frames 模块查看每一帧时间消耗。</li>
+<li>利用 FPS meter 工具(MoreTools—&gt;Rendering)在页面运行时实时查看 FPS 信息。</li>
+</ul>
+<h4 id="FPS-图表"><a href="#FPS-图表" class="headerlink" title="FPS 图表"></a>FPS 图表</h4><p>FPS 图表显示了整个记录过程中帧率的概况。图表中绿色折线越高代表帧率越好。<br>FPS 折线图上测出现的红色横线为一条性能警示线，表示帧率低于该值会严重影响用户体验。</p>
+<h4 id="Frames-模块"><a href="#Frames-模块" class="headerlink" title="Frames 模块"></a>Frames 模块</h4><p>Frames 模块清晰表明每个帧消耗时间。<br>鼠标在某一帧上悬停可以查看更多详细信息。</p>
+<h4 id="查看交互信息"><a href="#查看交互信息" class="headerlink" title="查看交互信息"></a>查看交互信息</h4><p>利用 Interactions 模块查看并分析记录过程中用户的交互操作。</p>
+<h4 id="查看-GPU-活动"><a href="#查看-GPU-活动" class="headerlink" title="查看 GPU 活动"></a>查看 GPU 活动</h4><p>在 GPU 模块查看 GPU 活动信息<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/DCF59BFE-D663-4BF2-B581-1562C15B425E.png" alt="69c660e3d248b30ffc310f2813525e08"></p>
+<h4 id="查看栅格活动"><a href="#查看栅格活动" class="headerlink" title="查看栅格活动"></a>查看栅格活动</h4><p>在 Raster 模块查看栅格活动信息</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/%E5%89%8D%E7%AB%AF%E8%84%9A%E6%89%8B%E6%9E%B6%E6%90%AD%E5%BB%BA.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -812,648 +1449,11 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/lerna%E6%9E%84%E5%BB%BAmonorepo%E5%AE%9E%E6%88%98.html" class="post-title-link" itemprop="url">lerna构建monorepo实战</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-11-26 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-26T00:00:00+08:00">2022-11-26</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>创建空文件夹，然后运行：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npx lerna init</span><br></pre></td></tr></table></figure>
-
-<p>这行命令会创建一个空的<code>packages</code>文件夹，一个<code>package.json</code> 和 <code>lerna.json</code></p>
-<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">|<span class="comment">-- mono-repo</span></span><br><span class="line">    |<span class="comment">-- packages</span></span><br><span class="line">    |<span class="comment">-- lerna.json</span></span><br><span class="line">    |<span class="comment">-- package.json</span></span><br></pre></td></tr></table></figure>
-
-<p><code>package.json</code>有一点需要注意，他的<code>private</code>必须设置为<code>true</code>，因为本身并不是一个项目，而是承载多个子项目的项目，所以他自己不能直接发布，发布的应该是 packages/下面的各个子项目。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"private": true</span><br></pre></td></tr></table></figure>
-
-<p>lerna.json 初始化长这样：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"0.0.0"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>packages</code>字段就是标记你子项目的位置，默认就是<code>packages/</code>文件夹，他是一个数组，所以是支持多个不同位置的。</p>
-<p>另外一个需要特别注意的是<code>version</code>字段，这个字段有两个类型的值，一个是像上面的<code>0.0.0</code>这样一个具体版本号，还可以是<code>independent</code>这个关键字。如果是具体版本号，那<code>lerna</code>管理的所有子项目都会有相同的版本号，如果你设置为<code>independent</code>，那各个子项目可以有自己的版本号。</p>
-<p>因为我们的组件都是需要独立版本号，所以直接将<code>version</code>设置为<code>independent</code></p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"independent"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="创建子项目"><a href="#创建子项目" class="headerlink" title="创建子项目"></a>创建子项目</h2><p>创建子项目可以使用 lerna 的命令来创建：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna create &lt;name&gt;</span><br></pre></td></tr></table></figure>
-
-<p>通过 create 创建的子项目目录：</p>
-<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">|<span class="comment">-- mono-repo</span></span><br><span class="line">    |<span class="comment">-- packages</span></span><br><span class="line">        |<span class="comment">-- @mono-repo/project_1 # 推荐使用 `@&lt;项目名&gt;/&lt;子项目名&gt;` 的方式命名</span></span><br><span class="line">            |<span class="comment">--  __test__</span></span><br><span class="line">            |<span class="comment">-- lib</span></span><br><span class="line">        |<span class="comment">-- @mono-repo/project_2</span></span><br><span class="line">            |<span class="comment">--  __test__</span></span><br><span class="line">            |<span class="comment">-- lib</span></span><br><span class="line">    |<span class="comment">-- lerna.json</span></span><br><span class="line">    |<span class="comment">-- package.json</span></span><br></pre></td></tr></table></figure>
-
-<p>这个是使用<code>lerna create</code>默认生成的目录结构，<code>__test__</code>文件夹下面放得是单元测试内容，<code>lib</code>下面放得是代码。实际使用过程中可以进行调整。</p>
-<h2 id="安装依赖项"><a href="#安装依赖项" class="headerlink" title="安装依赖项"></a>安装依赖项</h2><h4 id="lerna-bootstrap"><a href="#lerna-bootstrap" class="headerlink" title="lerna bootstrap"></a>lerna bootstrap</h4><p><code>packages/</code>下面的每个子项目有自己的依赖包，可使用命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">lerna bootstrap</span><br><span class="line">或</span><br><span class="line">lerna bootstrap --hoist</span><br></pre></td></tr></table></figure>
-
-<p>删除已经安装的子项目<code>node_modules</code>可以手动删除，也可以使用：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna clean</span><br></pre></td></tr></table></figure>
-
-<p>具体命令含义可参考</p>
-<ul>
-<li><a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/bootstrap.html" target="_blank" rel="noopener">lerna/bootstrap</a></li>
-<li><a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/clean.html" target="_blank" rel="noopener">lerna/clean</a></li>
-</ul>
-<hr>
-<h4 id="yarn-workspace"><a href="#yarn-workspace" class="headerlink" title="yarn workspace"></a>yarn workspace</h4><p><code>lerna bootstrap --hoist</code>虽然可以将子项目的依赖提升到顶层，但是他的方式比较粗暴：先在每个子项目运行<code>npm install</code>，等所有依赖都安装好后，将他们移动到顶层的<code>node_modules</code>。这会导致一个问题，如果多个子项目依赖同一个第三方库，但是需求的版本不同怎么办？比如我们三个子项目都依赖 antd，但是他们的版本不完全一样：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// @mono-repo/project_1</span></span><br><span class="line">"antd": "3.1.0"</span><br><span class="line"></span><br><span class="line"><span class="comment">// @mono-repo/project_2</span></span><br><span class="line">"antd": "3.1.0"</span><br><span class="line"></span><br><span class="line"><span class="comment">// @mono-repo/project_3</span></span><br><span class="line">"antd": "4.9.4"</span><br></pre></td></tr></table></figure>
-
-<p>这时候就需要介绍<code>yarn workspace</code>了，他可以解决前面说的版本不一致的问题，<code>lerna bootstrap --hoist</code>会把所有子项目用的最多的版本移动到顶层, 从而导致某些子项目依赖不正确，而<code>yarn workspace</code> 则会检查每个子项目里面依赖及其版本，如果版本不一样则会留在子项目自己的<code>node_modules</code>里面，只有完全一样的依赖才会提升到顶层。</p>
-<p>还是以上面这个<code>antd</code>为例，使用<code>yarn workspace</code>的话，会把<code>project1</code>和<code>project2</code>的 3.1.0 版本移动到顶层，而<code>project3</code>项目下会保留自己 4.9.4 的 antd，这样每个子项目都可以拿到自己需要的依赖了。</p>
-<p><code>yarn workspace</code>使用也很简单，<code>yarn 1.0</code>以上的版本默认就是开启<code>workspace</code>的，所以我们只需要在顶层的<code>package.json</code>加一个配置就行：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 顶层package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"workspaces"</span>: [<span class="string">"packages/*"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在 lerna.json 里面指定<code>npmClient</code>为<code>yarn</code>，并将<code>useWorkspaces</code>设置为<code>true</code>，稍稍改动变成这样：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"packages"</span>: [<span class="string">"packages/*"</span>],</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"independent"</span>,</span><br><span class="line">  <span class="attr">"npmClient"</span>: <span class="string">"yarn"</span>,</span><br><span class="line">  <span class="attr">"useWorkspaces"</span>: <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用了<code>yarn workspace</code>，我们就不用<code>lerna bootstrap</code>来安装依赖了，而是像以前一样<code>yarn install</code>就行了，他会自动帮我们提升依赖，这里的<code>yarn install</code>无论在顶层运行还是在任意一个子项目运行效果都是一样的。</p>
-<p>更多请参考</p>
-<ul>
-<li><a href="https://classic.yarnpkg.com/en/docs/workspaces/" target="_blank" rel="noopener">yarn workspace</a></li>
-<li><a href="https://yarnpkg.com/cli/workspace" target="_blank" rel="noopener">yarn workspace 命令</a></li>
-</ul>
-<h2 id="启动子项目"><a href="#启动子项目" class="headerlink" title="启动子项目"></a>启动子项目</h2><p>我们可以到子项目的目录运行 start 命令， 但是频繁切换文件是在太麻烦，lerna 提供了相应的命令以帮助我们直接在顶层运行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna run [script]</span><br></pre></td></tr></table></figure>
-
-<p>比如我们在顶层运行了 lerna run start，这相当于去每个子项目下面都去执行 yarn run start 或者 npm run start，具体是 yarn 还是 npm，取决于你在 lerna.json 里面的这个设置：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"npmClient": "yarn"</span><br></pre></td></tr></table></figure>
-
-<p>如果我只想在其中一个子项目运行命令，应该怎么办呢？加上<code>--scope</code>就行了，比如我就在顶层的<code>package.json</code>里面加了这么一行命令：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 顶层package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"scripts"</span>: &#123;</span><br><span class="line">    <span class="attr">"start:project1"</span>: <span class="string">"lerna --scope @mono-repo/project_1 run start"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注意<code>scope</code>后面的项目名称不是目录名，而是子项目<code>package.json</code>的<code>name</code></p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 子项目project_1的package.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"name"</span>: <span class="string">"@mono-repo/project_1"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="引入公共组件"><a href="#引入公共组件" class="headerlink" title="引入公共组件"></a>引入公共组件</h2><p>当我们的<code>@mono-repo/project_2</code>要引用<code>@mono-repo/project_1</code>的组件，我们需要先在<code>@mono-repo/project_2</code>的<code>package.json</code>里面将依赖加上，我们可以去手动修改他，也可以使用<code>lerna</code>命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lerna add @mono-repo&#x2F;project_1 --scope @mono-repo&#x2F;project_2</span><br></pre></td></tr></table></figure>
-
-<p>这样我们可以在<code>project2</code>中引入<code>project1</code>的组件，但是需要注意多个项目引用时，要避免各个子项目之间的循环引用。</p>
-<p>组件库相关请参考<a href="">组件库构建与编写</a></p>
-<h2 id="发布"><a href="#发布" class="headerlink" title="发布"></a>发布</h2><p>发布直接使用 lerna publish，因为此前我们已经将 version 修改为 independent，所以在发布时，只会自动更新有变动的子项目以及依赖该子项目的子项目的版本号。</p>
-<p>更多发布命令参数及解释请参考<a href="http://www.febeacon.com/lerna-docs-zh-cn/routes/commands/publish.html" target="_blank" rel="noopener">lerna/publish</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/Git%E4%BB%93%E5%BA%93%E8%BF%81%E7%A7%BB%E6%96%B9%E6%A1%88.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/Git%E4%BB%93%E5%BA%93%E8%BF%81%E7%A7%BB%E6%96%B9%E6%A1%88.html" class="post-title-link" itemprop="url">Git仓库迁移方案</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-30T00:00:00+08:00">2022-10-30</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>公司有一些前端代码在不同的托管平台上，为了统一管理和维护的效率，所以要将其他托管平台的代码全部快捷平迁到公司的私有 gitlab 上。</p>
-<h1 id="迁移方式"><a href="#迁移方式" class="headerlink" title="迁移方式"></a>迁移方式</h1><blockquote>
-<p>在你把原来的仓库推到你的仓库的新副本或镜像之前，你必须在新的托管平台上创建新的仓库。<br>在以下的这些示例中，exampleuser/new-repository 或 exampleuser/mirrored 是镜像。</p>
-</blockquote>
-<h3 id="镜像存储库"><a href="#镜像存储库" class="headerlink" title="镜像存储库"></a>镜像存储库</h3><ol>
-<li>创建存储库的裸克隆</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git clone --bare https:&#x2F;&#x2F;github.com&#x2F;EXAMPLE-USER&#x2F;OLD-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>镜像推送到新的存储库</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cd OLD-REPOSITORY.git</span><br><span class="line">$ git push --mirror https:&#x2F;&#x2F;github.com&#x2F;EXAMPLE-USER&#x2F;NEW-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>删除前面创建的临时本地存储库</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cd ..</span><br><span class="line">$ rm -rf OLD-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<ol start="4">
-<li>拉取新存储库或者更改本地项目的源为新的存储库的地址</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git remote set-url origin https:&#x2F;&#x2F;github.com&#x2F;EXAMPLE-USER&#x2F;NEW-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<h3 id="其它方式"><a href="#其它方式" class="headerlink" title="其它方式"></a>其它方式</h3><p>由于上面的方式可以满足目前已有的迁移需求，其它方式可参考<a href="https://docs.github.com/en/repositories/creating-and-managing-repositories/duplicating-a-repository" target="_blank" rel="noopener">文档</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/rollup.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/rollup.html" class="post-title-link" itemprop="url">rollup使用总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-10 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-10T00:00:00+08:00">2022-09-10</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>项目中一直用的都是 webpack，前一段需要开发几个类库， 看过很多开源库源码都是用 rollup。这次通过开发类库，于是就快速上手了 rollup。</p>
-<h2 id="定位"><a href="#定位" class="headerlink" title="定位"></a>定位</h2><p>Rollup 是一个 JavaScript 模块打包器，可以将小块代码编译成大块复杂的代码，例如 library 或应用程序。</p>
-<p>与 Webpack 偏向于应用打包的定位不同，rollup.js 更专注于 Javascript 类库打包。</p>
-<p>我们熟知的 Vue2、React 等诸多知名框架或类库都是通过 rollup.js 进行打包的。</p>
-<h2 id="常用配置"><a href="#常用配置" class="headerlink" title="常用配置"></a>常用配置</h2><h4 id="入口文件"><a href="#入口文件" class="headerlink" title="入口文件"></a>入口文件</h4><p>Rollup 既然是打包类库文件，那么它的入口也就只能是 JS 文件了（通过第三方插件可以支持 Html，这里不作展开），因此我们新建一个 main.js 作为入口文件，打包出来的文件我们命名为 bundle.js，我们可以简单的通过命令行进行打包：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 针对浏览器环境打包</span><br><span class="line">rollup main.js --file bundle.js --format iife</span><br><span class="line"></span><br><span class="line"># 针对Nodejs环境打包</span><br><span class="line">rollup main.js --file bundle.js --format cjs</span><br></pre></td></tr></table></figure>
-
-<p>推荐使用配置文件进行打包：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 默认使用rollup.config.js配置文件</span><br><span class="line">rollup --config</span><br><span class="line"></span><br><span class="line"># 使用自定义my.config.js配置文件</span><br><span class="line">$ rollup --config my.config.js</span><br></pre></td></tr></table></figure>
-
-<p>一个基础的配置文件如下</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// rollup.config.js</span></span><br><span class="line">export default &#123;</span><br><span class="line">    input: "main.js",</span><br><span class="line">    output: &#123;</span><br><span class="line">        file: "bundle.js",</span><br><span class="line">        format: "cjs"</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;;</span><br></pre></td></tr></table></figure>
-
-<p>这里的 format 字段有六种选项：</p>
-<ul>
-<li>amd： 异步模块定义，用于像 RequireJS 这样的模块加载器</li>
-<li>cjs：CommonJS，适用于 Node 和 Browserify/Webpack</li>
-<li>es：ES 模块文件</li>
-<li>iife：自执行模块，适用于浏览器环境 script 标签</li>
-<li>umd：通用模块定义，以 amd，cjs 和 iife 为一体</li>
-<li>system：SystemJS 加载器格式</li>
-</ul>
-<p>Rollup 也支持配置多个文件入口，我们新建 foo.js 和 bar.js 两个入口文件：</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> &#123;</span><br><span class="line">  input: &#123;</span><br><span class="line">    foo: <span class="string">'./foo.js'</span>,</span><br><span class="line">    bar: <span class="string">'./bar.js'</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">  output: &#123;</span><br><span class="line">    dir: <span class="string">'dist'</span>,</span><br><span class="line">    format: <span class="string">'cjs'</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这样打包出来的两个文件就放入 dist 中。</p>
-<hr>
-<h4 id="插件-plugins"><a href="#插件-plugins" class="headerlink" title="插件(plugins)"></a>插件(plugins)</h4><ul>
-<li>@rollup/plugin-json<ul>
-<li>可以读取 json 文件</li>
-</ul>
-</li>
-<li>@rollup/plugin-commonjs<ul>
-<li>第三方的模块为了能够直接使用，往往不是 ES6 模块而是用 commonjs 的模块方式编写的，<strong>将 commonjs 的模块转化为 ES6 模块</strong></li>
-</ul>
-</li>
-<li>@rollup/plugin-node-resolve<ul>
-<li><strong>帮助 rollup 查找 node_modules 里的三方模块</strong></li>
-</ul>
-</li>
-<li>@rollup-plugin-alias<ul>
-<li><strong>提供 modules 名称的 alias 和 reslove 功能</strong></li>
-</ul>
-</li>
-<li>@rollup/plugin-babel<ul>
-<li><strong>打包的时候使用 babel 编译 js 代码</strong></li>
-</ul>
-</li>
-<li>@rollup/plugin-replace<ul>
-<li>类似 Webpack 的 DefinePlugin, 可在源码中通过 process.env.NODE_ENV 用于构建区分环境.</li>
-</ul>
-</li>
-<li>rollup-plugin-typescript2<ul>
-<li>这是对原始 rollup-plugin-typescript 的重写，这个版本比原始版本慢一些，但是它将打印出打字稿的句法和语义诊断消息（毕竟使用打字稿的主要原因）。使用该插件还有一个重要的原因，该插件能生成 声明文件 首先需要提供基础安装环境, 除了 typescript 基础环境 该插件需要依赖 tslib 去编译 ts 代码</li>
-</ul>
-</li>
-<li>rollup-plugin-terser<ul>
-<li><strong>可以打包压缩 es6 的 js 代码</strong></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h4 id="外链-external"><a href="#外链-external" class="headerlink" title="外链(external)"></a>外链(external)</h4><p>我们在自己的库中需要使用第三方库，例如 vue 等，又不想在最终生成的打包文件中出现 vue，这个时候我们就需要 external 属性。</p>
-<ol>
-<li>外部依赖的名称</li>
-<li>一个已被找到路径的 ID（像文件的绝对路径）</li>
-</ol>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// rollup.config.js</span></span><br><span class="line"><span class="keyword">import</span> path <span class="keyword">from</span> <span class="string">'path'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> &#123;</span><br><span class="line">  ...,</span><br><span class="line">  external: [</span><br><span class="line">    <span class="string">'some-externally-required-library'</span>,</span><br><span class="line">    path.resolve( <span class="string">'./src/some-local-file-that-should-not-be-bundled.js'</span> )</span><br><span class="line">  ]</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="全局模块-globals"><a href="#全局模块-globals" class="headerlink" title="全局模块(globals)"></a>全局模块(globals)</h4><p><code>Object</code>  形式的  <code>id: name</code> 键值对，用于<code>umd/iife</code>包。例如在这样的情况下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import $ from &#39;jquery&#39;;</span><br></pre></td></tr></table></figure>
-
-<p>我们想告诉 Rollup jquery  模块的 id 等同于  $  变量:</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// rollup.config.js</span></span><br><span class="line">export default &#123;</span><br><span class="line">  ...,</span><br><span class="line">  format: 'iife',</span><br><span class="line">  name: 'MyBundle',</span><br><span class="line">  globals: &#123;</span><br><span class="line">    jquery: '$'</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">var MyBundle = (function ($) &#123;</span></span><br><span class="line"><span class="comment">  // 代码到这里</span></span><br><span class="line"><span class="comment">&#125;(window.jQuery));</span></span><br><span class="line">*/.</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="Tree-Shaking"><a href="#Tree-Shaking" class="headerlink" title="Tree Shaking"></a>Tree Shaking</h4><p>由于 Rollup 本身支持 ES6 模块化规范，因此不需要额外配置即可进行 Tree Shaking</p>
-<hr>
-<h4 id="代码分割"><a href="#代码分割" class="headerlink" title="代码分割"></a>代码分割</h4><p>import()实现了按需加载, rollup 内部会进行代码拆分，注意 format 不能用 iife 模式，因为 iife 会把所有模块放在同一个函数中</p>
-<hr>
-<p>更多可参考<a href="https://www.rollupjs.com/guide/big-list-of-options" target="_blank" rel="noopener">大选项列表</a></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>以上就是在开发类库的过程中对 rollup 的简单总结，接下来会进一步剖析 rollup 打包流程和原理。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/packagejson.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/packagejson.html" class="post-title-link" itemprop="url">package.json文件解析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-08-06 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-06T00:00:00+08:00">2022-08-06</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>从我们接触前端开始，每个项目的根目录下一般都会有一个 package.json 文件，这个文件定义了当前项目所需要的各种模块，以及项目的配置信息（比如名称、版本、许可证等）。</p>
-<p>当然大部分人其实并不关心 package.json 的配置，业务中应用的更多的是 dependencies 或 devDependencies 配置。</p>
-<p>但当开发库并上传 npm 仓库时，package.json 的配置就至关重要了，如果理解关键属性并加以应用会使得开发和解决问题的效率大大提升。</p>
-<p>接下来本文会详细解释一下每个字段的真实含义。</p>
-<blockquote>
-<p>tips：可参考<a href="https://github.com/ant-design/ant-design/blob/master/package.json" target="_blank" rel="noopener">ant-design</a>的 package.json 进行阅读</p>
-</blockquote>
-<h2 id="官方属性"><a href="#官方属性" class="headerlink" title="官方属性"></a>官方属性</h2><blockquote>
-<p><code>package.json</code>文件中最重要的就是<code>name</code>和<code>version</code>字段，这两项是必填的。名称和版本一起构成一个标识符，该标识符被认为是完全唯一的。对包的更改应该与对版本的更改一起进行。</p>
-</blockquote>
-<h4 id="1-name"><a href="#1-name" class="headerlink" title="1.name"></a>1.name</h4><p><code>name</code>必须小于等于 214 个字符，不能以.或_开头，不能有大写字母，因为名称最终成为 URL 的一部分因此不能包含任何非 URL 安全字符。 <code>npm</code>官方建议我们不要使用与核心节点模块相同的名称。不要在名称中加<code>js</code>或<code>node</code>。如果需要可以使用<code>engines</code>来指定运行环境。</p>
-<p>该名称会作为参数传递给 require，因此它应该是简短的，但也需要具有合理的描述性。</p>
-<hr>
-<h4 id="2-version"><a href="#2-version" class="headerlink" title="2.version"></a>2.version</h4><p><code>version</code>必须可由 <a href="https://github.com/ant-design/ant-design/blob/master/package.json" target="_blank" rel="noopener">node-semver</a> 解析，因为它会与 npm 作为依赖项捆绑在一起。</p>
-<hr>
-<h4 id="3-description"><a href="#3-description" class="headerlink" title="3.description"></a>3.description</h4><p><code>description</code>是一个字符串，用于编写描述信息。<br>有助于在<code>npm</code>库中搜索的时候发现你的模块。</p>
-<hr>
-<h4 id="4-keywords"><a href="#4-keywords" class="headerlink" title="4.keywords"></a>4.keywords</h4><p><code>keywords</code>是一个字符串组成的数组，有助于在<code>npm</code>库中搜索的时候发现你的模块。</p>
-<hr>
-<h4 id="5-homepage"><a href="#5-homepage" class="headerlink" title="5.homepage"></a>5.homepage</h4><p>项目的主页地址</p>
-<hr>
-<h4 id="6-bugs"><a href="#6-bugs" class="headerlink" title="6.bugs"></a>6.bugs</h4><p>用于项目问题的反馈 issue 地址或者一个邮箱。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">"bugs": &#123;</span><br><span class="line">  "url" : "https://github.com/owner/project/issues",</span><br><span class="line">  "email" : "project@hostname.com"</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="7-license"><a href="#7-license" class="headerlink" title="7.license"></a>7.license</h4><p><a href="http://caibaojian.com/npm/files/package.json.html#license" target="_blank" rel="noopener"><code>license</code></a>是当前项目的协议，让用户知道他们有何权限来使用你的模块，以及使用该模块有哪些限制</p>
-<hr>
-<h4 id="8-author-amp-contributors"><a href="#8-author-amp-contributors" class="headerlink" title="8.author &amp; contributors"></a>8.author &amp; contributors</h4><p><code>author</code>是具体一个人，<code>contributors</code>表示一群人，他们都表示当前项目的共享者。同时每个人都是一个对象。具有<code>name</code>字段和可选的<code>url</code>及<code>email</code>字段。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">"author": &#123;</span><br><span class="line">  "name" : "xxx",</span><br><span class="line">  "email" : "xxx@xx.com",</span><br><span class="line">  "url" : "https://xxx.com/"</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>也可以写成一个字符串</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"author": "xxx xxx@xx.com"</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="9-files"><a href="#9-files" class="headerlink" title="9.files"></a>9.files</h4><p><code>files</code>属性的值是一个数组，内容是模块下文件名或者文件夹名，如果是文件夹名，则文件夹下所有的文件也会被包含进来（除非文件被另一些配置排除了）</p>
-<p>可以在模块根目录下创建一个<code>.npmignore</code>文件，写在这个文件里边的文件即便被写在<code>files</code>属性里边也会被排除在外，这个文件的写法与<code>.gitignore</code>类似。</p>
-<hr>
-<h4 id="10-main"><a href="#10-main" class="headerlink" title="10.main"></a>10.main</h4><p>定义了  npm  包的入口文件，browser 环境和 node 环境均可使用</p>
-<hr>
-<h4 id="11-module"><a href="#11-module" class="headerlink" title="11.module"></a>11.module</h4><p>定义  npm  包的 ESM 规范的入口文件，browser 环境和 node 环境均可使用</p>
-<p>优先级：module &gt; main</p>
-<hr>
-<h4 id="12-browser"><a href="#12-browser" class="headerlink" title="12.browser"></a>12.browser</h4><p>定义  npm  包在 browser 环境下的入口文件</p>
-<hr>
-<h4 id="13-bin"><a href="#13-bin" class="headerlink" title="13.bin"></a>13.bin</h4><p><code>bin</code>项用来指定每个内部命令对应的可执行文件的位置。如果你编写的是一个 node 工具的时候一定会用到 bin 字段。<br>当我们编写一个 cli 工具的时候，需要指定工具的运行命令，比如常用的 webpack 模块，他的运行命令就是</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">webpack。<span class="string">"bin"</span>: &#123;</span><br><span class="line">  <span class="string">"webpack"</span>: <span class="string">"./bin/index.js"</span>,</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-
-<p>当我们执行<code>webpack</code>命令的时候就会执行<code>./bin/index.js</code>文件中的代码。</p>
-<p>在模块以依赖的方式被安装，如果存在<code>bin</code>选项。在<code>node_modules/.bin/</code>生成对应的文件， <code>Npm</code>会寻找这个文件，在<code>node_modules/.bin/</code>目录下建立符号链接。由于<code>node_modules/.bin/</code>目录会在运行时加入系统的<code>PATH</code>变量，因此在运行<code>npm</code>时，就可以不带路径，直接通过命令来调用这些脚本。</p>
-<p>所有<code>node_modules/.bin/</code>目录下的命令，都可以用<code>npm run [命令]</code>的格式运行。在命令行下，键入<code>npm run</code>，然后按 tab 键，就会显示所有可以使用的命令。</p>
-<hr>
-<h4 id="14-repository"><a href="#14-repository" class="headerlink" title="14.repository"></a>14.repository</h4><p>指定一个代码存放地址，对想要为你的项目贡献代码的人有帮助</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">"repository" : &#123;</span><br><span class="line">  "type" : "git",</span><br><span class="line">  "url" : "https://github.com/npm/npm.git"</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="15-script"><a href="#15-script" class="headerlink" title="15.script"></a>15.script</h4><p>scripts 指定了运行脚本命令的 npm 命令行缩写，比如 start 指定了运行 npm run start 时，所要执行的命令。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">"scripts": &#123;</span><br><span class="line">  "start": "node ./start.js"</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用<code>scripts</code>字段可以快速的执行 shell 命令，可以理解为<code>alias</code>。<br><code>scripts</code>可以直接使用<code>node_modules</code>中安装的模块，这区别于直接运行需要使用<code>npx</code>命令。</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">"scripts": &#123;</span><br><span class="line">  "build": "webpack"</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// npm run build</span></span><br><span class="line"><span class="comment">// npx webpack</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="16-config"><a href="#16-config" class="headerlink" title="16.config"></a>16.config</h4><p><code>config</code>字段用于添加命令行的环境变量。</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"config"</span>: &#123; <span class="attr">"port"</span>: <span class="string">"8080"</span> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>然后，在<code>server.js</code>脚本就可以引用 config 字段的值。</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">console</span>.log(process.env.npm_package_config_port) <span class="comment">// 8080</span></span><br></pre></td></tr></table></figure>
-
-<p>用户可以通过 npm config set 来修改这个值。</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm config <span class="keyword">set</span> &#123;name&#125;:port <span class="number">8000</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="17-dependencies-amp-devDependencies"><a href="#17-dependencies-amp-devDependencies" class="headerlink" title="17.dependencies &amp; devDependencies"></a>17.dependencies &amp; devDependencies</h4><p><code>dependencies</code>字段指定了项目运行所依赖的模块，<code>devDependencies</code>指定项目开发所需要的模块。</p>
-<p>它们的值都是一个对象。该对象的各个成员，分别由模块名和对应的版本要求组成，表示依赖的模块及其版本范围。</p>
-<p>当安装依赖的时候使用<code>--save</code>参数表示将该模块写入<code>dependencies</code>属性，<code>--save-dev</code>表示将该模块写入<code>devDependencies</code>属性。</p>
-<hr>
-<h4 id="18-peerDependencies"><a href="#18-peerDependencies" class="headerlink" title="18.peerDependencies"></a>18.peerDependencies</h4><p>有时，你的项目和所依赖的模块，都会同时依赖另一个模块，但是所依赖的版本不一样。比如，你的项目依赖 A 模块和 B 模块的 1.0 版，而 A 模块本身又依赖 B 模块的 2.0 版。</p>
-<p>大多数情况下，这不构成问题，B 模块的两个版本可以并存，同时运行。但是，有一种情况，会出现问题，就是这种依赖关系将暴露给用户。</p>
-<p>最典型的场景就是插件，比如 A 模块是 B 模块的插件。用户安装的 B 模块是 1.0 版本，但是 A 插件只能和 2.0 版本的 B 模块一起使用。这时，用户要是将 1.0 版本的 B 的实例传给 A，就会出现问题。因此，需要一种机制，在模板安装的时候提醒用户，如果 A 和 B 一起安装，那么 B 必须是 2.0 模块。</p>
-<p>peerDependencies 字段，就是用来供插件指定其所需要的主工具的版本。</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"name"</span>: <span class="string">"chai-as-promised"</span>,</span><br><span class="line">  <span class="attr">"peerDependencies"</span>: &#123;</span><br><span class="line">    <span class="attr">"chai"</span>: <span class="string">"1.x"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面代码指定，安装 chai-as-promised 模块时，主程序 chai 必须一起安装，而且 chai 的版本必须是 1.x。如果你的项目指定的依赖是 chai 的 2.0 版本，就会报错。</p>
-<p>注意，从 npm 3.0 版开始，peerDependencies 不再会默认安装了。</p>
-<hr>
-<h4 id="19-bundledDependencies"><a href="#19-bundledDependencies" class="headerlink" title="19.bundledDependencies"></a>19.bundledDependencies</h4><p><code>bundledDependencies</code>指定发布的时候会被一起打包的模块.</p>
-<hr>
-<h4 id="20-optionalDependencies"><a href="#20-optionalDependencies" class="headerlink" title="20.optionalDependencies"></a>20.optionalDependencies</h4><p>如果一个依赖模块可以被使用， 同时你也希望在该模块找不到或无法获取时<code>npm</code>继续运行，你可以把这个模块依赖放到<code>optionalDependencies</code>配置中。这个配置的写法和<code>dependencies</code>的写法一样，不同的是这里边写的模块安装失败不会导致<code>npm install</code>失败。</p>
-<hr>
-<h4 id="21-engines"><a href="#21-engines" class="headerlink" title="21.engines"></a>21.engines</h4><p><code>engines</code>字段指明了该模块运行的平台，比如<code>Node</code>或者<code>npm</code>的某个版本或者浏览器。</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123; <span class="attr">"engines"</span>: &#123; <span class="attr">"node"</span>: <span class="string">"&gt;=0.10.3 &lt;0.12"</span>, <span class="attr">"npm"</span>: <span class="string">"~1.0.20"</span> &#125; &#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="22-os"><a href="#22-os" class="headerlink" title="22.os"></a>22.os</h4><p>可以指定你的模块只能在哪个操作系统上运行</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"os" : [ "darwin", "linux", "win32" ]</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="23-cpu"><a href="#23-cpu" class="headerlink" title="23.cpu"></a>23.cpu</h4><p>限制模块只能在某种架构的<code>cpu</code>下运行</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"cpu" : [ "x64", "ia32" ]</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="24-private"><a href="#24-private" class="headerlink" title="24.private"></a>24.private</h4><p>如果这个属性被设置为<code>true</code>，<code>npm</code>将拒绝发布它，这是为了防止一个私有模块被无意间发布出去。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"private": true</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="25-publishConfig"><a href="#25-publishConfig" class="headerlink" title="25.publishConfig"></a>25.publishConfig</h4><p>这个配置是会在模块发布时生效，用于设置发布用到的一些值的集合。如果你不想模块被默认标记为最新的，或者默认发布到公共仓库，可以在这里配置 tag 或仓库地址。</p>
-<p>通常<code>publishConfig</code>会配合<code>private</code>来使用，如果你只想让模块被发布到一个特定的<code>npm</code>仓库，如一个内部的仓库。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">"private": true,</span><br><span class="line">"publishConfig": &#123;</span><br><span class="line">  "tag": "1.0.0",</span><br><span class="line">  "registry": "https://registry.npmjs.org/",</span><br><span class="line">  "access": "public"</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="26-preferGlobal"><a href="#26-preferGlobal" class="headerlink" title="26.preferGlobal"></a>26.preferGlobal</h4><p><code>preferGlobal</code>的值是布尔值，表示当用户不将该模块安装为全局模块时（即不用–global 参数），要不要显示警告，表示该模块的本意就是安装为全局模块。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">"preferGlobal": false</span><br></pre></td></tr></table></figure>
-
-<p>更多请参考<a href="http://caibaojian.com/npm/files/package.json.html" target="_blank" rel="noopener">package.json 的官方属性</a></p>
-<h2 id="额外属性"><a href="#额外属性" class="headerlink" title="额外属性"></a>额外属性</h2><h4 id="1-types-typings"><a href="#1-types-typings" class="headerlink" title="1.types | typings"></a>1.types | typings</h4><p>定义一个针对  TypeScript  的入口文件</p>
-<hr>
-<h4 id="2-unpkg"><a href="#2-unpkg" class="headerlink" title="2.unpkg"></a>2.unpkg</h4><p>让  npm  上所有的文件都开启  cdn  服务。</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"unpkg"</span>: <span class="string">"dist/antd.min.js"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>当你使用省略的 url <a href="https://unpkg.com/antd" target="_blank" rel="noopener">https://unpkg.com/antd</a> 时，便会按照如下的方式获取文件：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># [latestVersion] 指最新版本号，pkg 指 package.json</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义了 unpkg 属性时</span></span><br><span class="line"><span class="string">https://unpkg.com/jquery@[latestVersion]/[pkg.unpkg]</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 未定义 unpkg 属性时，将回退到 main 属性</span></span><br><span class="line"><span class="string">https://unpkg.com/jquery@[latestVersion]/[pkg.main]</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="3-browserslist"><a href="#3-browserslist" class="headerlink" title="3.browserslist"></a>3.browserslist</h4><p>设置项目的浏览器兼容情况。</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"browserslist"</span>: [<span class="string">"&gt; 1%"</span>, <span class="string">"last 2 versions"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="4-webpack"><a href="#4-webpack" class="headerlink" title="4.webpack"></a>4.webpack</h4><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"sideEffects"</span>: <span class="literal">true</span> | <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>声明该模块是否包含  sideEffects（副作用），从而可以为  tree-shaking  提供更大的优化空间。</p>
-<hr>
-<h4 id="5-exports"><a href="#5-exports" class="headerlink" title="5.exports"></a>5.exports</h4><p><code>exports</code>  字段提供了一种方法来为不同的环境和  JavaScript  风格公开您的包模块，同时限制对其内部部分的访问。<br>具体用法请参考<a href="https://github.com/jkrems/proposal-pkg-exports/" target="_blank" rel="noopener">官方文档</a></p>
-<hr>
-<p>更多请参考<a href="https://github.com/stereobooster/package.json" target="_blank" rel="noopener">package.json 的额外属性</a></p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li><a href="http://javascript.ruanyifeng.com/nodejs/packagejson.html" target="_blank" rel="noopener">javaScript 标准参考教程</a></li>
-<li><a href="https://github.com/SunshowerC/blog/issues/8" target="_blank" rel="noopener">package.json 中 你还不清楚的 browser，module，main 字段优先级</a></li>
-<li><a href="https://segmentfault.com/a/1190000016365409" target="_blank" rel="noopener">package.json 非官方字段集合</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react-docgen.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/react-docgen.html" class="post-title-link" itemprop="url">react组件文档生成介绍 & 业务实践</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-01-26 00:00:00" itemprop="dateCreated datePublished" datetime="2022-01-26T00:00:00+08:00">2022-01-26</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于业务快速发展，业务组件库也在快速迭代。当组件Props等发生变化时，开发人员需要额外的消耗一定精力去保持代码和文档的统一。<br>此时，我们就可以利用TypeScript的静态类型检查与代码提示能力，通过自动生成文档工具，来增强开发的生产力，解放双手，提高工作效率。</p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>团队内部组件库文档年久失修，组件规范不统一，导致对很多组件的修改是牵一发而动全身，痛定思痛，于是经过小组商议后决定从组件文档着手，逐 步统一业务组件风格规范和组件文档。</p>
-<h2 id="调研"><a href="#调研" class="headerlink" title="调研"></a>调研</h2><p>通过调研以及过往经验，发现市面上有几款插件可供选择，分别是Docz、StoryBook、dumi、react-docgen、react-docgen-typescript，根据与目前项目匹配度最终dumi和react-docgen-typescript进入了决赛圈，最终根据灵活的和对目前的项目整体的副作用，选择了<a href="https://github.com/styleguidist/react-docgen-typescript" target="_blank" rel="noopener">react-docgen-typescript</a>和<a href="https://github.com/styleguidist/react-styleguidist" target="_blank" rel="noopener">react-styleguidist</a>配合生成文档。</p>
-<h3 id="dumi"><a href="#dumi" class="headerlink" title="dumi"></a>dumi</h3><p>dumi，中文发音嘟米，是一款为组件开发场景而生的文档工具，与 father 一起为开发者提供一站式的组件开发体验，father 负责构建，而 dumi 负责组件开发及组件文档生成。</p>
-<ul>
-<li>特性<ul>
-<li>开箱即用，将注意力集中在组件开发和文档编写上</li>
-<li>基于 TypeScript 类型定义，自动生成组件 API</li>
-<li>丰富的 Markdown 扩展，不止于渲染组件 demo</li>
-<li>支持移动端组件库研发，内置移动端高清渲染方案</li>
-<li>一行命令将组件资产数据化，与下游生产力工具串联</li>
-</ul>
-</li>
-</ul>
-<h3 id="react-docgen"><a href="#react-docgen" class="headerlink" title="react-docgen"></a>react-docgen</h3><ul>
-<li>来自Facebook开源</li>
-<li>基于Babel解析源码，对propTypes支持良好</li>
-<li>虽然新版本支持 TypeScript，但从其它文件导入的类型信息无法被获取</li>
-<li>不解析JSDoc部分，整个注释都作为描述部分，不过可以添加自己handler来补充解析</li>
-</ul>
-<h3 id="react-docgen-typescript"><a href="#react-docgen-typescript" class="headerlink" title="react-docgen-typescript"></a>react-docgen-typescript</h3><ul>
-<li>来自styleguidist开源，主要目标是服务TS React组件的API文档生成</li>
-<li>基于TS解析源码，不支持propTypes，Props interface继承的类型都可以拿到</li>
-<li>会读取JSDoc的@type、@default作为类型和默认值信息</li>
-</ul>
-<h2 id="业务实践阶段"><a href="#业务实践阶段" class="headerlink" title="业务实践阶段"></a>业务实践阶段</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package.json</span></span><br><span class="line"><span class="string">"devDependencies"</span>: &#123;</span><br><span class="line">  <span class="string">"react-docgen-typescript"</span>: <span class="string">"^1.9.0"</span>,</span><br><span class="line">  <span class="string">"react-styleguidist"</span>: <span class="string">"^7.3.7"</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 可根据配置文件，自行设置、执行启动和构建命令</span></span><br><span class="line"><span class="string">"scripts"</span>: &#123;</span><br><span class="line">  <span class="string">"styleguide:dev"</span>: <span class="string">"cross-env STYLEGUIDE_ENV=development styleguidist server --config styleguide.config.js"</span>,</span><br><span class="line">  <span class="string">"styleguide:build"</span>: <span class="string">"cross-env STYLEGUIDE_ENV=production styleguidist build --config styleguide.config.js"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// styleguide.config.js</span></span><br><span class="line"><span class="keyword">const</span> path = <span class="built_in">require</span>(<span class="string">'path'</span>);</span><br><span class="line"><span class="keyword">const</span> glob = <span class="built_in">require</span>(<span class="string">'glob'</span>);</span><br><span class="line"><span class="keyword">const</span> STYLEGUIDE_ENV = process.env.STYLEGUIDE_ENV</span><br><span class="line"></span><br><span class="line"><span class="built_in">module</span>.exports = &#123;</span><br><span class="line">  title: <span class="string">'components'</span>,</span><br><span class="line">  styleguideDir: <span class="string">'dist'</span>,</span><br><span class="line">  components: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> glob.sync(path.resolve(__dirname, <span class="string">'src/componets/**/*.tsx'</span>))</span><br><span class="line">      .filter(<span class="function"><span class="keyword">function</span> (<span class="params">module</span>) </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="regexp">/\/[A-Za-z]\w*\.tsx$/</span>.test(<span class="built_in">module</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;,</span><br><span class="line">  resolver: <span class="built_in">require</span>(<span class="string">'react-docgen'</span>).resolver.findAllComponentDefinitions,</span><br><span class="line">  propsParser: <span class="built_in">require</span>(<span class="string">'react-docgen-typescript'</span>).withDefaultConfig(&#123; <span class="attr">propFilter</span>: &#123; <span class="attr">skipPropsWithoutDoc</span>: <span class="literal">true</span> &#125; &#125;).parse,</span><br><span class="line">  webpackConfig: <span class="built_in">Object</span>.assign(&#123;&#125;, STYLEGUIDE_ENV === <span class="string">'production'</span> ? <span class="built_in">require</span>(<span class="string">'./config/styleguide.webpack.config.prod'</span>) : <span class="built_in">require</span>(<span class="string">'./config/styleguide.webpack.config.dev'</span>)),</span><br><span class="line">  dangerouslyUpdateWebpackConfig: <span class="function"><span class="keyword">function</span> (<span class="params">config, env</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">      ...config,</span><br><span class="line">      output: &#123;</span><br><span class="line">        ...config.output,</span><br><span class="line">        filename: <span class="string">'build/[name].bundle.js'</span>, <span class="comment">// 默认是生成hash，公司部署平台要求入口文件不带hash</span></span><br><span class="line">        chunkFilename: <span class="string">'build/[name].js'</span>,</span><br><span class="line">      &#125;,</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<h3 id="组件内部配置"><a href="#组件内部配置" class="headerlink" title="组件内部配置"></a>组件内部配置</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> React <span class="keyword">from</span> <span class="string">'react'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在原有interface基础上，每个属性添加上jsdoc即可</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Select properties.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">export</span> interface ISelectProps &#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 传入的数据源，可以动态渲染子项</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  dataSource: string[];</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Select发生改变时触发的回调</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  onChange?: <span class="function">(<span class="params">item: string</span>) =&gt;</span> <span class="keyword">void</span>;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 是否只读，只读模式下可以展开弹层但不能选</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  readOnly?: boolean;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 选择器尺寸</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  size?: <span class="string">'small'</span> | <span class="string">'medium'</span> | <span class="string">'large'</span>;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 当前值，用于受控模式</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  value?: string | number;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Component is described here.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@visibleName <span class="variable">Select</span></span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Select</span> <span class="keyword">extends</span> <span class="title">React</span>.<span class="title">Component</span>&lt;<span class="title">ISelectProps</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> defaultProps = &#123;</span><br><span class="line">    readOnly: <span class="literal">false</span>,</span><br><span class="line">    size: <span class="string">'medium'</span>,</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  render() &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="xml"><span class="tag">&lt;<span class="name">div</span>&gt;</span>Test<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> Select;</span><br></pre></td></tr></table></figure>
-
-<h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><p>执行build命令后，会生成dist文件，可根据自己的需求部署到指定位置。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>TypeScript给js带来了类型，做到静态类型检查和代码提示，经过上面一顿的折腾，把类型又用了一遍。整个过程中，我们已经拿到了组件中的所有想要拿到的数据并生成文档，不足的是子属性的类型并不能很好的显示，还需要后续完善，但是已经满足基础的需求。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1521,14 +1521,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">26</span>
+          <span class="site-state-item-count">31</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

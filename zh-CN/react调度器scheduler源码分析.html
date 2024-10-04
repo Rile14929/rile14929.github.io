@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="核心算法 - 最小堆packages\scheduler\src\SchedulerMinHeap.js 123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react18.2调度器scheduler源码分析">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="核心算法 - 最小堆packages\scheduler\src\SchedulerMinHeap.js 123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://rile14929.github.io/images/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/image.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/image-1.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/image-2.png">
+<meta property="article:published_time" content="2024-09-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-09-14T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="react18.2">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://rile14929.github.io/images/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/image.png">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>react18.2调度器scheduler源码分析 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          react18.2调度器scheduler源码分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-09-15 00:00:00" itemprop="dateCreated datePublished" datetime="2024-09-15T00:00:00+08:00">2024-09-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="核心算法-最小堆"><a href="#核心算法-最小堆" class="headerlink" title="核心算法 - 最小堆"></a>核心算法 - 最小堆</h2><p><font color=gray><em>packages\scheduler\src\SchedulerMinHeap.js</em></font></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line">type Heap&lt;T: Node&gt; = <span class="built_in">Array</span>&lt;T&gt;;</span><br><span class="line">type Node = &#123;</span><br><span class="line">  id: number,</span><br><span class="line">  sortIndex: number,</span><br><span class="line">  ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">push</span>&lt;<span class="title">T</span>: <span class="title">Node</span>&gt;(<span class="params">heap: Heap&lt;T&gt;, node: T</span>): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> index = heap.length;</span><br><span class="line">  heap.push(node);</span><br><span class="line">  siftUp(heap, node, index);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">peek</span>&lt;<span class="title">T</span>: <span class="title">Node</span>&gt;(<span class="params">heap: Heap&lt;T&gt;</span>): <span class="title">T</span> | <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> heap.length === <span class="number">0</span> ? <span class="literal">null</span> : heap[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">pop</span>&lt;<span class="title">T</span>: <span class="title">Node</span>&gt;(<span class="params">heap: Heap&lt;T&gt;</span>): <span class="title">T</span> | <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (heap.length === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">const</span> first = heap[<span class="number">0</span>];</span><br><span class="line">  <span class="keyword">const</span> last = heap.pop();</span><br><span class="line">  <span class="keyword">if</span> (last !== first) &#123;</span><br><span class="line">    heap[<span class="number">0</span>] = last;</span><br><span class="line">    siftDown(heap, last, <span class="number">0</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> first;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">siftUp</span>&lt;<span class="title">T</span>: <span class="title">Node</span>&gt;(<span class="params">heap: Heap&lt;T&gt;, node: T, i: number</span>): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="keyword">let</span> index = i;</span><br><span class="line">  <span class="keyword">while</span> (index &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> parentIndex = (index - <span class="number">1</span>) &gt;&gt;&gt; <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">const</span> parent = heap[parentIndex];</span><br><span class="line">    <span class="keyword">if</span> (compare(parent, node) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="comment">// The parent is larger. Swap positions.</span></span><br><span class="line">      heap[parentIndex] = node;</span><br><span class="line">      heap[index] = parent;</span><br><span class="line">      index = parentIndex;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// The parent is smaller. Exit.</span></span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">siftDown</span>&lt;<span class="title">T</span>: <span class="title">Node</span>&gt;(<span class="params">heap: Heap&lt;T&gt;, node: T, i: number</span>): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="keyword">let</span> index = i;</span><br><span class="line">  <span class="keyword">const</span> length = heap.length;</span><br><span class="line">  <span class="keyword">const</span> halfLength = length &gt;&gt;&gt; <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">while</span> (index &lt; halfLength) &#123;</span><br><span class="line">    <span class="keyword">const</span> leftIndex = (index + <span class="number">1</span>) * <span class="number">2</span> - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">const</span> left = heap[leftIndex];</span><br><span class="line">    <span class="keyword">const</span> rightIndex = leftIndex + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">const</span> right = heap[rightIndex];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If the left or right node is smaller, swap with the smaller of those.</span></span><br><span class="line">    <span class="keyword">if</span> (compare(left, node) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (rightIndex &lt; length &amp;&amp; compare(right, left) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        heap[index] = right;</span><br><span class="line">        heap[rightIndex] = node;</span><br><span class="line">        index = rightIndex;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        heap[index] = left;</span><br><span class="line">        heap[leftIndex] = node;</span><br><span class="line">        index = leftIndex;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (rightIndex &lt; length &amp;&amp; compare(right, node) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">      heap[index] = right;</span><br><span class="line">      heap[rightIndex] = node;</span><br><span class="line">      index = rightIndex;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Neither child is smaller. Exit.</span></span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">compare</span>(<span class="params">a: Node, b: Node</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// Compare sort index first, then task id.</span></span><br><span class="line">  <span class="keyword">const</span> diff = a.sortIndex - b.sortIndex;</span><br><span class="line">  <span class="keyword">return</span> diff !== <span class="number">0</span> ? diff : a.id - b.id;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="任务调度器"><a href="#任务调度器" class="headerlink" title="任务调度器"></a>任务调度器</h2><p>通过调用 <code>scheduleCallback</code> 方法进入调度器</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> newCallbackNode = scheduleCallback(</span><br><span class="line">    schedulerPriorityLevel,</span><br><span class="line">    performConcurrentWorkOnRoot.bind(<span class="literal">null</span>, root),</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>从下面开始，我们将深入scheduler的源码：</p>
+<h3 id="1-定义全局变量"><a href="#1-定义全局变量" class="headerlink" title="1. 定义全局变量"></a>1. 定义全局变量</h3><p><font color=gray><em>packages\scheduler\src\forks\Scheduler.js</em></font></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123;push, pop, peek&#125; <span class="keyword">from</span> <span class="string">'../SchedulerMinHeap'</span>;</span><br><span class="line"><span class="keyword">import</span> &#123;</span><br><span class="line">  ImmediatePriority,</span><br><span class="line">  UserBlockingPriority,</span><br><span class="line">  NormalPriority,</span><br><span class="line">  LowPriority,</span><br><span class="line">  IdlePriority,</span><br><span class="line">&#125; <span class="keyword">from</span> <span class="string">'../SchedulerPriorities'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> &#123;</span><br><span class="line">  enableIsInputPending,</span><br><span class="line">  enableIsInputPendingContinuous,</span><br><span class="line">  frameYieldMs,</span><br><span class="line">  continuousYieldMs,</span><br><span class="line">  maxYieldMs,</span><br><span class="line">  userBlockingPriorityTimeout,</span><br><span class="line">  lowPriorityTimeout,</span><br><span class="line">  normalPriorityTimeout,</span><br><span class="line">&#125; <span class="keyword">from</span> <span class="string">'../SchedulerFeatureFlags'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> &#123;</span><br><span class="line">  markTaskRun,</span><br><span class="line">  markTaskYield,</span><br><span class="line">  markTaskCompleted,</span><br><span class="line">  markTaskCanceled,</span><br><span class="line">  markTaskErrored,</span><br><span class="line">  markSchedulerSuspended,</span><br><span class="line">  markSchedulerUnsuspended,</span><br><span class="line">  markTaskStart,</span><br><span class="line">  stopLoggingProfilingEvents,</span><br><span class="line">  startLoggingProfilingEvents,</span><br><span class="line">&#125; <span class="keyword">from</span> <span class="string">'../SchedulerProfiling'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> type Callback = <span class="function"><span class="params">boolean</span> =&gt;</span> ?Callback;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> opaque type Task = &#123;</span><br><span class="line">  id: number,</span><br><span class="line">  callback: Callback | <span class="literal">null</span>,</span><br><span class="line">  priorityLevel: PriorityLevel,</span><br><span class="line">  startTime: number,</span><br><span class="line">  expirationTime: number,</span><br><span class="line">  sortIndex: number,</span><br><span class="line">  isQueued?: boolean,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取当前时间，通过performance或者Date</span></span><br><span class="line"><span class="keyword">let</span> getCurrentTime: <span class="function"><span class="params">()</span> =&gt;</span> number | DOMHighResTimeStamp;</span><br><span class="line"><span class="keyword">const</span> hasPerformanceNow =</span><br><span class="line">  <span class="keyword">typeof</span> performance === <span class="string">'object'</span> &amp;&amp; <span class="keyword">typeof</span> performance.now === <span class="string">'function'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (hasPerformanceNow) &#123;</span><br><span class="line">  <span class="keyword">const</span> localPerformance = performance;</span><br><span class="line">  getCurrentTime = <span class="function"><span class="params">()</span> =&gt;</span> localPerformance.now();</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="keyword">const</span> localDate = <span class="built_in">Date</span>;</span><br><span class="line">  <span class="keyword">const</span> initialTime = localDate.now();</span><br><span class="line">  getCurrentTime = <span class="function"><span class="params">()</span> =&gt;</span> localDate.now() - initialTime;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Max 31 bit integer. The max integer size in V8 for 32-bit systems.</span></span><br><span class="line"><span class="comment">// 最大的31位整数。V8中32位系统的最大整数。</span></span><br><span class="line"><span class="comment">// Math.pow(2, 30) - 1</span></span><br><span class="line"><span class="comment">// 0b111111111111111111111111111111</span></span><br><span class="line"><span class="keyword">var</span> maxSigned31BitInt = <span class="number">1073741823</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Tasks are stored on a min heap</span></span><br><span class="line"><span class="keyword">var</span> taskQueue: <span class="built_in">Array</span>&lt;Task&gt; = []; <span class="comment">// 没有延迟的任务</span></span><br><span class="line"><span class="keyword">var</span> timerQueue: <span class="built_in">Array</span>&lt;Task&gt; = []; <span class="comment">// 有延迟的任务</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 自增id，标记task唯一性</span></span><br><span class="line"><span class="comment">// Incrementing id counter. Used to maintain insertion order.</span></span><br><span class="line"><span class="keyword">var</span> taskIdCounter = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Pausing the scheduler is useful for debugging.</span></span><br><span class="line"><span class="keyword">var</span> isSchedulerPaused = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> currentTask = <span class="literal">null</span>;</span><br><span class="line"><span class="keyword">var</span> currentPriorityLevel = NormalPriority;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 锁</span></span><br><span class="line"><span class="comment">// 是否有work在执行</span></span><br><span class="line"><span class="comment">// This is set while performing work, to prevent re-entrance.</span></span><br><span class="line"><span class="keyword">var</span> isPerformingWork = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程是否在调度</span></span><br><span class="line"><span class="keyword">var</span> isHostCallbackScheduled = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> isMessageLoopRunning = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 是否有任务在倒计时</span></span><br><span class="line"><span class="keyword">var</span> isHostTimeoutScheduled = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> taskTimeoutID: TimeoutID = (<span class="number">-1</span>: any);</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> needsPaint = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Capture local references to native APIs, in case a polyfill overrides them.</span></span><br><span class="line"><span class="keyword">const</span> localSetTimeout = <span class="keyword">typeof</span> setTimeout === <span class="string">'function'</span> ? setTimeout : <span class="literal">null</span>;</span><br><span class="line"><span class="keyword">const</span> localClearTimeout =</span><br><span class="line">  <span class="keyword">typeof</span> clearTimeout === <span class="string">'function'</span> ? clearTimeout : <span class="literal">null</span>;</span><br><span class="line"><span class="keyword">const</span> localSetImmediate =</span><br><span class="line">  <span class="keyword">typeof</span> setImmediate !== <span class="string">'undefined'</span> ? setImmediate : <span class="literal">null</span>; <span class="comment">// IE and Node.js + jsdom</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 判断当前是否有所有类型的输入事件，包括按键、鼠标、滚轮触控等DOM UI事件</span></span><br><span class="line"><span class="keyword">const</span> isInputPending =</span><br><span class="line">  <span class="keyword">typeof</span> navigator !== <span class="string">'undefined'</span> &amp;&amp;</span><br><span class="line">  <span class="comment">// $FlowFixMe[prop-missing]</span></span><br><span class="line">  navigator.scheduling !== <span class="literal">undefined</span> &amp;&amp;</span><br><span class="line">  <span class="comment">// $FlowFixMe[incompatible-type]</span></span><br><span class="line">  navigator.scheduling.isInputPending !== <span class="literal">undefined</span></span><br><span class="line">    ? navigator.scheduling.isInputPending.bind(navigator.scheduling)</span><br><span class="line">    : <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 是否应该把控制权交换给主线程</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">shouldYieldToHost</span>(<span class="params"></span>): <span class="title">boolean</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 当前程序运行时间</span></span><br><span class="line">  <span class="keyword">const</span> timeElapsed = getCurrentTime() - startTime;</span><br><span class="line">  <span class="comment">// 如果运行时间小于帧间隔时间5ms</span></span><br><span class="line">  <span class="keyword">if</span> (timeElapsed &lt; frameInterval) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// The main thread has been blocked for a non-negligible amount of time. We</span></span><br><span class="line">  <span class="comment">// may want to yield control of the main thread, so the browser can perform</span></span><br><span class="line">  <span class="comment">// high priority tasks. The main ones are painting and user input. If there's</span></span><br><span class="line">  <span class="comment">// a pending paint or a pending input, then we should yield. But if there's</span></span><br><span class="line">  <span class="comment">// neither, then we can yield less often while remaining responsive. We'll</span></span><br><span class="line">  <span class="comment">// eventually yield regardless, since there could be a pending paint that</span></span><br><span class="line">  <span class="comment">// wasn't accompanied by a call to `requestPaint`, or other main thread tasks</span></span><br><span class="line">  <span class="comment">// like network events.</span></span><br><span class="line">  <span class="keyword">if</span> (enableIsInputPending) &#123;</span><br><span class="line">    <span class="keyword">if</span> (needsPaint) &#123;</span><br><span class="line">      <span class="comment">// There's a pending paint (signaled by `requestPaint`). Yield now.</span></span><br><span class="line">      <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (timeElapsed &lt; continuousInputInterval) &#123;</span><br><span class="line">      <span class="comment">// We haven't blocked the thread for that long. Only yield if there's a</span></span><br><span class="line">      <span class="comment">// pending discrete input (e.g. click). It's OK if there's pending</span></span><br><span class="line">      <span class="comment">// continuous input (e.g. mouseover).</span></span><br><span class="line">      <span class="keyword">if</span> (isInputPending !== <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> isInputPending();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (timeElapsed &lt; maxInterval) &#123;</span><br><span class="line">      <span class="comment">// Yield if there's either a pending discrete or continuous input.</span></span><br><span class="line">      <span class="keyword">if</span> (isInputPending !== <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> isInputPending(continuousOptions);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// We've blocked the thread for a long time. Even if there's no pending</span></span><br><span class="line">      <span class="comment">// input, there may be some other scheduled work that we don't know about,</span></span><br><span class="line">      <span class="comment">// like a network event. Yield now.</span></span><br><span class="line">      <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// `isInputPending` isn't available. Yield now.</span></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-根据环境设置生成宏任务调度函数"><a href="#2-根据环境设置生成宏任务调度函数" class="headerlink" title="2. 根据环境设置生成宏任务调度函数"></a>2. 根据环境设置生成宏任务调度函数</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> schedulePerformWorkUntilDeadline;</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">typeof</span> localSetImmediate === <span class="string">'function'</span>) &#123;</span><br><span class="line">  <span class="comment">// Node.js and old IE.</span></span><br><span class="line">  <span class="comment">// There's a few reasons for why we prefer setImmediate.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// Unlike MessageChannel, it doesn't prevent a Node.js process from exiting.</span></span><br><span class="line">  <span class="comment">// (Even though this is a DOM fork of the Scheduler, you could get here</span></span><br><span class="line">  <span class="comment">// with a mix of Node.js 15+, which has a MessageChannel, and jsdom.)</span></span><br><span class="line">  <span class="comment">// https://github.com/facebook/react/issues/20756</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// But also, it runs earlier which is the semantic we want.</span></span><br><span class="line">  <span class="comment">// If other browsers ever implement it, it's better to use it.</span></span><br><span class="line">  <span class="comment">// Although both of these would be inferior to native scheduling.</span></span><br><span class="line">  schedulePerformWorkUntilDeadline = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    localSetImmediate(performWorkUntilDeadline);</span><br><span class="line">  &#125;;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">typeof</span> MessageChannel !== <span class="string">'undefined'</span>) &#123;</span><br><span class="line">  <span class="comment">// DOM and Worker environments.</span></span><br><span class="line">  <span class="comment">// We prefer MessageChannel because of the 4ms setTimeout clamping.</span></span><br><span class="line">  <span class="keyword">const</span> channel = <span class="keyword">new</span> MessageChannel();</span><br><span class="line">  <span class="keyword">const</span> port = channel.port2;</span><br><span class="line">  channel.port1.onmessage = performWorkUntilDeadline;</span><br><span class="line">  schedulePerformWorkUntilDeadline = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    port.postMessage(<span class="literal">null</span>);</span><br><span class="line">  &#125;;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="comment">// We should only fallback here in non-browser environments.</span></span><br><span class="line">  schedulePerformWorkUntilDeadline = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    localSetTimeout(performWorkUntilDeadline, <span class="number">0</span>);</span><br><span class="line">  &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-任务调度器的入口函数"><a href="#3-任务调度器的入口函数" class="headerlink" title="3. 任务调度器的入口函数"></a>3. 任务调度器的入口函数</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 任务调度器的入口函数：并发模式下调度一个回调函数 【这里传入的callback就是performConcurrentWorkOnRoot】</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">unstable_scheduleCallback</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  priorityLevel: PriorityLevel,</span></span></span><br><span class="line"><span class="function"><span class="params">  callback: Callback,</span></span></span><br><span class="line"><span class="function"><span class="params">  options?: &#123;delay: number&#125;,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">Task</span> </span>&#123;</span><br><span class="line">  <span class="keyword">var</span> currentTime = getCurrentTime(); <span class="comment">// 获取当前程序执行时间，performance.now()</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> startTime; <span class="comment">// 定义任务开始时间，不是执行时间</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'object'</span> &amp;&amp; options !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">var</span> delay = options.delay;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">typeof</span> delay === <span class="string">'number'</span> &amp;&amp; delay &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="comment">// 如果存在延期，则开始时间 = 当前时间 + 延期时间</span></span><br><span class="line">      startTime = currentTime + delay;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 否则，开始时间 = 当前时间</span></span><br><span class="line">      startTime = currentTime;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 开始时间直接等于currentTime</span></span><br><span class="line">    startTime = currentTime;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 定义超时时间 【根据优先级，设置不同的超时时间】</span></span><br><span class="line">  <span class="keyword">var</span> timeout;</span><br><span class="line">  <span class="keyword">switch</span> (priorityLevel) &#123;</span><br><span class="line">    <span class="keyword">case</span> ImmediatePriority:</span><br><span class="line">      <span class="comment">// Times out immediately，立即超时</span></span><br><span class="line">      timeout = <span class="number">-1</span>;</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> UserBlockingPriority:</span><br><span class="line">      <span class="comment">// Eventually times out，最终超时</span></span><br><span class="line">      timeout = userBlockingPriorityTimeout; <span class="comment">// 250</span></span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> IdlePriority:</span><br><span class="line">      <span class="comment">// Never times out，永不超时</span></span><br><span class="line">      timeout = maxSigned31BitInt; <span class="comment">// Math.pow(2, 30) - 1， 最大的31位整数。V8中32位系统的最大整数。</span></span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> LowPriority:</span><br><span class="line">      <span class="comment">// Eventually times out，最终超时</span></span><br><span class="line">      timeout = lowPriorityTimeout; <span class="comment">// 10000</span></span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> NormalPriority:</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="comment">// Eventually times out，最终超时</span></span><br><span class="line">      timeout = normalPriorityTimeout; <span class="comment">// 5000</span></span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 过期时间，也是理论上的任务执行时间，值越小，说明优先级越高，需要优先执行</span></span><br><span class="line">  <span class="keyword">var</span> expirationTime = startTime + timeout;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> newTask: Task = &#123;</span><br><span class="line">    id: taskIdCounter++,</span><br><span class="line">    callback,</span><br><span class="line">    priorityLevel,</span><br><span class="line">    startTime,</span><br><span class="line">    expirationTime,</span><br><span class="line">    sortIndex: <span class="number">-1</span>, <span class="comment">// 调度执行任务的依据</span></span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 开始时间 大于当前时间：说明是延期任务，先加入到延时队列timerQueue</span></span><br><span class="line">  <span class="keyword">if</span> (startTime &gt; currentTime) &#123;</span><br><span class="line">    <span class="comment">// 有delay的任务</span></span><br><span class="line">    newTask.sortIndex = startTime; <span class="comment">// sortIndex是把任务从timerQueue中取出来放到taskQueue中的依据</span></span><br><span class="line">    push(timerQueue, newTask); <span class="comment">// 暂时存到timerQueue，等晚点到了执行时间，再放到taskQueue，再执行任务</span></span><br><span class="line">    <span class="keyword">if</span> (peek(taskQueue) === <span class="literal">null</span> &amp;&amp; newTask === peek(timerQueue)) &#123;</span><br><span class="line">      <span class="comment">// All tasks are delayed, and this is the task with the earliest delay.</span></span><br><span class="line">      <span class="comment">// 所有任务都延迟了，而这是延迟时间最短的任务。</span></span><br><span class="line">      <span class="keyword">if</span> (isHostTimeoutScheduled) &#123;</span><br><span class="line">        <span class="comment">// Cancel an existing timeout.</span></span><br><span class="line">        <span class="comment">// 取消现有的setTimeout</span></span><br><span class="line">        cancelHostTimeout();</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        isHostTimeoutScheduled = <span class="literal">true</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// Schedule a timeout.</span></span><br><span class="line">      <span class="comment">// setTimeout</span></span><br><span class="line">      requestHostTimeout(handleTimeout, startTime - currentTime);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 没有delay的任务，直接加入任务队列</span></span><br><span class="line">    newTask.sortIndex = expirationTime;</span><br><span class="line">    push(taskQueue, newTask);</span><br><span class="line">    <span class="comment">// Schedule a host callback, if needed. If we're already performing work,</span></span><br><span class="line">    <span class="comment">// wait until the next time we yield.</span></span><br><span class="line">    <span class="comment">// 如果需要的话，调度一个HostCallback。如果我们已经在执行work，就等到下次我们让出控制权的时候。</span></span><br><span class="line">    <span class="comment">// 判断host回调任务是否已经被调度，以及是否正在工作中，只有host回调任务还没有被调度 且 当前并未在工作中；才会开启一个新的host回调任务</span></span><br><span class="line">    <span class="comment">// 【首次加载时，需要调度一个host回调任务】</span></span><br><span class="line">    <span class="keyword">if</span> (!isHostCallbackScheduled &amp;&amp; !isPerformingWork) &#123;</span><br><span class="line">      isHostCallbackScheduled = <span class="literal">true</span>;</span><br><span class="line">      <span class="comment">// 设置host回调任务，触发localSetImmediate、MessageChannel或localSetTimeout，生成新的宏任务，在宏任务中执行工作循环workLoop</span></span><br><span class="line">      requestHostCallback();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> newTask;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-调度异步执行，创建新的宏任务"><a href="#4-调度异步执行，创建新的宏任务" class="headerlink" title="4. 调度异步执行，创建新的宏任务"></a>4. 调度异步执行，创建新的宏任务</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">requestHostCallback</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (!isMessageLoopRunning) &#123;</span><br><span class="line">    isMessageLoopRunning = <span class="literal">true</span>;</span><br><span class="line">    <span class="comment">// 调度异步执行，创建新的宏任务</span></span><br><span class="line">    schedulePerformWorkUntilDeadline();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-异步执行宏任务"><a href="#5-异步执行宏任务" class="headerlink" title="5. 异步执行宏任务"></a>5. 异步执行宏任务</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在有效时间内执行工作</span></span><br><span class="line"><span class="keyword">const</span> performWorkUntilDeadline = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> (isMessageLoopRunning) &#123;</span><br><span class="line">    <span class="keyword">const</span> currentTime = getCurrentTime();</span><br><span class="line">    <span class="comment">// Keep track of the start time so we can measure how long the main thread</span></span><br><span class="line">    <span class="comment">// has been blocked.</span></span><br><span class="line">    <span class="comment">// 记录了一个work的起始时间，其实就是一个时间切片的起始时间，是个时间戳</span></span><br><span class="line">    startTime = currentTime;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If a scheduler task throws, exit the current browser task so the</span></span><br><span class="line">    <span class="comment">// error can be observed.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Intentionally not using a try-catch, since that makes some debugging</span></span><br><span class="line">    <span class="comment">// techniques harder. Instead, if `flushWork` errors, then `hasMoreWork` will</span></span><br><span class="line">    <span class="comment">// remain true, and we'll continue the work loop.</span></span><br><span class="line">    <span class="keyword">let</span> hasMoreWork = <span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// 根据返回判断是否还有工作</span></span><br><span class="line">      hasMoreWork = flushWork(currentTime);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (hasMoreWork) &#123;</span><br><span class="line">        <span class="comment">// 如果还有任务,则又触发调度宏任务事件，生成新的宏任务，即在下一个event loop中继续执行任务</span></span><br><span class="line">        schedulePerformWorkUntilDeadline();</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        isMessageLoopRunning = <span class="literal">false</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// Yielding to the browser will give it a chance to paint, so we can</span></span><br><span class="line">  <span class="comment">// reset this.</span></span><br><span class="line">  needsPaint = <span class="literal">false</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">flushWork</span>(<span class="params">initialTime: number</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// We'll need a host callback the next time work is scheduled.</span></span><br><span class="line">  isHostCallbackScheduled = <span class="literal">false</span>;</span><br><span class="line">  <span class="keyword">if</span> (isHostTimeoutScheduled) &#123;</span><br><span class="line">    <span class="comment">// We scheduled a timeout but it's no longer needed. Cancel it.</span></span><br><span class="line">    isHostTimeoutScheduled = <span class="literal">false</span>;</span><br><span class="line">    cancelHostTimeout();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  isPerformingWork = <span class="literal">true</span>;</span><br><span class="line">  <span class="keyword">const</span> previousPriorityLevel = currentPriorityLevel;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> workLoop(initialTime);</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    currentTask = <span class="literal">null</span>;</span><br><span class="line">    currentPriorityLevel = previousPriorityLevel;</span><br><span class="line">    isPerformingWork = <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 有很多task，每个task都有一个callback，callback执行完了，就执行下一个task</span></span><br><span class="line"><span class="comment">// 一个work就是一个时间切片内执行的一些task</span></span><br><span class="line"><span class="comment">// 时间切片要循环，就是work要循环</span></span><br><span class="line"><span class="comment">// 返回为true，表示还有任务没有执行完，需要继续执行</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">workLoop</span>(<span class="params">initialTime: number</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">let</span> currentTime = initialTime;</span><br><span class="line">  <span class="comment">// 如果timerQueue中有*有效任务*到达执行时间，就放到taskQueue中</span></span><br><span class="line">  advanceTimers(currentTime);</span><br><span class="line">  <span class="comment">// 从任务队列中取出队列第一个任务【注意：taskQueue中是按任务的到期时间expirationTime排序的，越小越先执行】</span></span><br><span class="line">  currentTask = peek(taskQueue);</span><br><span class="line">  <span class="comment">// 循环从taskQueue中取出任务</span></span><br><span class="line">  <span class="keyword">while</span> (currentTask !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 【重点判断】</span></span><br><span class="line"><span class="comment">     * 1，如果当前任务到期时间 大于 当前时间，说明任务还未过期</span></span><br><span class="line"><span class="comment">     * 2，shouldYieldToHost为true应该暂停</span></span><br><span class="line"><span class="comment">     * 总结：如果同时满足这两个条件，即任务还没过期，但是没有剩余可执行时间了，就应该跳出本次工作循环，</span></span><br><span class="line"><span class="comment">     * 让出主线程，交给渲染流水线，等待下一个宏任务执行task</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (currentTask.expirationTime &gt; currentTime &amp;&amp; shouldYieldToHost()) &#123;</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 执行任务</span></span><br><span class="line">    <span class="keyword">const</span> callback = currentTask.callback;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">typeof</span> callback === <span class="string">'function'</span>) &#123;</span><br><span class="line">      <span class="comment">// 有效的任务</span></span><br><span class="line">      currentTask.callback = <span class="literal">null</span>;</span><br><span class="line">      currentPriorityLevel = currentTask.priorityLevel;</span><br><span class="line">      <span class="comment">// 是否属于过期的任务，可能存在还没过期的任务。</span></span><br><span class="line">      <span class="keyword">const</span> didUserCallbackTimeout = currentTask.expirationTime &lt;= currentTime;</span><br><span class="line">      <span class="comment">// 执行任务</span></span><br><span class="line">      <span class="keyword">const</span> continuationCallback = callback(didUserCallbackTimeout);</span><br><span class="line">      currentTime = getCurrentTime();</span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">typeof</span> continuationCallback === <span class="string">'function'</span>) &#123;</span><br><span class="line">        <span class="comment">// 如果执行完后又返回了 function，赋值给当前任务的callback</span></span><br><span class="line">        currentTask.callback = continuationCallback;</span><br><span class="line">        advanceTimers(currentTime);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 否则的话，将当前任务移除。中断在这个位置发生，高优先任务会把低优先任务的callback置空。</span></span><br><span class="line">        <span class="keyword">if</span> (currentTask === peek(taskQueue)) &#123;</span><br><span class="line">          pop(taskQueue);</span><br><span class="line">        &#125;</span><br><span class="line">        advanceTimers(currentTime);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      pop(taskQueue);</span><br><span class="line">    &#125;</span><br><span class="line">    currentTask = peek(taskQueue);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// Return whether there's additional work</span></span><br><span class="line">  <span class="keyword">if</span> (currentTask !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// 返回是否还有任务</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 说明 currentTask 执行完了</span></span><br><span class="line">    <span class="keyword">const</span> firstTimer = peek(timerQueue);</span><br><span class="line">    <span class="keyword">if</span> (firstTimer !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="comment">// 处理 timerQueue</span></span><br><span class="line">      requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Scheduler periodically yields in case there is other work on the main</span></span><br><span class="line"><span class="comment">// thread, like user events. By default, it yields multiple times per frame.</span></span><br><span class="line"><span class="comment">// It does not attempt to align with frame boundaries, since most tasks don't</span></span><br><span class="line"><span class="comment">// need to be frame aligned; for those that do, use requestAnimationFrame.</span></span><br><span class="line"><span class="keyword">let</span> frameInterval = frameYieldMs;</span><br><span class="line"><span class="keyword">const</span> continuousInputInterval = continuousYieldMs;</span><br><span class="line"><span class="keyword">const</span> maxInterval = maxYieldMs;</span><br><span class="line"><span class="keyword">let</span> startTime = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> continuousOptions = &#123;<span class="attr">includeContinuous</span>: enableIsInputPendingContinuous&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">advanceTimers</span>(<span class="params">currentTime: number</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// Check for tasks that are no longer delayed and add them to the queue.</span></span><br><span class="line">  <span class="keyword">let</span> timer = peek(timerQueue);</span><br><span class="line">  <span class="keyword">while</span> (timer !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (timer.callback === <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="comment">// 无效的任务</span></span><br><span class="line">      <span class="comment">// Timer was cancelled.</span></span><br><span class="line">      pop(timerQueue);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (timer.startTime &lt;= currentTime) &#123;</span><br><span class="line">      <span class="comment">// 有效的任务</span></span><br><span class="line">      <span class="comment">// 任务已到达开始时间，转入taskQueue中</span></span><br><span class="line">      <span class="comment">// Timer fired. Transfer to the task queue.</span></span><br><span class="line">      pop(timerQueue);</span><br><span class="line">      timer.sortIndex = timer.expirationTime;</span><br><span class="line">      push(taskQueue, timer);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Remaining timers are pending.</span></span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    timer = peek(timerQueue);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">handleTimeout</span>(<span class="params">currentTime: number</span>) </span>&#123;</span><br><span class="line">  isHostTimeoutScheduled = <span class="literal">false</span>;</span><br><span class="line">  <span class="comment">// 把延迟任务从timerQueue中推入taskQueue</span></span><br><span class="line">  advanceTimers(currentTime);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!isHostCallbackScheduled) &#123;</span><br><span class="line">    <span class="keyword">if</span> (peek(taskQueue) !== <span class="literal">null</span>) &#123;</span><br><span class="line">      isHostCallbackScheduled = <span class="literal">true</span>;</span><br><span class="line">      requestHostCallback();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> firstTimer = peek(timerQueue);</span><br><span class="line">      <span class="keyword">if</span> (firstTimer !== <span class="literal">null</span>) &#123;</span><br><span class="line">        requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">cancelCallback</span>(<span class="params">task: Task</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// Null out the callback to indicate the task has been canceled. (Can't</span></span><br><span class="line">  <span class="comment">// remove from the queue because you can't remove arbitrary nodes from an</span></span><br><span class="line">  <span class="comment">// array based heap, only the first one.)</span></span><br><span class="line">  task.callback = <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getCurrentPriorityLevel</span>(<span class="params"></span>): <span class="title">PriorityLevel</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> currentPriorityLevel;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">requestHostTimeout</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  callback: (currentTime: number</span>) =&gt; <span class="title">void</span>,</span></span><br><span class="line"><span class="function">  <span class="title">ms</span>: <span class="title">number</span>,</span></span><br><span class="line"><span class="function">) </span>&#123;</span><br><span class="line">  taskTimeoutID = localSetTimeout(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    callback(getCurrentTime());</span><br><span class="line">  &#125;, ms);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">cancelHostTimeout</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  localClearTimeout(taskTimeoutID);</span><br><span class="line">  taskTimeoutID = ((<span class="number">-1</span>: any): TimeoutID);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> &#123;</span><br><span class="line">  ImmediatePriority,</span><br><span class="line">  UserBlockingPriority,</span><br><span class="line">  NormalPriority,</span><br><span class="line">  IdlePriority,</span><br><span class="line">  LowPriority,</span><br><span class="line">  scheduleCallback,</span><br><span class="line">  cancelCallback,</span><br><span class="line">  getCurrentPriorityLevel,</span><br><span class="line">  shouldYieldToHost <span class="keyword">as</span> unstable_shouldYield,</span><br><span class="line">  getCurrentTime,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="核心流程图"><a href="#核心流程图" class="headerlink" title="核心流程图"></a>核心流程图</h2><h3 id="1-使用了-Scheduler-任务调度的流程图（Concurrent模式）"><a href="#1-使用了-Scheduler-任务调度的流程图（Concurrent模式）" class="headerlink" title="1. 使用了 Scheduler 任务调度的流程图（Concurrent模式）"></a>1. 使用了 Scheduler 任务调度的流程图（Concurrent模式）</h3><p><img src="../images/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/image.png" alt="alt text"></p>
+<h3 id="2-没有使用-Scheduler-任务调度的流程图（legacy模式）"><a href="#2-没有使用-Scheduler-任务调度的流程图（legacy模式）" class="headerlink" title="2. 没有使用 Scheduler 任务调度的流程图（legacy模式）"></a>2. 没有使用 Scheduler 任务调度的流程图（legacy模式）</h3><p><img src="../images/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/image-1.png" alt="alt text"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>一个比较泛的流程示例：<br><img src="../images/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/image-2.png" alt="alt text"></p>
+<ul>
+<li>在 React 中宏观来看，针对浏览器、Scheduler 、Reconciler 其实是有3层 Loop。浏览器级别的 eventLoop，Scheduler 级别的 workLoop，Reconciler 级别 workLoopConcurrent 。<ul>
+<li>浏览器的 eventLoop 与 Scheduler 的关系<ul>
+<li>每次 eventLoop 会执行宏任务的队列的宏任务，而 React 中的 Scheduler 就是用宏任务 setImmediate等 触发的。</li>
+<li>当 eventLoop 开始执行跟 Scheduler 有关的宏任务时，Scheduler 会启动一次 workLoop，就是在遍历执行 Scheduler 中已存在的 taskQueue 队列的每个 task。</li>
+</ul>
+</li>
+<li>Scheduler 与 Reconciler 的关系<ul>
+<li>Scheduler中的 workLoop 中每执行一次 task，是通过调用 Reconciler 中的 performConcurrentWorkOnRoot 方法，即每一个 task 可以理解为是一个 performConcurrentWorkOnRoot 方法的调用。</li>
+<li>performConcurrentWorkOnRoot 方法每次调用，其本质是在执行 workLoopConcurrent 方法，这个方法是在循环 performUnitOfWork 这个构建 Fiber 树中每个 Fiber 的方法。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>因此可以梳理出来，3个大循环，从最开始的 eventLoop 的单个宏任务执行，会逐步触发 Scheduler 和 Reconciler 的任务循环执行。</p>
+<ul>
+<li>任务的中断与恢复，实现中断与恢复的逻辑分了2个部分，第一个是 Scheduler 中正在执行的 workLoop 的任务中断，第二个是 Reconciler 中正在执行的 workLoopConcurrent 的任务中断<ul>
+<li>Reconciler 中的任务中断与恢复：在 workLoopConcurrent 的 while 循环中，通过 shouldYield() 方法来判断当前构建 fiber 树的执行过程是否超时，如果超时，则中断当前的 while 循环。由于每次 while 执行的 fiber 构建方法，即 performUnitOfWork 是按照每个 fiberNode 来遍历的，也就是说每完成一次 fiberNode 的 beginWork + completeWork 树的构建过程，会设置下一次 nextNode 的值 ，可以理解为中断时已经保留了下一次要构建的 fiberNode 指针，以至于不会下一次不知道从哪里继续。</li>
+<li>Scheduler 中的任务中断与恢复：当执行任务时间超时后，如果 Reconciler 中的 performConcurrentWorkOnRoot 方法没有执行完成，会返回其自身。在 Scheduler 中，发现当前任务还有下一个任务没有执行完，则不会将当前任务从 taskQueue 中取出，同时会把 reconciler 中返回的待执行的回调函数继续赋值给当前任务，于是下一次继续启动 Scheduler 的任务时，也就连接上了。同时退出这次中断的任务前，会通过 messageChannel 向 eventLoop 的宏任务队列放入一个新的宏任务。</li>
+<li>所以任务的恢复，其实就是从下一次 eventLoop 开始执行 Scheduler 相关的宏任务，而执行的宏任务也是 Reconciler 中断前赋值的 fiberNode，也就实现了整体的任务恢复。</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react18-2/" rel="tag"># react18.2</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/react%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89render-commit%E9%98%B6%E6%AE%B5.html" rel="prev" title="react18.2源码分析（四）render-commit阶段">
+      <i class="fa fa-chevron-left"></i> react18.2源码分析（四）render-commit阶段
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#核心算法-最小堆"><span class="nav-number">1.</span> <span class="nav-text">核心算法 - 最小堆</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#任务调度器"><span class="nav-number">2.</span> <span class="nav-text">任务调度器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-定义全局变量"><span class="nav-number">2.1.</span> <span class="nav-text">1. 定义全局变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-根据环境设置生成宏任务调度函数"><span class="nav-number">2.2.</span> <span class="nav-text">2. 根据环境设置生成宏任务调度函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-任务调度器的入口函数"><span class="nav-number">2.3.</span> <span class="nav-text">3. 任务调度器的入口函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-调度异步执行，创建新的宏任务"><span class="nav-number">2.4.</span> <span class="nav-text">4. 调度异步执行，创建新的宏任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-异步执行宏任务"><span class="nav-number">2.5.</span> <span class="nav-text">5. 异步执行宏任务</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心流程图"><span class="nav-number">3.</span> <span class="nav-text">核心流程图</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-使用了-Scheduler-任务调度的流程图（Concurrent模式）"><span class="nav-number">3.1.</span> <span class="nav-text">1. 使用了 Scheduler 任务调度的流程图（Concurrent模式）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-没有使用-Scheduler-任务调度的流程图（legacy模式）"><span class="nav-number">3.2.</span> <span class="nav-text">2. 没有使用 Scheduler 任务调度的流程图（legacy模式）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
