@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="1. 加载阶段1.1 updateClassComponentpackages&#x2F;react-reconciler&#x2F;src&#x2F;ReactFiberBeginWork.js 123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657function up">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react18.2类组件加载过程">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/react18.2%E7%B1%BB%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="1. 加载阶段1.1 updateClassComponentpackages&#x2F;react-reconciler&#x2F;src&#x2F;ReactFiberBeginWork.js 123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657function up">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-10-08T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="react18.2">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/react18.2%E7%B1%BB%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>react18.2类组件加载过程 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react18.2%E7%B1%BB%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          react18.2类组件加载过程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-10-09 00:00:00" itemprop="dateCreated datePublished" datetime="2024-10-09T00:00:00+08:00">2024-10-09</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="1-加载阶段"><a href="#1-加载阶段" class="headerlink" title="1. 加载阶段"></a>1. 加载阶段</h2><h3 id="1-1-updateClassComponent"><a href="#1-1-updateClassComponent" class="headerlink" title="1.1 updateClassComponent"></a>1.1 updateClassComponent</h3><p><font color=gray><em>packages/react-reconciler/src/ReactFiberBeginWork.js</em></font></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">updateClassComponent</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  current: Fiber | null,</span></span></span><br><span class="line"><span class="function"><span class="params">  workInProgress: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  Component: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  nextProps: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  renderLanes: Lanes,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>) </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">let</span> hasContext;</span><br><span class="line">  <span class="keyword">if</span> (isLegacyContextProvider(Component)) &#123;</span><br><span class="line">    hasContext = <span class="literal">true</span>;</span><br><span class="line">    pushLegacyContextProvider(workInProgress);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    hasContext = <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  prepareToReadContext(workInProgress, renderLanes);</span><br><span class="line">  <span class="comment">// 类组件节点的stateNode 不是存储dom元素，而是组件实例 【hostComponent的stateNode才是dom元素】</span></span><br><span class="line">  <span class="keyword">const</span> instance = workInProgress.stateNode;</span><br><span class="line">  <span class="keyword">let</span> shouldUpdate;</span><br><span class="line">  # 第一次class组件加载，instance都为null</span><br><span class="line">  <span class="keyword">if</span> (instance === <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// 初始化构建组件实例</span></span><br><span class="line">    constructClassInstance(workInProgress, Component, nextProps);</span><br><span class="line">    <span class="comment">// 加载组件实例</span></span><br><span class="line">    mountClassInstance(workInProgress, Component, nextProps, renderLanes);</span><br><span class="line">    shouldUpdate = <span class="literal">true</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (current === <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// In a resume, we'll already have an instance we can reuse.</span></span><br><span class="line">    shouldUpdate = resumeMountClassInstance(</span><br><span class="line">      workInProgress,</span><br><span class="line">      Component,</span><br><span class="line">      nextProps,</span><br><span class="line">      renderLanes,</span><br><span class="line">    );</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// update阶段：判断是否更新class组件</span></span><br><span class="line">    shouldUpdate = updateClassInstance(</span><br><span class="line">      current,</span><br><span class="line">      workInProgress,</span><br><span class="line">      Component,</span><br><span class="line">      nextProps,</span><br><span class="line">      renderLanes,</span><br><span class="line">    );</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  # 最后：创建class组件child</span><br><span class="line">  <span class="keyword">const</span> nextUnitOfWork = finishClassComponent(</span><br><span class="line">    current,</span><br><span class="line">    workInProgress,</span><br><span class="line">    Component,</span><br><span class="line">    shouldUpdate,</span><br><span class="line">    hasContext,</span><br><span class="line">    renderLanes,</span><br><span class="line">  );</span><br><span class="line">  # 返回child子节点</span><br><span class="line">  <span class="keyword">return</span> nextUnitOfWork;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>updateClassComponent</code> 方法的内容并不复杂，主要就是两个逻辑的执行：</p>
+<ol>
+<li>class组件实例的创建或者更新。</li>
+<li>创建组件的child子节点，最后返回子节点。</li>
+</ol>
+<h3 id="1-2-构建class组件实例-constructClassInstance"><a href="#1-2-构建class组件实例-constructClassInstance" class="headerlink" title="1.2 构建class组件实例 - constructClassInstance"></a>1.2 构建class组件实例 - constructClassInstance</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">constructClassInstance</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  workInProgress: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  ctor: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  props: any,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">any</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  # 创建class实例对象，参数为props和context</span><br><span class="line">  <span class="keyword">let</span> instance = <span class="keyword">new</span> ctor(props, context);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 将instance实例对象的state数据同步到Fiber节点的memoizedState属性</span></span><br><span class="line">  <span class="keyword">const</span> state = (workInProgress.memoizedState =</span><br><span class="line">    instance.state !== <span class="literal">null</span> &amp;&amp; instance.state !== <span class="literal">undefined</span></span><br><span class="line">      ? instance.state</span><br><span class="line">      : <span class="literal">null</span>);</span><br><span class="line"></span><br><span class="line">  # 确定class组件实例：即链接FiberNode与对应的组件实例</span><br><span class="line">  adoptClassInstance(workInProgress, instance);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// dev开发环境下的警告：如果class组件使用了过时的生命周期钩子，发出对应的警告</span></span><br><span class="line">  ...</span><br><span class="line"></span><br><span class="line">  # 返回创建完成的实例</span><br><span class="line">  <span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-1-adoptClassInstance"><a href="#1-2-1-adoptClassInstance" class="headerlink" title="1.2.1 adoptClassInstance"></a>1.2.1 adoptClassInstance</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">adoptClassInstance</span>(<span class="params">workInProgress: Fiber, instance: any</span>): <span class="title">void</span> </span>&#123;</span><br><span class="line">  instance.updater = classComponentUpdater;</span><br><span class="line">  <span class="comment">// Fiber节点存储instance实例</span></span><br><span class="line">  workInProgress.stateNode = instance;</span><br><span class="line">  <span class="comment">// instance对象定义一个_reactInternal内部属性存储Fiber节点</span></span><br><span class="line">  setInstance(instance, workInProgress);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-加载组件-mountClassInstance"><a href="#1-3-加载组件-mountClassInstance" class="headerlink" title="1.3 加载组件 - mountClassInstance"></a>1.3 加载组件 - mountClassInstance</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">mountClassInstance</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  workInProgress: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  ctor: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  newProps: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  renderLanes: Lanes,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">void</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 取出class组件实例</span></span><br><span class="line">  <span class="keyword">const</span> instance = workInProgress.stateNode;</span><br><span class="line">  <span class="comment">// props</span></span><br><span class="line">  instance.props = newProps;</span><br><span class="line">  <span class="comment">// 同步state数据</span></span><br><span class="line">  instance.state = workInProgress.memoizedState;</span><br><span class="line">  <span class="comment">// ref：默认为空对象</span></span><br><span class="line">  instance.refs = emptyRefsObject;</span><br><span class="line">  <span class="comment">// 初始化一个Fiber节点的更新队列</span></span><br><span class="line">  # 设置更新队列对象：fiber.updateQueue = queue;</span><br><span class="line">  initializeUpdateQueue(workInProgress);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 同步组件实例的state数据</span></span><br><span class="line">  instance.state = workInProgress.memoizedState;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> getDerivedStateFromProps = ctor.getDerivedStateFromProps;</span><br><span class="line">  <span class="comment">// 调用getDerivedStateFromProps钩子</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> getDerivedStateFromProps === <span class="string">'function'</span>) &#123;</span><br><span class="line">    applyDerivedStateFromProps(</span><br><span class="line">      workInProgress,</span><br><span class="line">      ctor,</span><br><span class="line">      getDerivedStateFromProps,</span><br><span class="line">      newProps,</span><br><span class="line">    );</span><br><span class="line">    instance.state = workInProgress.memoizedState;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// In order to support react-lifecycles-compat polyfilled components,</span></span><br><span class="line">  <span class="comment">// Unsafe lifecycles should not be invoked for components using the new APIs.</span></span><br><span class="line">  <span class="comment">// 不应该使用旧的生命周期钩子</span></span><br><span class="line">  <span class="keyword">if</span> (</span><br><span class="line">    <span class="keyword">typeof</span> ctor.getDerivedStateFromProps !== <span class="string">'function'</span> &amp;&amp;</span><br><span class="line">    <span class="keyword">typeof</span> instance.getSnapshotBeforeUpdate !== <span class="string">'function'</span> &amp;&amp;</span><br><span class="line">    (<span class="keyword">typeof</span> instance.UNSAFE_componentWillMount === <span class="string">'function'</span> ||</span><br><span class="line">      <span class="keyword">typeof</span> instance.componentWillMount === <span class="string">'function'</span>)</span><br><span class="line">  ) &#123;</span><br><span class="line">    # 触发WillMount生命周期钩子</span><br><span class="line">    callComponentWillMount(workInProgress, instance);</span><br><span class="line">    <span class="comment">// If we had additional state updates during this life-cycle, let's</span></span><br><span class="line">    <span class="comment">// process them now.</span></span><br><span class="line">    processUpdateQueue(workInProgress, newProps, instance, renderLanes);</span><br><span class="line">    instance.state = workInProgress.memoizedState;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  # 如果设置了class组件的componentDidMount生命周期钩子函数，则需要在组件的FiberNode上设置对应的flags</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> instance.componentDidMount === <span class="string">'function'</span>) &#123;</span><br><span class="line">    <span class="keyword">let</span> fiberFlags: Flags = Update;</span><br><span class="line">    <span class="keyword">if</span> (enableSuspenseLayoutEffectSemantics) &#123;</span><br><span class="line">      fiberFlags |= LayoutStatic;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    workInProgress.flags |= fiberFlags;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先更新了 <code>instance</code> 组件实例上的一些属性，然后初始化了当前组件 <code>Fiber</code> 节点的 <code>updateQueue</code> 属性：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">initializeUpdateQueue</span>&lt;<span class="title">State</span>&gt;(<span class="params">fiber: Fiber</span>): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 创建一个更新队列对象</span></span><br><span class="line">  <span class="keyword">const</span> queue: UpdateQueue&lt;State&gt; = &#123;</span><br><span class="line">    baseState: fiber.memoizedState, <span class="comment">// 初始state数据</span></span><br><span class="line">    firstBaseUpdate: <span class="literal">null</span>,</span><br><span class="line">    lastBaseUpdate: <span class="literal">null</span>,</span><br><span class="line">    shared: &#123;</span><br><span class="line">      pending: <span class="literal">null</span>, <span class="comment">// 存储update链表</span></span><br><span class="line">      lanes: NoLanes,</span><br><span class="line">    &#125;,</span><br><span class="line">    effects: <span class="literal">null</span>,</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 设置updateQueue属性</span></span><br><span class="line">  fiber.updateQueue = queue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就是针对 <code>componentWillMount</code> 生命周期钩子函数的处理，虽然是过时的API，但是如果定义了还是需要在这里触发。</p>
+<p>最后如果定义了 <code>componentDidMount</code> 钩子函数，则需要给该 <code>Fiber</code> 节点的 <code>flags</code> 属性设置对应的副作用标记。</p>
+<p><code>flags</code> 标记的作用是在 <code>commit</code> 阶段执行对应的副作用操作，所以 <code>componentDidMount</code> 钩子函数会在 <code>commit</code> 阶段中进行触发调用。</p>
+<p>到此，类组件的加载就完成了。</p>
+<h2 id="2-更新阶段"><a href="#2-更新阶段" class="headerlink" title="2. 更新阶段"></a>2. 更新阶段</h2><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># setState原理</span><br><span class="line">Component.prototype.setState = <span class="function"><span class="keyword">function</span>(<span class="params">partialState, callback</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// 调用updater中的一个方法</span></span><br><span class="line">  <span class="keyword">this</span>.updater.enqueueSetState(<span class="keyword">this</span>, partialState, callback, <span class="string">'setState'</span>);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-enqueueSetState"><a href="#2-1-enqueueSetState" class="headerlink" title="2.1 enqueueSetState"></a>2.1 enqueueSetState</h3><p><font color=gray><em>packages/react-reconciler/src/ReactFiberClassComponent.js</em></font></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> classComponentUpdater = &#123;</span><br><span class="line">  isMounted,</span><br><span class="line">  enqueueSetState(inst: any, <span class="attr">payload</span>: any, callback) &#123;</span><br><span class="line">    <span class="comment">// ! 1. 获取current和lane</span></span><br><span class="line">    <span class="keyword">const</span> fiber = getInstance(inst);</span><br><span class="line">    <span class="keyword">const</span> lane = requestUpdateLane(fiber);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ! 2. 创建update</span></span><br><span class="line">    <span class="keyword">const</span> update = createUpdate(lane);</span><br><span class="line">    update.payload = payload;</span><br><span class="line">    <span class="keyword">if</span> (callback !== <span class="literal">undefined</span> &amp;&amp; callback !== <span class="literal">null</span>) &#123;</span><br><span class="line">      update.callback = callback;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ! 3. update入队fiber.updateQueue中, 并返回应用的root根节点</span></span><br><span class="line">    <span class="keyword">const</span> root = enqueueUpdate(fiber, update, lane);</span><br><span class="line">    <span class="keyword">if</span> (root !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="comment">// ! 4. 调度更新(开启一个从root根节点开始的更新调度)</span></span><br><span class="line">      scheduleUpdateOnFiber(root, fiber, lane);</span><br><span class="line">      <span class="comment">// ! 5. 处理transitions，非紧急更新</span></span><br><span class="line">      entangleTransitions(root, fiber, lane);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (enableSchedulingProfiler) &#123;</span><br><span class="line">      markStateUpdateScheduled(fiber, lane);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  enqueueReplaceState(inst: any, <span class="attr">payload</span>: any, <span class="attr">callback</span>: <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">  &#125;,</span><br><span class="line">  enqueueForceUpdate(inst: any, callback) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-1-enqueueUpdate"><a href="#2-1-1-enqueueUpdate" class="headerlink" title="2.1.1 enqueueUpdate"></a>2.1.1 enqueueUpdate</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">enqueueUpdate</span>&lt;<span class="title">State</span>&gt;(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  fiber: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  update: Update&lt;State&gt;,</span></span></span><br><span class="line"><span class="function"><span class="params">  lane: Lane,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">FiberRoot</span> | <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> updateQueue = fiber.updateQueue;</span><br><span class="line">  <span class="keyword">const</span> sharedQueue: SharedQueue&lt;State&gt; = (updateQueue: any).shared;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> enqueueConcurrentClassUpdate(fiber, sharedQueue, update, lane);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-1-2-enqueueConcurrentClassUpdate"><a href="#2-1-2-enqueueConcurrentClassUpdate" class="headerlink" title="2.1.2 enqueueConcurrentClassUpdate"></a>2.1.2 enqueueConcurrentClassUpdate</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">enqueueConcurrentClassUpdate</span>(<span class="params">fiber, sharedQueue, update, lane</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> interleaved = sharedQueue.interleaved;</span><br><span class="line">  <span class="comment">// 第一个update对象入队</span></span><br><span class="line">  <span class="keyword">if</span> (interleaved === <span class="literal">null</span>) &#123;</span><br><span class="line">    update.next = update;</span><br><span class="line">    pushConcurrentUpdateQueue(sharedQueue);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 其他的update对象入队</span></span><br><span class="line">    update.next = interleaved.next;</span><br><span class="line">    interleaved.next = update;</span><br><span class="line">  &#125;</span><br><span class="line">  sharedQueue.interleaved = update;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>回到 <code>enqueueSetState</code> 方法中，这个方法最后会调用 <code>scheduleUpdateOnFiber</code> 函数进入更新的调度程序。</p>
+<h3 id="2-2-performSyncWorkOnRoot"><a href="#2-2-performSyncWorkOnRoot" class="headerlink" title="2.2 performSyncWorkOnRoot"></a>2.2 performSyncWorkOnRoot</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">performSyncWorkOnRoot</span>(<span class="params">root: FiberRoot, lanes: Lanes</span>): <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> ((executionContext &amp; (RenderContext | CommitContext)) !== NoContext) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">'Should not already be working.'</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> didFlushPassiveEffects = flushPassiveEffects();</span><br><span class="line">  <span class="keyword">if</span> (didFlushPassiveEffects) &#123;</span><br><span class="line">    <span class="comment">// If passive effects were flushed, exit to the outer work loop in the root</span></span><br><span class="line">    <span class="comment">// scheduler, so we can recompute the priority.</span></span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span> We don't actually need this `ensureRootIsScheduled` call because</span></span><br><span class="line">    <span class="comment">// this path is only reachable if the root is already part of the schedule.</span></span><br><span class="line">    <span class="comment">// I'm including it only for consistency with the other exit points from</span></span><br><span class="line">    <span class="comment">// this function. Can address in a subsequent refactor.</span></span><br><span class="line">    ensureRootIsScheduled(root);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (enableProfilerTimer &amp;&amp; enableProfilerNestedUpdatePhase) &#123;</span><br><span class="line">    syncNestedUpdateFlag();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// * setState</span></span><br><span class="line">  <span class="comment">// !1. render阶段</span></span><br><span class="line">  <span class="keyword">let</span> exitStatus = renderRootSync(root, lanes);</span><br><span class="line">  <span class="keyword">if</span> (root.tag !== LegacyRoot &amp;&amp; exitStatus === RootErrored) &#123;</span><br><span class="line">    <span class="comment">// If something threw an error, try rendering one more time. We'll render</span></span><br><span class="line">    <span class="comment">// synchronously to block concurrent data mutations, and we'll includes</span></span><br><span class="line">    <span class="comment">// all pending updates are included. If it still fails after the second</span></span><br><span class="line">    <span class="comment">// attempt, we'll give up and commit the resulting tree.</span></span><br><span class="line">    <span class="keyword">const</span> originallyAttemptedLanes = lanes;</span><br><span class="line">    <span class="keyword">const</span> errorRetryLanes = getLanesToRetrySynchronouslyOnError(</span><br><span class="line">      root,</span><br><span class="line">      originallyAttemptedLanes,</span><br><span class="line">    );</span><br><span class="line">    <span class="keyword">if</span> (errorRetryLanes !== NoLanes) &#123;</span><br><span class="line">      lanes = errorRetryLanes;</span><br><span class="line">      exitStatus = recoverFromConcurrentError(</span><br><span class="line">        root,</span><br><span class="line">        originallyAttemptedLanes,</span><br><span class="line">        errorRetryLanes,</span><br><span class="line">      );</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (exitStatus === RootFatalErrored) &#123;</span><br><span class="line">    <span class="keyword">const</span> fatalError = workInProgressRootFatalError;</span><br><span class="line">    prepareFreshStack(root, NoLanes);</span><br><span class="line">    markRootSuspended(root, lanes, NoLane);</span><br><span class="line">    ensureRootIsScheduled(root);</span><br><span class="line">    <span class="keyword">throw</span> fatalError;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (exitStatus === RootDidNotComplete) &#123;</span><br><span class="line">    <span class="comment">// The render unwound without completing the tree. This happens in special</span></span><br><span class="line">    <span class="comment">// cases where need to exit the current render without producing a</span></span><br><span class="line">    <span class="comment">// consistent tree or committing.</span></span><br><span class="line">    markRootSuspended(root, lanes, workInProgressDeferredLane);</span><br><span class="line">    ensureRootIsScheduled(root);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// We now have a consistent tree. Because this is a sync render, we</span></span><br><span class="line">  <span class="comment">// will commit it even if something suspended.</span></span><br><span class="line">  <span class="keyword">const</span> finishedWork: Fiber = (root.current.alternate: any);</span><br><span class="line">  root.finishedWork = finishedWork;</span><br><span class="line">  root.finishedLanes = lanes;</span><br><span class="line">  <span class="comment">// ! 2. commit阶段</span></span><br><span class="line">  commitRoot(</span><br><span class="line">    root,</span><br><span class="line">    workInProgressRootRecoverableErrors,</span><br><span class="line">    workInProgressTransitions,</span><br><span class="line">    workInProgressRootDidIncludeRecursiveRenderUpdate,</span><br><span class="line">    workInProgressDeferredLane,</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Before exiting, make sure there's a callback scheduled for the next</span></span><br><span class="line">  <span class="comment">// pending level.</span></span><br><span class="line">  ensureRootIsScheduled(root);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-updateClassInstance"><a href="#2-3-updateClassInstance" class="headerlink" title="2.3 updateClassInstance"></a>2.3 updateClassInstance</h3><p><font color=gray><em>packages/react-reconciler/src/ReactFiberClassComponent.js</em></font></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">updateClassInstance</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  current: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  workInProgress: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  ctor: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  newProps: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  renderLanes: Lanes,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">boolean</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>updateClassInstance</code> 方法里面的内容比较多，我们分成以下几个部分来分析</p>
+<h4 id="2-3-1-根据updateQueue计算state"><a href="#2-3-1-根据updateQueue计算state" class="headerlink" title="2.3.1 根据updateQueue计算state"></a>2.3.1 根据updateQueue计算state</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 取出组件实例</span></span><br><span class="line"><span class="keyword">const</span> instance = workInProgress.stateNode;</span><br><span class="line"># 从旧节点上克隆updateQueue信息，包含了shared.pending中等待处理的更新操作</span><br><span class="line">cloneUpdateQueue(current, workInProgress);</span><br><span class="line"><span class="comment">// 旧的props</span></span><br><span class="line"><span class="keyword">const</span> unresolvedOldProps = workInProgress.memoizedProps;</span><br><span class="line"><span class="keyword">const</span> oldProps =</span><br><span class="line">  workInProgress.type === workInProgress.elementType</span><br><span class="line">    ? unresolvedOldProps</span><br><span class="line">    : resolveDefaultProps(workInProgress.type, unresolvedOldProps);</span><br><span class="line">instance.props = oldProps;</span><br><span class="line"><span class="comment">// 新的props</span></span><br><span class="line"><span class="keyword">const</span> unresolvedNewProps = workInProgress.pendingProps;</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> getDerivedStateFromProps = ctor.getDerivedStateFromProps;</span><br><span class="line"><span class="keyword">const</span> hasNewLifecycles =</span><br><span class="line">  <span class="keyword">typeof</span> getDerivedStateFromProps === <span class="string">'function'</span> ||</span><br><span class="line">  <span class="keyword">typeof</span> instance.getSnapshotBeforeUpdate === <span class="string">'function'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 取出旧的数据</span></span><br><span class="line"><span class="keyword">const</span> oldState = workInProgress.memoizedState;</span><br><span class="line"><span class="keyword">let</span> newState = (instance.state = oldState);</span><br><span class="line"># 更新组件实例的数据</span><br><span class="line">processUpdateQueue(workInProgress, newProps, instance, renderLanes);</span><br><span class="line">newState = workInProgress.memoizedState;</span><br></pre></td></tr></table></figure>
+<p>首先处理之前的 <code>updateQueue</code> 信息：</p>
+<p>这里就是将 <code>current</code> 节点中的 <code>updateQueue</code> 信息克隆到 <code>workInProgress</code> 节点中对应的属性中。<br><strong>注意：</strong>react应用每次更新都会执行Fiber Reconciler流程【即FiberTree的创建流程】，在进入此流程之前，current节点会存储本次更新相关的一些信息，但是在进入此流程之后，current就变成了旧的节点，workInProgress代表新建的节点，此时就需要将current节点上的一些信息保存到新的节点之中，也就是对应的workInProgress。</p>
+<p>从class类中取出 <code>getDerivedStateFromProps</code> 钩子，判断当前类组件有没有使用此钩子，如果没有使用则设置变量 <code>hasNewLifecycles</code> 为 <code>false</code>，此变量的作用是后续判断其他生命周期钩子的执行与否。</p>
+<p>下面开始对state的处理：</p>
+<ol>
+<li>首先取出旧的state数据：</li>
+<li>重点：调用processUpdateQueue方法，根据updateQueue信息，计算生成新的state数据。</li>
+</ol>
+<h5 id="2-3-1-1-processUpdateQueue"><a href="#2-3-1-1-processUpdateQueue" class="headerlink" title="2.3.1.1 processUpdateQueue"></a>2.3.1.1 processUpdateQueue</h5><p><font color=gray><em>packages/react-reconciler/src/ReactFiberClassUpdateQueue.js</em></font></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">processUpdateQueue</span>&lt;<span class="title">State</span>&gt;(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  workInProgress: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  props: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  instance: any,</span></span></span><br><span class="line"><span class="function"><span class="params">  renderLanes: Lanes,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">void</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> queue = workInProgress.updateQueue;</span><br><span class="line">  <span class="keyword">let</span> firstBaseUpdate = queue.firstBaseUpdate; <span class="comment">// 第一个处理的update，一个完整指向的队列</span></span><br><span class="line">  <span class="keyword">let</span> lastBaseUpdate = queue.lastBaseUpdate; <span class="comment">// 最后一个处理的update</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// Check if there are pending updates. If so, transfer them to the base queue.</span></span><br><span class="line">  <span class="comment">// pending：等待处理的更新操作</span></span><br><span class="line">  <span class="comment">// 如果pending存在内容，则重置它，将它的内容转移到基础队列 firstBaseUpdate</span></span><br><span class="line">  <span class="keyword">let</span> pendingQueue = queue.shared.pending;</span><br><span class="line">  <span class="keyword">if</span> (pendingQueue !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// 重置pending：因为workInProgress和current同用一个shared对象，所以current的pengding也重置了</span></span><br><span class="line">    queue.shared.pending = <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">    # 重构pendingQueue，将单向环状链表变成普通的单向链表</span><br><span class="line">    <span class="comment">// 最后处理的update对象</span></span><br><span class="line">    <span class="keyword">const</span> lastPendingUpdate = pendingQueue;</span><br><span class="line">    <span class="comment">// 第一个处理的update对象</span></span><br><span class="line">    <span class="keyword">const</span> firstPendingUpdate = lastPendingUpdate.next;</span><br><span class="line">    <span class="comment">// 断开链接：最后一个update不再指向第一个update，形成一个单向链表，不再首尾相连</span></span><br><span class="line">    lastPendingUpdate.next = <span class="literal">null</span>;</span><br><span class="line">    <span class="comment">// Append pending updates to base queue</span></span><br><span class="line">    <span class="comment">// 将等待处理的更新对象添加到firstBaseUpdate基础更新队列</span></span><br><span class="line">    <span class="keyword">if</span> (lastBaseUpdate === <span class="literal">null</span>) &#123;</span><br><span class="line">      firstBaseUpdate = firstPendingUpdate;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      lastBaseUpdate.next = firstPendingUpdate;</span><br><span class="line">    &#125;</span><br><span class="line">    lastBaseUpdate = lastPendingUpdate;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// These values may change as we process the queue.</span></span><br><span class="line">  <span class="comment">// 当我们处理队列时，这些值可能会发生变化。</span></span><br><span class="line">  <span class="keyword">if</span> (firstBaseUpdate !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// Iterate through the list of updates to compute the result.</span></span><br><span class="line">    <span class="keyword">let</span> newState = queue.baseState;</span><br><span class="line">    <span class="keyword">let</span> newLanes = NoLanes;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> newBaseState = <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">let</span> newFirstBaseUpdate = <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">let</span> newLastBaseUpdate = <span class="literal">null</span>;</span><br><span class="line">    # 第一个更新的update</span><br><span class="line">    <span class="keyword">let</span> update = firstBaseUpdate;</span><br><span class="line"></span><br><span class="line">    # 循环update链表计算state</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">      <span class="comment">// <span class="doctag">TODO:</span> Don't need this field anymore</span></span><br><span class="line">      <span class="keyword">const</span> updateEventTime = update.eventTime;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">const</span> updateLane = removeLanes(update.lane, OffscreenLane);</span><br><span class="line">      <span class="keyword">const</span> isHiddenUpdate = updateLane !== update.lane;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 根据每个update对象的lane来判断是否更新：</span></span><br><span class="line">      <span class="comment">// 检查此更新update是否是在隐藏树时进行的。如果是，组件在隐藏时不需要更新</span></span><br><span class="line">      <span class="comment">// 跳过更新</span></span><br><span class="line">      <span class="keyword">const</span> shouldSkipUpdate = isHiddenUpdate</span><br><span class="line">        ? !isSubsetOfLanes(getWorkInProgressRootRenderLanes(), updateLane)</span><br><span class="line">        : !isSubsetOfLanes(renderLanes, updateLane);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (shouldSkipUpdate) &#123;</span><br><span class="line">        <span class="comment">// 不必更新【跳过更新】</span></span><br><span class="line">		...</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// This update does have sufficient priority.</span></span><br><span class="line">        <span class="comment">// 此更新具有足够的优先级【正常更新】</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (newLastBaseUpdate !== <span class="literal">null</span>) &#123;</span><br><span class="line">          <span class="keyword">const</span> clone: Update&lt;State&gt; = &#123;</span><br><span class="line">            eventTime: updateEventTime,</span><br><span class="line">            <span class="comment">// This update is going to be committed so we never want uncommit</span></span><br><span class="line">            <span class="comment">// it. Using NoLane works because 0 is a subset of all bitmasks, so</span></span><br><span class="line">            <span class="comment">// this will never be skipped by the check above.</span></span><br><span class="line">            lane: NoLane,</span><br><span class="line"></span><br><span class="line">            tag: update.tag,</span><br><span class="line">            payload: update.payload,</span><br><span class="line">            callback: update.callback,</span><br><span class="line"></span><br><span class="line">            next: <span class="literal">null</span>,</span><br><span class="line">          &#125;;</span><br><span class="line">          newLastBaseUpdate = newLastBaseUpdate.next = clone;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Process this update.</span></span><br><span class="line">        # 处理当前update对象</span><br><span class="line">        newState = getStateFromUpdate(</span><br><span class="line">          workInProgress,</span><br><span class="line">          queue,</span><br><span class="line">          update,</span><br><span class="line">          newState,</span><br><span class="line">          props,</span><br><span class="line">          instance,</span><br><span class="line">        );</span><br><span class="line">        <span class="keyword">const</span> callback = update.callback;</span><br><span class="line">        <span class="comment">// If the update was already committed, we should not queue its</span></span><br><span class="line">        <span class="comment">// callback again.</span></span><br><span class="line">        # 如果存在回调函数，则添加到队列的effects数组中，表示有副作用等待执行</span><br><span class="line">        <span class="keyword">if</span> (callback !== <span class="literal">null</span> &amp;&amp; update.lane !== NoLane) &#123;</span><br><span class="line">          workInProgress.flags |= Callback;</span><br><span class="line">          <span class="keyword">const</span> effects = queue.effects;</span><br><span class="line">          <span class="keyword">if</span> (effects === <span class="literal">null</span>) &#123;</span><br><span class="line">            queue.effects = [update];</span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            effects.push(update);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 更新update为下一个等待处理的对象</span></span><br><span class="line">      update = update.next;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// update有值，开启下一次循环</span></span><br><span class="line">      <span class="keyword">if</span> (update === <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 如果为null，代表链表执行完成，退出循环，表示本次更新state计算完成</span></span><br><span class="line">        pendingQueue = queue.shared.pending;</span><br><span class="line">        <span class="keyword">if</span> (pendingQueue === <span class="literal">null</span>) &#123;</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">// An update was scheduled from inside a reducer. Add the new</span></span><br><span class="line">          <span class="comment">// pending updates to the end of the list and keep processing.</span></span><br><span class="line">          <span class="keyword">const</span> lastPendingUpdate = pendingQueue;</span><br><span class="line">          <span class="comment">// Intentionally unsound. Pending updates form a circular list, but we</span></span><br><span class="line">          <span class="comment">// unravel them when transferring them to the base queue.</span></span><br><span class="line">          <span class="keyword">const</span> firstPendingUpdate = ((lastPendingUpdate.next: any): Update&lt;State&gt;);</span><br><span class="line">          lastPendingUpdate.next = <span class="literal">null</span>;</span><br><span class="line">          update = firstPendingUpdate;</span><br><span class="line">          queue.lastBaseUpdate = lastPendingUpdate;</span><br><span class="line">          queue.shared.pending = <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> (<span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (newLastBaseUpdate === <span class="literal">null</span>) &#123;</span><br><span class="line">      newBaseState = newState;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    queue.baseState = ((newBaseState: any): State);</span><br><span class="line">    queue.firstBaseUpdate = newFirstBaseUpdate;</span><br><span class="line">    queue.lastBaseUpdate = newLastBaseUpdate;</span><br><span class="line"></span><br><span class="line">    markSkippedUpdateLanes(newLanes);</span><br><span class="line">    workInProgress.lanes = newLanes;</span><br><span class="line">    <span class="comment">// 更新state数据</span></span><br><span class="line">    workInProgress.memoizedState = newState;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-3-2-调用getDerivedStateFromProps钩子"><a href="#2-3-2-调用getDerivedStateFromProps钩子" class="headerlink" title="2.3.2 调用getDerivedStateFromProps钩子"></a>2.3.2 调用getDerivedStateFromProps钩子</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">typeof</span> getDerivedStateFromProps === <span class="string">'function'</span>) &#123;</span><br><span class="line">  <span class="comment">// 调用getDerivedStateFromProps钩子</span></span><br><span class="line">  applyDerivedStateFromProps(</span><br><span class="line">    workInProgress,</span><br><span class="line">    ctor,</span><br><span class="line">    getDerivedStateFromProps,</span><br><span class="line">    newProps,</span><br><span class="line">  );</span><br><span class="line">  newState = workInProgress.memoizedState;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果类组件定义了 <code>getDerivedStateFromProps</code> 钩子函数，则在此触发此回调。</p>
+<h4 id="2-3-3-调用shouldComponentUpdate钩子，检查组件是否应该更新"><a href="#2-3-3-调用shouldComponentUpdate钩子，检查组件是否应该更新" class="headerlink" title="2.3.3 调用shouldComponentUpdate钩子，检查组件是否应该更新"></a>2.3.3 调用shouldComponentUpdate钩子，检查组件是否应该更新</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> shouldUpdate =</span><br><span class="line">    <span class="comment">// 检查是否为强制更新</span></span><br><span class="line">    checkHasForceUpdateAfterProcessing() ||</span><br><span class="line">    <span class="comment">// 调用shouldComponentUpdate钩子，检查是否应该更新</span></span><br><span class="line">    checkShouldComponentUpdate( workInProgress, ctor, oldProps, newProps, oldState, newState, nextContext)</span><br></pre></td></tr></table></figure>
+
+
+<h5 id="2-3-3-1-checkHasForceUpdateAfterProcessing"><a href="#2-3-3-1-checkHasForceUpdateAfterProcessing" class="headerlink" title="2.3.3.1 checkHasForceUpdateAfterProcessing"></a>2.3.3.1 checkHasForceUpdateAfterProcessing</h5><p><code>checkHasForceUpdateAfterProcessing</code> 方法返回一个变量的状态：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">checkHasForceUpdateAfterProcessing</span>(<span class="params"></span>): <span class="title">boolean</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> hasForceUpdate;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>hasForceUpdate</code> 是一个全局变量，它默认为 <code>false</code> ，表示非强制更新，它的修改就在之前计算state的逻辑中：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">newState = getStateFromUpdate(...)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getStateFromUpdate</span>&lt;<span class="title">State</span>&gt;(<span class="params"></span>) </span>&#123;</span><br><span class="line">	<span class="keyword">switch</span> (update.tag) &#123;</span><br><span class="line">		<span class="keyword">case</span> ReplaceState: &#123;&#125;</span><br><span class="line">		<span class="keyword">case</span> CaptureUpdate: &#123;&#125;</span><br><span class="line">		<span class="keyword">case</span> UpdateState: &#123;&#125;</span><br><span class="line">		<span class="comment">// 强制更新 场景</span></span><br><span class="line">		<span class="keyword">case</span> ForceUpdate: &#123;</span><br><span class="line">      		hasForceUpdate = <span class="literal">true</span>;</span><br><span class="line">      		<span class="keyword">return</span> prevState;</span><br><span class="line">    	&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果为 <code>this.forceUpdate</code> 触发的场景，就会进入 <code>ForceUpdate</code> 分支，更新变量 <code>hasForceUpdate</code> 的值为 <code>true</code>。</p>
+<p>这时在校验组件是否应该更新时，就会返回 <code>true</code>，代表组件需要更新。</p>
+<p>而我们当前是通过 <code>this.setState</code> 修改数据触发的更新，所以当前 <code>hasForceUpdate</code> 是为 <code>false</code> 的，这也是绝大部分类组件更新的场景。</p>
+<h5 id="2-3-3-2-checkShouldComponentUpdate"><a href="#2-3-3-2-checkShouldComponentUpdate" class="headerlink" title="2.3.3.2 checkShouldComponentUpdate"></a>2.3.3.2 checkShouldComponentUpdate</h5><p>查看 <code>checkShouldComponentUpdate</code>：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">checkShouldComponentUpdate</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  workInProgress,</span></span></span><br><span class="line"><span class="function"><span class="params">  ctor,</span></span></span><br><span class="line"><span class="function"><span class="params">  oldProps,</span></span></span><br><span class="line"><span class="function"><span class="params">  newProps,</span></span></span><br><span class="line"><span class="function"><span class="params">  oldState,</span></span></span><br><span class="line"><span class="function"><span class="params">  newState,</span></span></span><br><span class="line"><span class="function"><span class="params">  nextContext,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> instance = workInProgress.stateNode;</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> instance.shouldComponentUpdate === <span class="string">'function'</span>) &#123;</span><br><span class="line">    <span class="keyword">let</span> shouldUpdate = instance.shouldComponentUpdate(</span><br><span class="line">      newProps,</span><br><span class="line">      newState,</span><br><span class="line">      nextContext,</span><br><span class="line">    );</span><br><span class="line">    <span class="keyword">return</span> shouldUpdate;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 针对PureComponent纯组件的 内部校验</span></span><br><span class="line">  <span class="keyword">if</span> (ctor.prototype &amp;&amp; ctor.prototype.isPureReactComponent) &#123;</span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">      !shallowEqual(oldProps, newProps) || !shallowEqual(oldState, newState)</span><br><span class="line">    );</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>checkShouldComponentUpdate</code> 方法也比较简单，主要就是调用一次我们定义的 <code>shouldComponentUpdate</code> 钩子，根据调用的返回值来决定类组件是否应该更新，如果我们没有使用 <code>shouldComponentUpdate</code> 钩子，则类组件是默认需要更新的。</p>
+<p>同时在这里我们还可以发现有一个针对 <code>PureComponent</code> 纯组件的更新校验，这其实就是 <code>PureComponent</code> 和 <code>Component</code> 唯一的区别，纯组件 <code>PureComponent</code>在react内部自动帮助我们对 <code>props</code> 和 <code>state</code> 进行了浅比较，任何一个变化则返回 <code>true</code>，需要更新组件。</p>
+<h4 id="2-3-4-为组件Fiber的flags属性设置componentDidUpdate和getSnapshotBeforeUpdate副作用标记"><a href="#2-3-4-为组件Fiber的flags属性设置componentDidUpdate和getSnapshotBeforeUpdate副作用标记" class="headerlink" title="2.3.4 为组件Fiber的flags属性设置componentDidUpdate和getSnapshotBeforeUpdate副作用标记"></a>2.3.4 为组件Fiber的flags属性设置componentDidUpdate和getSnapshotBeforeUpdate副作用标记</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 执行componentWillUpdate钩子</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">typeof</span> instance.componentWillUpdate === <span class="string">'function'</span>) &#123;</span><br><span class="line">	instance.componentWillUpdate(newProps, newState, nextContext);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 更新flags标记</span></span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">typeof</span> instance.componentDidUpdate === <span class="string">'function'</span>) &#123;</span><br><span class="line">	workInProgress.flags |= Update;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">typeof</span> instance.getSnapshotBeforeUpdate === <span class="string">'function'</span>) &#123;</span><br><span class="line">	workInProgress.flags |= Snapshot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果类组件定义了 <code>componentWillUpdate</code> 生命周期钩子函数，则会在此处调用此函数。</p>
+<p>然后如果类组件定义了 <code>componentDidUpdate</code> 或者 <code>getSnapshotBeforeUpdate</code> 生命周期钩子函数，就会更新组件 <code>Fiber</code> 的 <code>flags</code> 副作用标记。</p>
+<p>这些生命周期钩子会在commit阶段，真实DOM渲染完成之后，被触发执行。</p>
+<p>最后同步更新组件实例instance的props和state：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">instance.props = newProps;</span><br><span class="line">instance.state = newState;</span><br></pre></td></tr></table></figure>
+
+<p>到此，一个类组件的更新程序基本执行完成。</p>
+<h3 id="2-4-commit阶段"><a href="#2-4-commit阶段" class="headerlink" title="2.4 commit阶段"></a>2.4 commit阶段</h3><p>前面全部的加载逻辑都是在Fiber Reconciler协调流程中执行的，即类组件大部分的加载或者更新逻辑都是在reconciler协调流程中完成的，还有剩下的一部分逻辑在commit阶段之中处理。</p>
+<p>对于类组件的更新来说，在commit阶段主要还有以下两部分逻辑需要处理：</p>
+<ol>
+<li>执行类组件的 <code>componentDidUpdate</code> 生命周期钩子函数。</li>
+<li>执行 <code>this.setState</code> 方法传入的回调函数。</li>
+</ol>
+<p><font color=gray><em>packages/react-reconciler/src/ReactFiberCommitWork.js</em></font></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">commitLayoutEffectOnFiber</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  finishedRoot: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  current: Fiber | null,</span></span></span><br><span class="line"><span class="function"><span class="params">  finishedWork: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  committedLanes: Lanes,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> ((finishedWork.flags &amp; LayoutMask) !== NoFlags) &#123;</span><br><span class="line">    <span class="comment">// 根据组件类型：进行不同的处理</span></span><br><span class="line">    <span class="keyword">switch</span> (finishedWork.tag) &#123;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 类组件的处理</span></span><br><span class="line">      <span class="keyword">case</span> ClassComponent: &#123;</span><br><span class="line">        <span class="comment">// 组件实例</span></span><br><span class="line">        <span class="keyword">const</span> instance = finishedWork.stateNode;</span><br><span class="line">        <span class="keyword">if</span> (finishedWork.flags &amp; Update) &#123;</span><br><span class="line">          <span class="keyword">if</span> (!offscreenSubtreeWasHidden) &#123;</span><br><span class="line">            <span class="keyword">if</span> (current === <span class="literal">null</span>) &#123;</span><br><span class="line">			  <span class="comment">// mount加载阶段</span></span><br><span class="line"></span><br><span class="line">              # 触发componentDidMount 生命周期钩子函数【这类静态方法：是存储在instance对象原型上的】</span><br><span class="line">              instance.componentDidMount();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">              <span class="comment">// update更新阶段</span></span><br><span class="line">              <span class="keyword">const</span> prevProps = finishedWork.elementType === finishedWork.type ? current.memoizedProps</span><br><span class="line">                  : resolveDefaultProps( finishedWork.type, current.memoizedProps);</span><br><span class="line">              <span class="keyword">const</span> prevState = current.memoizedState;</span><br><span class="line">			  # 触发componentDidUpdate 生命周期钩子函数</span><br><span class="line">              instance.componentDidUpdate( prevProps,prevState,</span><br><span class="line">                  instance.__reactInternalSnapshotBeforeUpdate,</span><br><span class="line">                );</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        # 取出当前组件节点的updateQueue更新对象</span><br><span class="line">        <span class="keyword">const</span> updateQueue: UpdateQueue = finishedWork.updateQueue;</span><br><span class="line">        <span class="keyword">if</span> (updateQueue !== <span class="literal">null</span>) &#123;</span><br><span class="line">          <span class="comment">// 触发更新</span></span><br><span class="line">          commitUpdateQueue(finishedWork, updateQueue, instance);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>finishedWork代表当前处理的类组件Fiber节点，首先从fiber.stateNode属性中取出组件实例instance。然后根据进行判断，只有存在相关的副作用标记才会继续内部的逻辑：</p>
+<p>然后判断current是否为null，current表示旧的虚拟DOM节点，在组件的更新阶段，它肯定是存在的。然后直接调用 <code>componentDidUpdate</code> 生命周期钩子函数即可。</p>
+<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3. 总结"></a>3. 总结</h2><p>类组件的更新逻辑主要内容是以下两点：</p>
+<ol>
+<li><code>reconciler</code> 协调流程中循环 <code>update</code> 链表计算出最新的 <code>state</code>。</li>
+<li><code>commit</code> 阶段中触发 <code>componentDidUpdate</code> 生命周期钩子函数以及循环执行 <code>this.setState</code> 的回调。</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react18-2/" rel="tag"># react18.2</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html" rel="prev" title="react18.2调度器scheduler源码分析">
+      <i class="fa fa-chevron-left"></i> react18.2调度器scheduler源码分析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-加载阶段"><span class="nav-number">1.</span> <span class="nav-text">1. 加载阶段</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-updateClassComponent"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 updateClassComponent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-构建class组件实例-constructClassInstance"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 构建class组件实例 - constructClassInstance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-1-adoptClassInstance"><span class="nav-number">1.3.</span> <span class="nav-text">1.2.1 adoptClassInstance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-加载组件-mountClassInstance"><span class="nav-number">1.4.</span> <span class="nav-text">1.3 加载组件 - mountClassInstance</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-更新阶段"><span class="nav-number">2.</span> <span class="nav-text">2. 更新阶段</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-enqueueSetState"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 enqueueSetState</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-1-enqueueUpdate"><span class="nav-number">2.1.1.</span> <span class="nav-text">2.1.1 enqueueUpdate</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-2-enqueueConcurrentClassUpdate"><span class="nav-number">2.1.2.</span> <span class="nav-text">2.1.2 enqueueConcurrentClassUpdate</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-performSyncWorkOnRoot"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 performSyncWorkOnRoot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-updateClassInstance"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 updateClassInstance</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-1-根据updateQueue计算state"><span class="nav-number">2.3.1.</span> <span class="nav-text">2.3.1 根据updateQueue计算state</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#2-3-1-1-processUpdateQueue"><span class="nav-number">2.3.1.1.</span> <span class="nav-text">2.3.1.1 processUpdateQueue</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-2-调用getDerivedStateFromProps钩子"><span class="nav-number">2.3.2.</span> <span class="nav-text">2.3.2 调用getDerivedStateFromProps钩子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-3-调用shouldComponentUpdate钩子，检查组件是否应该更新"><span class="nav-number">2.3.3.</span> <span class="nav-text">2.3.3 调用shouldComponentUpdate钩子，检查组件是否应该更新</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#2-3-3-1-checkHasForceUpdateAfterProcessing"><span class="nav-number">2.3.3.1.</span> <span class="nav-text">2.3.3.1 checkHasForceUpdateAfterProcessing</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-3-3-2-checkShouldComponentUpdate"><span class="nav-number">2.3.3.2.</span> <span class="nav-text">2.3.3.2 checkShouldComponentUpdate</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-4-为组件Fiber的flags属性设置componentDidUpdate和getSnapshotBeforeUpdate副作用标记"><span class="nav-number">2.3.4.</span> <span class="nav-text">2.3.4 为组件Fiber的flags属性设置componentDidUpdate和getSnapshotBeforeUpdate副作用标记</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-commit阶段"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 commit阶段</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-总结"><span class="nav-number">3.</span> <span class="nav-text">3. 总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

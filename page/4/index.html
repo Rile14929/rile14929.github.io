@@ -164,6 +164,136 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/hexo-github.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/hexo-github.html" class="post-title-link" itemprop="url">Mac下使用Hexo+Github搭建个人博客</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-24 00:00:00" itemprop="dateCreated datePublished" datetime="2020-04-24T00:00:00+08:00">2020-04-24</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h4 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h4><p>Hexo是一个快速、简洁且高效的博客框架，最近有搭建个人博客的想法，便动手尝试了。</p>
+<h4 id="二、初始化"><a href="#二、初始化" class="headerlink" title="二、初始化"></a>二、初始化</h4><h5 id="1-安装Node-js"><a href="#1-安装Node-js" class="headerlink" title="1.安装Node.js"></a>1.安装Node.js</h5><p>去<a href="https://nodejs.org/zh-cn/download/" target="_blank" rel="noopener">Node.js官网</a>下载相应的安装包，一路安装即可。</p>
+<h5 id="2-安装Git"><a href="#2-安装Git" class="headerlink" title="2.安装Git"></a>2.安装Git</h5><p>Mac下安装Xcode就自带Git。</p>
+<h5 id="3-注册Github账号并新建仓库"><a href="#3-注册Github账号并新建仓库" class="headerlink" title="3.注册Github账号并新建仓库"></a>3.注册Github账号并新建仓库</h5><p>注册过程就不多说了，注册完成之后需要新建一个仓库。需要注意的是新创建的仓库的名字，必须是username.github.io。例如我的username是rile，那么新创建的仓库的名字便是rile.github.io。</p>
+<h5 id="4-配置SSH-Key"><a href="#4-配置SSH-Key" class="headerlink" title="4.配置SSH Key"></a>4.配置SSH Key</h5><p>这一步不是必须的，配置SSH Key的话之后每次更新博客就不用都输入用户名和密码，可以方便一些。</p>
+<p>以下是详细配置过程。<br> (1)检查本机上是否已经存在SSH Key<br> 打开终端，输入如下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> .ssh</span><br><span class="line">ls -la</span><br></pre></td></tr></table></figure>
+
+<p>检查终端输出的文件列表中是否已经存在id_rsa.pub 或 id_dsa.pub 文件，如果文件已经存在，则直接进入第三步。</p>
+<p>(2)创建一个SSH Key<br> 在终端输入如下命令</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">ssh-keygen</span> <span class="selector-tag">-t</span> <span class="selector-tag">rsa</span> <span class="selector-tag">-C</span> "<span class="selector-tag">your_email</span><span class="keyword">@example</span>.com"</span><br></pre></td></tr></table></figure>
+
+<p>按下回车，让你输入文件名，直接回车会创建使用默认文件名的文件(推荐使用默认文件名)，然后会提示你输入两次密码，可以为空。</p>
+<p>(3)添加SSH Key到Github</p>
+<p>如果你没有指定文件名（也就是使用的默认文件名），那么你的.ssh文件夹下，应该有一个id_rsa.pub文件了，打开该文件，复制里面的文本。然后登录Github，点击右上角头像右边的三角图标，点击Settings，然后在左边菜单栏点击SSH and GPG keys，点击New SSH key，Title 随便填一个，在Key栏填入你复制的内容，点击Add SSH key，就添加成功了。</p>
+<p>(4)检验SSH Key是否配置成功<br> 在终端输入如下命令</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">ssh</span> <span class="selector-tag">-T</span> <span class="selector-tag">git</span><span class="keyword">@github</span>.com</span><br></pre></td></tr></table></figure>
+
+<p>如果出现</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Are you sure you want to <span class="keyword">continue</span> connecting (yes/no)?</span><br></pre></td></tr></table></figure>
+
+<p>请输入yes再按回车。</p>
+<p>如果最后出现</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Hi username! You<span class="symbol">'ve</span> successfully authenticated, but GitHub does not provide shell access.</span><br></pre></td></tr></table></figure>
+
+<p>就说明你的SSH Key配置成功了。</p>
+<h5 id="5-安装Hexo"><a href="#5-安装Hexo" class="headerlink" title="5.安装Hexo"></a>5.安装Hexo</h5><p>前面我们已经安装了Node.js，这里我们使用npm命令来安装Hexo</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo</span><br></pre></td></tr></table></figure>
+
+<p>等待一会就会完成下载安装。</p>
+<p>接着在任意位置创建一个文件夹，如Blog，cd到该路径下执行以下命令</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo <span class="keyword">init</span></span><br></pre></td></tr></table></figure>
+
+<p>该命令会在目标文件夹内建立网站所需要的所有文件。接下来是安装依赖包</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install</span><br></pre></td></tr></table></figure>
+
+<p>到这里本地博客就搭建好了。执行以下命令（在你博客的对应文件夹路径下）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hexo generate</span><br><span class="line">hexo server</span><br></pre></td></tr></table></figure>
+
+<p>在浏览器输入<a href="http://localhost:4000/" target="_blank" rel="noopener">http://localhost:4000/</a> 就可以进行查看了。<br> 当然这个博客是本地的，别人是无法访问的，之后我们需要部署到GitHub上。</p>
+<h5 id="6-同步本地博客到Github"><a href="#6-同步本地博客到Github" class="headerlink" title="6.同步本地博客到Github"></a>6.同步本地博客到Github</h5><p>编辑自己创建的本地博客文件夹中的_config.yml中的deploy节点</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  type: git</span><br><span class="line">  repo: git@github.com:username&#x2F;username.github.io.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
+
+<p>注意：repo为这种形式的是配置了SSH Key之后的，如果没有配置则使用Https形式的地址。</p>
+<p>为了能够使Hexo部署到GitHub上，需要安装一个插件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
+
+<p>然后输入以下命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo generate</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>在浏览器输入username.github.io就可以访问你的博客了。</p>
+<h4 id="三、配置主题"><a href="#三、配置主题" class="headerlink" title="三、配置主题"></a>三、配置主题</h4><p>Hexo主题在Github上有很多，如</p>
+<ul>
+<li><a href="https://github.com/iissnan/hexo-theme-next" target="_blank" rel="noopener">https://github.com/iissnan/hexo-theme-next</a></li>
+<li><a href="https://github.com/litten/hexo-theme-yilia" target="_blank" rel="noopener">https://github.com/litten/hexo-theme-yilia</a></li>
+<li><a href="https://github.com/viosey/hexo-theme-material" target="_blank" rel="noopener">https://github.com/viosey/hexo-theme-material</a></li>
+<li><a href="https://github.com/LouisBarranqueiro/hexo-theme-tranquilpeak" target="_blank" rel="noopener">https://github.com/LouisBarranqueiro/hexo-theme-tranquilpeak</a></li>
+<li><a href="https://github.com/pinggod/hexo-theme-apollo" target="_blank" rel="noopener">https://github.com/pinggod/hexo-theme-apollo</a></li>
+<li><a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">https://github.com/ppoffice/hexo-theme-icarus</a></li>
+</ul>
+<p>挑选自己喜欢的一款。当然，自己能够DIY也是极好的。</p>
+<h4 id="四、发布新文章"><a href="#四、发布新文章" class="headerlink" title="四、发布新文章"></a>四、发布新文章</h4><p>执行以下命令</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo <span class="keyword">new</span> post <span class="string">'文章标题'</span></span><br></pre></td></tr></table></figure>
+
+<p>这样会在本地博客的source-&gt;_posts路径下看到新建的文章，是md格式的，推荐使用Typora进行编辑。</p>
+<p>编辑完成之后，与上面一样，执行以下命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo generate</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>即可更新到Github上。</p>
+<p>最后晒上我的博客地址：<a href="https://rile14929.github.io/">https://rile14929.github.io/</a><br> 祝大家也早日拥有自己的博客~</p>
+<h4 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h4><ul>
+<li><a href="https://www.jianshu.com/p/e5f95eb990ad" target="_blank" rel="noopener">https://www.jianshu.com/p/e5f95eb990ad</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/hello-world.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -302,7 +432,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-count">32</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
