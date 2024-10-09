@@ -27,7 +27,7 @@
 <meta property="og:site_name" content="右耳听风">
 <meta property="og:description" content="1. 加载过程执行函数组件 Fiber 节点的 beginWork 工作，根据 tag 类型，进入 IndeterminateComponent 待定组件的逻辑处理【case IndeterminateComponent】： 每个函数组件的首次加载都是走的 IndeterminateComponent 分支逻辑，这是因为在创建函数组件 Fiber 的时候，react 没有更新它的 tag 值，所以">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://rile14929.github.io/zh-CN/image.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/image.png">
 <meta property="og:image" content="https://rile14929.github.io/images/react18.2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/image-1.png">
 <meta property="og:image" content="https://rile14929.github.io/images/react18.2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/image-3.png">
 <meta property="og:image" content="https://rile14929.github.io/images/react18.2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/image-2.png">
@@ -43,7 +43,7 @@
 <meta property="article:author" content="rile">
 <meta property="article:tag" content="react18.2">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://rile14929.github.io/zh-CN/image.png">
+<meta name="twitter:image" content="https://rile14929.github.io/images/react18.2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/image.png">
 
 <link rel="canonical" href="https://rile14929.github.io/zh-CN/react18.2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B.html">
 
@@ -271,7 +271,7 @@
 <p>将新建 <code>hook</code> 对象赋值给 <code>workInProgressHook</code>，表示为正在处理中的 <code>hook</code> 对象。</p>
 <p>同时也将第一个 <code>hook</code> 对象赋值给当前函数组件 <code>Fiber</code> 节点的 <code>memoizedState</code> 属性。</p>
 <p>此时函数组件 <code>Fiber</code> 节点的 <code>memoizedState</code> 属性指向为：</p>
-<p><img src="image.png" alt="alt text"></p>
+<p><img src="../images/react18.2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/image.png" alt="alt text"></p>
 <p>继续回到 <code>mountState</code> 方法中:</p>
 <p>在 <code>hook</code> 新建完成之后，判断传入的参数 <code>initialState</code> 是否为函数，如果为函数则调用此函数，将结果赋值为新的 <code>initialState</code>。</p>
 <p>然后设置 <code>hook</code> 对象的 <code>memoizedState</code> 和 <code>baseState</code> 属性为初始的数据 <code>initialState</code>。</p>
