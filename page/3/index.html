@@ -164,6 +164,119 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/tsconfig.json%E6%96%87%E4%BB%B6%E5%85%A8%E8%A7%A3%E6%9E%90.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/tsconfig.json%E6%96%87%E4%BB%B6%E5%85%A8%E8%A7%A3%E6%9E%90.html" class="post-title-link" itemprop="url">tsconfig.json文件解析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-10 00:00:00" itemprop="dateCreated datePublished" datetime="2023-03-10T00:00:00+08:00">2023-03-10</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p><code>TypeScript</code>带来的类型系统以及强大的<code>IDE</code>支持，让前端开发也变得严谨而流畅。但<code>TypeScript</code>不是原生的<code>Javascript</code>代码，需要进行编译才能转换为<code>Javascript</code>代码。</p>
+<p><code>tsconfig.json</code>是编译<code>TypeScript</code>的配置文件，对书写<code>TypeScript</code>代码十分重要。接下来会介绍一些常用的编译选项和所有<code>tsconfig.json</code>选项的解释。</p>
+<h2 id="常用属性"><a href="#常用属性" class="headerlink" title="常用属性"></a>常用属性</h2><h4 id="1-experimentalDecorators"><a href="#1-experimentalDecorators" class="headerlink" title="1.experimentalDecorators"></a>1.experimentalDecorators</h4><p><code>是否启用实验性的ES装饰器</code>。 默认值：<strong>false</strong>, <a href="https://www.typescriptlang.org/docs/handbook/decorators.html" target="_blank" rel="noopener">官方解释</a></p>
+<p>TypeScript 和 ES6 中引入了 Class 的概念，同时在 stage 2 proposal (opens new window)提出了 Java 等服务器端语言早就有的装饰器模式。通过引入装饰器模式，能极大简化书写代码，把一些通用逻辑封装到装饰器中。</p>
+<h4 id="2-strictPropertyInitialization"><a href="#2-strictPropertyInitialization" class="headerlink" title="2.strictPropertyInitialization"></a>2.strictPropertyInitialization</h4><p><code>是否类的非undefined属性已经在构造函数里初始化</code>。 默认值：<strong>false</strong></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="class"><span class="keyword">class</span> <span class="title">Home</span> </span>&#123;</span><br><span class="line">  id: string <span class="comment">// 如果开启strictPropertyInitialization，则这里会报错，因为没有赋值默认值</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-noImplicitAny"><a href="#3-noImplicitAny" class="headerlink" title="3.noImplicitAny"></a>3.noImplicitAny</h4><p><code>有隐含的 any类型时是否报错</code>。 默认值：<strong>false</strong></p>
+<p>ts 是有默认推导的，同时还有 any 类型，所以不是每个变量或参数定义需要明确告知类型是什么。如果开启该值，当有隐含 any 类型时，会报错。</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当开启noImplicitAny时，需要隐含当any需要明确指出</span></span><br><span class="line">arr.find(<span class="function">(<span class="params">item</span>) =&gt;</span> item.name === name) <span class="comment">// error</span></span><br><span class="line">arr.find(<span class="function">(<span class="params">item: <span class="built_in">any</span></span>) =&gt;</span> item.name === name) <span class="comment">// ok</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="4-target"><a href="#4-target" class="headerlink" title="4.target"></a>4.target</h4><p><code>指定编译的ECMAScript目标版本</code>。默认值: “ES3”<a href="https://www.typescriptlang.org/tsconfig#target" target="_blank" rel="noopener">官方解释</a><br>枚举值：”ES3”， “ES5”， “ES6”/ “ES2015”， “ES2016”， “ES2017”，”ES2018”，”ES2019”，”ES2020”，”ES2021”，”ES2022”，”ESNext”</p>
+<blockquote>
+<p>target: “ESNext” 是指 tc39 最新的<a href="https://github.com/tc39/proposals" target="_blank" rel="noopener">ECMAScript proposals</a></p>
+</blockquote>
+<p>当编译 ts 代码时，可以把 ts 转为 ES5 或更早的 js 代码。所以需要选择一个编译的目标版本。</p>
+<h4 id="5-module"><a href="#5-module" class="headerlink" title="5.module"></a>5.module</h4><p><code>指定生成哪个模块系统代码</code> <a href="https://www.typescriptlang.org/tsconfig#module" target="_blank" rel="noopener">官方解释</a></p>
+<p>枚举值：”None”， “CommonJS”， “AMD”， “System”， “UMD”， “ES6”， “ES2015”，”ES2020”, “ES2022”, “ESNext”, “node16”, “nodenext”,</p>
+<p>默认值根据–target 选项不同而不同，当 target 设置为 ES6 时，默认 module 为“ES6”，否则为“commonjs”</p>
+<h4 id="6-lib"><a href="#6-lib" class="headerlink" title="6.lib"></a>6.lib</h4><p><code>编译过程中需要引入的库文件的列表</code></p>
+<ul>
+<li><a href="https://www.typescriptlang.org/tsconfig#lib" target="_blank" rel="noopener">官方解释</a></li>
+<li><a href="https://jkchao.github.io/typescript-book-chinese/typings/lib.html#%E4%BD%BF%E7%94%A8%E4%BE%8B%E5%AD%90" target="_blank" rel="noopener">实际场景下的解释</a></li>
+</ul>
+<p>string[]类型，可选的值有很多，常用的有 ES5，ES6，ESNext，DOM，DOM.Iterable、WebWorker、ScriptHost 等。</p>
+<p>该值默认值是根据–target 选项不同而不同。<br>当 target 为 ES5 时，默认值为[‘DOM ‘, ‘ES5’, ‘ScriptHost’];<br>当 target 为 ES6 时，默认值为[‘DOM’, ‘ES6’, ‘DOM.Iterable’, ‘ScriptHost’]</p>
+<h4 id="7-moduleResolution"><a href="#7-moduleResolution" class="headerlink" title="7.moduleResolution"></a>7.moduleResolution</h4><p><code>决定如何处理模块</code> <a href="https://www.typescriptlang.org/docs/handbook/module-resolution.html" target="_blank" rel="noopener">官方解释</a></p>
+<p>说直白点，也就是遇到 import { AAA } from ‘./aaa’该如何去找对应文件模块解析。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 在源文件&#x2F;root&#x2F;src&#x2F;A.ts中import &#123; b &#125; from &quot;.&#x2F;moduleB&quot;</span><br><span class="line">&#x2F;&#x2F; 两种解析方式查找文件方式不同</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; classic模块解析方式</span><br><span class="line">1. &#x2F;root&#x2F;src&#x2F;moduleB.ts</span><br><span class="line">2. &#x2F;root&#x2F;src&#x2F;moduleB.d.ts</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; node模块解析方式</span><br><span class="line">1. &#x2F;root&#x2F;src&#x2F;moduleB.ts</span><br><span class="line">2. &#x2F;root&#x2F;src&#x2F;moduleB.tsx</span><br><span class="line">3. &#x2F;root&#x2F;src&#x2F;moduleB.d.ts</span><br><span class="line">4. &#x2F;root&#x2F;src&#x2F;moduleB&#x2F;package.json (if it specifies a &quot;types&quot; property)</span><br><span class="line">5. &#x2F;root&#x2F;src&#x2F;moduleB&#x2F;index.ts</span><br><span class="line">6. &#x2F;root&#x2F;src&#x2F;moduleB&#x2F;index.tsx</span><br><span class="line">7. &#x2F;root&#x2F;src&#x2F;moduleB&#x2F;index.d.ts</span><br></pre></td></tr></table></figure>
+
+<h4 id="8-paths"><a href="#8-paths" class="headerlink" title="8.paths"></a>8.paths</h4><p><code>模块名或路径映射的列表</code></p>
+<p>这是一个非常有用的选项，比如我们经常使用‘@/util/help’来代替’./src/util/help’，省的每次在不同层级文件 import 模块时,都纠结于是’./‘还是’../‘。该选项告诉编译器遇到匹配的值时，去映射的路径下加载模块。</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">"baseUrl"</span>: <span class="string">"."</span>, <span class="comment">// 注意：baseUrl不可少</span></span><br><span class="line">    <span class="string">"paths"</span>: &#123;</span><br><span class="line">      <span class="comment">// 映射列表</span></span><br><span class="line">      <span class="string">"@/*"</span>: [</span><br><span class="line">        <span class="string">"src/*"</span></span><br><span class="line">      ],</span><br><span class="line">      <span class="string">"moduleA"</span>: [</span><br><span class="line">        <span class="string">"src/libs/moduleA"</span></span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// in ts code</span></span><br><span class="line"><span class="keyword">import</span> Setting <span class="keyword">from</span> <span class="string">'@/components/Setting.vue'</span> <span class="comment">// 模块实际位置: src/components/Setting.vue</span></span><br><span class="line"><span class="keyword">import</span> TestModule <span class="keyword">from</span> <span class="string">'moduleA/index.js'</span> <span class="comment">// 模块实际位置: src/libs/moduleA/index.js</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="9-strictNullChecks"><a href="#9-strictNullChecks" class="headerlink" title="9.strictNullChecks"></a>9.strictNullChecks</h4><p><code>是否启用严格的 null检查模式</code> 默认值: <strong>false</strong> 建议开启该选项</p>
+<p>未处理的 null 和 undefined 经常会导致 BUG 的产生，所以 TypeScript 包含了 strictNullChecks 选项来帮助我们减少对这种情况的担忧。当启用了 strictNullChecks，null 和 undefined 获得了它们自己各自的类型 null 和 undefined。开启该模式有助于发现并处理可能为 undefined 的赋值。</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 未开启strictNullChecks，number类型包含了null和undefined类型</span></span><br><span class="line"><span class="keyword">let</span> foo: <span class="built_in">number</span> = <span class="number">123</span></span><br><span class="line">foo = <span class="literal">null</span> <span class="comment">// Okay</span></span><br><span class="line">foo = <span class="literal">undefined</span> <span class="comment">// Okay</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 开启strictNullChecks</span></span><br><span class="line"><span class="keyword">let</span> foo: <span class="built_in">string</span>[] | <span class="literal">undefined</span> = arr.find(<span class="function">(<span class="params">key</span>) =&gt;</span> key === <span class="string">'test'</span>)</span><br><span class="line"><span class="comment">// foo.push('1') // error - 'foo' is possibly 'undefined'</span></span><br><span class="line">foo &amp;&amp; foo.push(<span class="string">'1'</span>) <span class="comment">// okay</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意：启用 –strict 相当于启用 –noImplicitAny, –noImplicitThis, –alwaysStrict, –strictNullChecks, –strictFunctionTypes 和–strictPropertyInitialization</p>
+</blockquote>
+<h4 id="10-noUnusedLocals"><a href="#10-noUnusedLocals" class="headerlink" title="10.noUnusedLocals"></a>10.noUnusedLocals</h4><p><code>有未使用的变量时，是否抛出错误</code> 默认值: <strong>false</strong></p>
+<p>当发现变量定义但没有使用时，编译不报错。eslint 的 rule 中也有该条，建议正式项目将该选项开启，设置为 true，使得代码干净整洁</p>
+<h4 id="11-noUnusedParameters"><a href="#11-noUnusedParameters" class="headerlink" title="11.noUnusedParameters"></a>11.noUnusedParameters</h4><p><code>有未使用的参数时，是否抛出错误</code> 默认值: <strong>false</strong></p>
+<p>建议开启，理由同上。</p>
+<h4 id="12-allowJs"><a href="#12-allowJs" class="headerlink" title="12.allowJs"></a>12.allowJs</h4><p><code>是否允许编译javascript文件</code> 默认值: <strong>false</strong></p>
+<p>如果设置为 true，js 后缀的文件也会被 typescript 进行编译。</p>
+<h4 id="13-typeRoots-和-types"><a href="#13-typeRoots-和-types" class="headerlink" title="13.typeRoots 和 types"></a>13.typeRoots 和 types</h4><p>默认所有可见的”@types”包会在编译过程中被包含进来。如果指定了 typeRoots，只有 typeRoots 下面的包才会被包含进来。如果指定了 types，只有被列出来的 npm 包才会被包含进来。<a href="https://www.tslang.cn/docs/handbook/tsconfig-json.html#types-typeroots-and-types" target="_blank" rel="noopener">详细解释</a></p>
+<blockquote>
+<p>可以指定”types”: []来禁用自动引入@types 包#14. files、include 和 exclude</p>
+</blockquote>
+<h4 id="14-files、include-和-exclude"><a href="#14-files、include-和-exclude" class="headerlink" title="14.files、include 和 exclude"></a>14.files、include 和 exclude</h4><p><code>编译文件包含哪些文件以及排除哪些文件</code></p>
+<p>未设置 include 时，编译器默认包含当前目录和子目录下所有的 TypeScript 文件（.ts, .d.ts 和 .tsx）。如果 allowJs 被设置成 true，JS 文件（.js 和.jsx）也被包含进来。exclude 排除那些不需要编译的文件或文件夹。</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">"compilerOptions"</span>: &#123;&#125;,</span><br><span class="line">    <span class="string">"include"</span>: [</span><br><span class="line">        <span class="string">"src/**/*"</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="string">"exclude"</span>: [</span><br><span class="line">        <span class="string">"node_modules"</span>,</span><br><span class="line">        <span class="string">"**/*.spec.ts"</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="全解析"><a href="#全解析" class="headerlink" title="全解析"></a>全解析</h2><figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">"compilerOptions"</span>: &#123;</span><br><span class="line">    <span class="comment">/* 基本选项 */</span></span><br><span class="line">    <span class="string">"target"</span>: <span class="string">"es5"</span>,                       <span class="comment">// 指定 ECMAScript 目标版本: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', or 'ESNEXT'（"ESNext"表示最新的ES语法，包括还处在stage X阶段）</span></span><br><span class="line">    <span class="string">"module"</span>: <span class="string">"commonjs"</span>,                  <span class="comment">// 指定使用模块: 'commonjs', 'amd', 'system', 'umd' or 'es2015'</span></span><br><span class="line">    <span class="string">"lib"</span>: [],                             <span class="comment">// 指定要包含在编译中的库文件</span></span><br><span class="line">    <span class="string">"allowJs"</span>: <span class="literal">true</span>,                       <span class="comment">// 允许编译 javascript 文件</span></span><br><span class="line">    <span class="string">"checkJs"</span>: <span class="literal">true</span>,                       <span class="comment">// 报告 javascript 文件中的错误</span></span><br><span class="line">    <span class="string">"jsx"</span>: <span class="string">"preserve"</span>,                     <span class="comment">// 指定 jsx 代码的生成: 'preserve', 'react-native', or 'react'</span></span><br><span class="line">    <span class="string">"declaration"</span>: <span class="literal">true</span>,                   <span class="comment">// 生成相应的 '.d.ts' 文件</span></span><br><span class="line">    <span class="string">"sourceMap"</span>: <span class="literal">true</span>,                     <span class="comment">// 生成相应的 '.map' 文件</span></span><br><span class="line">    <span class="string">"outFile"</span>: <span class="string">"./"</span>,                       <span class="comment">// 将输出文件合并为一个文件</span></span><br><span class="line">    <span class="string">"outDir"</span>: <span class="string">"./"</span>,                        <span class="comment">// 指定输出目录</span></span><br><span class="line">    <span class="string">"rootDir"</span>: <span class="string">"./"</span>,                       <span class="comment">// 用来控制输出目录结构 --outDir.</span></span><br><span class="line">    <span class="string">"removeComments"</span>: <span class="literal">true</span>,                <span class="comment">// 删除编译后的所有的注释</span></span><br><span class="line">    <span class="string">"noEmit"</span>: <span class="literal">true</span>,                        <span class="comment">// 不生成输出文件</span></span><br><span class="line">    <span class="string">"importHelpers"</span>: <span class="literal">true</span>,                 <span class="comment">// 从 tslib 导入辅助工具函数</span></span><br><span class="line">    <span class="string">"isolatedModules"</span>: <span class="literal">true</span>,               <span class="comment">// 将每个文件做为单独的模块 （与 'ts.transpileModule' 类似）.</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 严格的类型检查选项 */</span></span><br><span class="line">    <span class="string">"strict"</span>: <span class="literal">true</span>,                        <span class="comment">// 启用所有严格类型检查选项</span></span><br><span class="line">    <span class="string">"noImplicitAny"</span>: <span class="literal">true</span>,                 <span class="comment">// 在表达式和声明上有隐含的 any类型时报错</span></span><br><span class="line">    <span class="string">"strictNullChecks"</span>: <span class="literal">true</span>,              <span class="comment">// 启用严格的 null 检查</span></span><br><span class="line">    <span class="string">"noImplicitThis"</span>: <span class="literal">true</span>,                <span class="comment">// 当 this 表达式值为 any 类型的时候，生成一个错误</span></span><br><span class="line">    <span class="string">"alwaysStrict"</span>: <span class="literal">true</span>,                  <span class="comment">// 以严格模式检查每个模块，并在每个文件里加入 'use strict'</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 额外的检查 */</span></span><br><span class="line">    <span class="string">"noUnusedLocals"</span>: <span class="literal">true</span>,                <span class="comment">// 有未使用的变量时，抛出错误</span></span><br><span class="line">    <span class="string">"noUnusedParameters"</span>: <span class="literal">true</span>,            <span class="comment">// 有未使用的参数时，抛出错误</span></span><br><span class="line">    <span class="string">"noImplicitReturns"</span>: <span class="literal">true</span>,             <span class="comment">// 并不是所有函数里的代码都有返回值时，抛出错误</span></span><br><span class="line">    <span class="string">"noFallthroughCasesInSwitch"</span>: <span class="literal">true</span>,    <span class="comment">// 报告 switch 语句的 fallthrough 错误。（即，不允许 switch 的 case 语句贯穿）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 模块解析选项 */</span></span><br><span class="line">    <span class="string">"moduleResolution"</span>: <span class="string">"node"</span>,            <span class="comment">// 选择模块解析策略： 'node' (Node.js) or 'classic' (TypeScript pre-1.6)。默认是classic</span></span><br><span class="line">    <span class="string">"baseUrl"</span>: <span class="string">"./"</span>,                       <span class="comment">// 用于解析非相对模块名称的基目录</span></span><br><span class="line">    <span class="string">"paths"</span>: &#123;&#125;,                           <span class="comment">// 模块名到基于 baseUrl 的路径映射的列表</span></span><br><span class="line">    <span class="string">"rootDirs"</span>: [],                        <span class="comment">// 根文件夹列表，其组合内容表示项目运行时的结构内容</span></span><br><span class="line">    <span class="string">"typeRoots"</span>: [],                       <span class="comment">// 包含类型声明的文件列表</span></span><br><span class="line">    <span class="string">"types"</span>: [],                           <span class="comment">// 需要包含的类型声明文件名列表</span></span><br><span class="line">    <span class="string">"allowSyntheticDefaultImports"</span>: <span class="literal">true</span>,  <span class="comment">// 允许从没有设置默认导出的模块中默认导入。</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Source Map Options */</span></span><br><span class="line">    <span class="string">"sourceRoot"</span>: <span class="string">"./"</span>,                    <span class="comment">// 指定调试器应该找到 TypeScript 文件而不是源文件的位置</span></span><br><span class="line">    <span class="string">"mapRoot"</span>: <span class="string">"./"</span>,                       <span class="comment">// 指定调试器应该找到映射文件而不是生成文件的位置</span></span><br><span class="line">    <span class="string">"inlineSourceMap"</span>: <span class="literal">true</span>,               <span class="comment">// 生成单个 soucemaps 文件，而不是将 sourcemaps 生成不同的文件</span></span><br><span class="line">    <span class="string">"inlineSources"</span>: <span class="literal">true</span>,                 <span class="comment">// 将代码与 sourcemaps 生成到一个文件中，要求同时设置了 --inlineSourceMap 或 --sourceMap 属性</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 其他选项 */</span></span><br><span class="line">    <span class="string">"experimentalDecorators"</span>: <span class="literal">true</span>,        <span class="comment">// 启用装饰器</span></span><br><span class="line">    <span class="string">"emitDecoratorMetadata"</span>: <span class="literal">true</span>,         <span class="comment">// 为装饰器提供元数据的支持</span></span><br><span class="line">    <span class="string">"strictFunctionTypes"</span>: <span class="literal">false</span>           <span class="comment">// 禁用函数参数双向协变检查。</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="comment">/* 指定编译文件或排除指定编译文件 */</span></span><br><span class="line">  <span class="string">"include"</span>: [</span><br><span class="line">      <span class="string">"src/**/*"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="string">"exclude"</span>: [</span><br><span class="line">      <span class="string">"node_modules"</span>,</span><br><span class="line">      <span class="string">"**/*.spec.ts"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="string">"files"</span>: [</span><br><span class="line">    <span class="string">"core.ts"</span>,</span><br><span class="line">    <span class="string">"sys.ts"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="comment">// 从另一个配置文件里继承配置</span></span><br><span class="line">  <span class="string">"extends"</span>: <span class="string">"./config/base"</span>,</span><br><span class="line">  <span class="comment">// 让IDE在保存文件的时候根据tsconfig.json重新生成文件</span></span><br><span class="line">  <span class="string">"compileOnSave"</span>: <span class="literal">true</span> <span class="comment">// 支持这个特性需要Visual Studio 2015， TypeScript1.8.4以上并且安装atom-typescript插件</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/%E8%A7%84%E8%8C%83%E5%9B%A2%E9%98%9FGitCommitMessage.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1238,189 +1351,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/xss_csrf.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/xss_csrf.html" class="post-title-link" itemprop="url">web安全之前端安全</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-01-03 00:00:00" itemprop="dateCreated datePublished" datetime="2021-01-03T00:00:00+08:00">2021-01-03</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="web安全之前端安全"><a href="#web安全之前端安全" class="headerlink" title="web安全之前端安全"></a>web安全之前端安全</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>  随着互联网的高速发展，信息安全问题已经成为企业最为关注的焦点之一，而前端又是引发企业安全问题的高危据点。  在移动互联网时代，前端人员除了传统的 XSS、CSRF 等安全问题之外，又时常遭遇网络劫持、非法调用 Hybrid API 等新型安全问题。当然，浏览器自身也在不断在进化和发展，不断引入 CSP、Same-Site Cookies 等新技术来增强安全性，但是仍存在很多潜在的威胁，这需要前端技术人员不断进行“查漏补缺”。</p>
-<h2 id="常见的攻击方式"><a href="#常见的攻击方式" class="headerlink" title="常见的攻击方式"></a>常见的攻击方式</h2><h3 id="XSS（跨站脚本攻击-Cross-Site-Scripting）"><a href="#XSS（跨站脚本攻击-Cross-Site-Scripting）" class="headerlink" title="XSS（跨站脚本攻击 Cross-Site Scripting）"></a>XSS（跨站脚本攻击 Cross-Site Scripting）</h3><ul>
-<li><h5 id="反射型"><a href="#反射型" class="headerlink" title="反射型"></a>反射型</h5><ul>
-<li>漏洞原理<ul>
-<li>应用程序或API包括未经验证和未转义的用户输入，直接作为HTML输出的一部分。</li>
-<li>一个成功的攻击可以让攻击者在受害者额的浏览器中执行任意的HTML和javascript</li>
-</ul>
-</li>
-<li>特点<ul>
-<li>非持久化，必须用户点击带有特定参数的链接才能引起</li>
-<li>影响范围是仅执行脚本的用户</li>
-</ul>
-</li>
-<li>攻击步骤<ul>
-<li>攻击者构造出特殊的 URL，其中包含恶意代码。</li>
-<li>用户打开带有恶意代码的 URL 时，网站服务端将恶意代码从 URL 中取出，拼接在 HTML 中返回给浏览器。</li>
-<li>用户浏览器接收到响应后解析执行，混在其中的恶意代码也被执行。</li>
-<li>恶意代码窃取用户数据并发送到攻击者的网站，或者冒充用户的行为，调用目标网站接口执行攻击者指定的操作。</li>
-</ul>
-</li>
-<li>防御措施<ul>
-<li>危害相对较小，多为一次性点击触发，对于用户端来说陌生的链接不要打开</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<p>  反射型 XSS 漏洞常见于通过 URL 传递参数的功能，如网站搜索、跳转等。由于需要用户主动打开恶意的 URL 才能生效，攻击者往往会结合多种手段诱导用户点击。</p>
-<p>  POST 的内容也可以触发反射型 XSS，只不过其触发条件比较苛刻（需要构造表单提交页面，并引导用户点击），所以非常少见。</p>
-<ul>
-<li><h5 id="存储型"><a href="#存储型" class="headerlink" title="存储型"></a>存储型</h5><ul>
-<li><p>漏洞原理</p>
-<ul>
-<li>程序通过web请求获取不可信赖的数据，在未检校是否存在XSS代码的情况下，便将其存入数据库</li>
-<li>当下次从数据库中获取该数据时程序未为对其进行过滤，页面再次执行XSS代码</li>
-<li>可以持续攻击用户</li>
-</ul>
-</li>
-<li><p>攻击步骤：</p>
-<ul>
-<li>攻击者将恶意代码提交到目标网站的数据库中。</li>
-<li>用户打开目标网站时，网站服务端将恶意代码从数据库取出，拼接在 HTML 中返回给浏览器。</li>
-<li>用户浏览器接收到响应后解析执行，混在其中的恶意代码也被执行。</li>
-<li>恶意代码窃取用户数据并发送到攻击者的网站，或者冒充用户的行为，调用目标网站接口执行攻击者指定的操作。</li>
-</ul>
-</li>
-<li><p>防御措施</p>
-<ul>
-<li>这种攻击常见于带有用户保存数据的网站功能，如论坛发帖、商品评论、用户私信等</li>
-<li>针对用户的输入合理验证，对特殊字符（&lt; 、&gt;、’、”等）以及script javascript等进行过滤</li>
-<li>对数据输出HTML上下文中不同位置进行恰当的输出编码</li>
-<li>设置httponly 属性 避免攻击者利用跨站脚本漏洞进行cookie劫持</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><h5 id="DOM型"><a href="#DOM型" class="headerlink" title="DOM型"></a>DOM型</h5><ul>
-<li><p>漏洞原理</p>
-<ul>
-<li>基于DOM，文档对象模型的一种漏洞，也是一种特殊的反射型XSS</li>
-<li>通过JS操作DOM树，动态的输出数据到页面，而不依赖将数据提交给服务端</li>
-</ul>
-</li>
-<li><p>攻击步骤：</p>
-<ul>
-<li>攻击者构造出特殊的 URL，其中包含恶意代码。</li>
-<li>用户打开带有恶意代码的 URL。</li>
-<li>用户浏览器接收到响应后解析执行，前端 JavaScript 取出 URL 中的恶意代码并执行。</li>
-<li>恶意代码窃取用户数据并发送到攻击者的网站，或者冒充用户的行为，调用目标网站接口执行攻击者指定的操作。</li>
-</ul>
-</li>
-<li><p>案例</p>
-</li>
-<li><p>防御措施</p>
-<ul>
-<li>在使用 <code>.innerHTML</code>、<code>.outerHTML</code>、<code>document.write()</code> 时要特别小心，不要把不可信的数据作为 HTML 插到页面上，而应尽量使用 <code>.textContent</code>、<code>.setAttribute()</code> 等。</li>
-<li>如果用 Vue/React 技术栈，并且不使用 <code>v-html</code>/<code>dangerouslySetInnerHTML</code> 功能，就在前端 render 阶段避免 <code>innerHTML</code>、<code>outerHTML</code> 的 XSS 隐患。</li>
-<li>DOM 中的内联事件监听器，如 <code>location</code>、<code>onclick</code>、<code>onerror</code>、<code>onload</code>、<code>onmouseover</code> 等，<code>&lt;a&gt;</code> 标签的 <code>href</code> 属性，JavaScript 的 <code>eval()</code>、<code>setTimeout()</code>、<code>setInterval()</code> 等，都能把字符串作为代码运行。如果不可信的数据拼接到字符串中传递给这些 API，很容易产生安全隐患，请务必避免。</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="三种类型的比较"><a href="#三种类型的比较" class="headerlink" title="三种类型的比较"></a><strong>三种类型的比较</strong></h4><ul>
-<li>反射型 跟存储型  的区别是：存储型  的恶意代码存在数据库里，反射型  的恶意代码存在 URL 里。</li>
-<li>DOM型和反射型相同点：都是没有控制好输入，并且把JavaScript脚本输入作为输入 插入到HTML页面</li>
-<li>DOM型和反射型不同点：反射型是通过后端后，页面引用后端输出后生效。DOM 是经过JS对DOM树直接操作后插入到页面</li>
-</ul>
-<h4 id="小游戏"><a href="#小游戏" class="headerlink" title="小游戏"></a>小游戏</h4><ul>
-<li><a href="https://alf.nu/alert1" target="_blank" rel="noopener">https://alf.nu/alert1</a></li>
-</ul>
-<h3 id="CSRF（跨站请求伪造-cross-site-request-forgery）"><a href="#CSRF（跨站请求伪造-cross-site-request-forgery）" class="headerlink" title="CSRF（跨站请求伪造 cross-site request forgery）"></a>CSRF（跨站请求伪造 cross-site request forgery）</h3><ul>
-<li><p>漏洞原理</p>
-<ul>
-<li>数据包中的cookie的值是浏览器从本地存储中取出的，并自动填充到数据包中</li>
-<li>如果攻击者控制了受害者的浏览器并窃取了cookie</li>
-<li>浏览器会自动完成cookie的填充，目标网站会误认为该数据包就是管理员发送的，会以受害者的权限进行操作</li>
-</ul>
-</li>
-<li><p>案例 &amp; 攻击步骤</p>
-<ul>
-<li>受害者登录a.com，并保留了登录凭证（Cookie）。</li>
-<li>攻击者引诱受害者访问了b.com。</li>
-<li>b.com 向 a.com 发送了一个请求：a.com/act=xx。浏览器会默认携带a.com的Cookie。</li>
-<li>a.com接收到请求后，对请求进行验证，并确认是受害者的凭证，误以为是受害者自己发送的请求。</li>
-<li>a.com以受害者的名义执行了act=xx。</li>
-<li>攻击完成，攻击者在受害者不知情的情况下，冒充受害者，让a.com执行了自己定义的操作。</li>
-</ul>
-</li>
-<li><p>防御措施</p>
-<ul>
-<li><p>Token</p>
-<ul>
-<li>Token - 是由web应用程序添加到数据包中</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>HTTP Referer</p>
-<ul>
-<li>站点可以对一些敏感操作限制其Referer字段的值</li>
-</ul>
-</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1493,7 +1423,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">33</span>
+          <span class="site-state-item-count">34</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
