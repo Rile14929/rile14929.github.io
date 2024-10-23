@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="事件优先级1234567&#x2F;&#x2F; packages\react-reconciler\src\ReactEventPriorities.js&#x2F;&#x2F; 优先级从上往下，越来越小export const DiscreteEventPriority: EventPriority &#x3D; SyncLane; &#x2F;&#x2F; 2export const ContinuousEventPriority: EventPriority">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react18.2优先级和批处理场景解析">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/react18.2%E4%BC%98%E5%85%88%E7%BA%A7%E5%92%8C%E6%89%B9%E5%A4%84%E7%90%86%E5%9C%BA%E6%99%AF%E8%A7%A3%E6%9E%90.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="事件优先级1234567&#x2F;&#x2F; packages\react-reconciler\src\ReactEventPriorities.js&#x2F;&#x2F; 优先级从上往下，越来越小export const DiscreteEventPriority: EventPriority &#x3D; SyncLane; &#x2F;&#x2F; 2export const ContinuousEventPriority: EventPriority">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-10-22T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="react18.2">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/react18.2%E4%BC%98%E5%85%88%E7%BA%A7%E5%92%8C%E6%89%B9%E5%A4%84%E7%90%86%E5%9C%BA%E6%99%AF%E8%A7%A3%E6%9E%90.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>react18.2优先级和批处理场景解析 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react18.2%E4%BC%98%E5%85%88%E7%BA%A7%E5%92%8C%E6%89%B9%E5%A4%84%E7%90%86%E5%9C%BA%E6%99%AF%E8%A7%A3%E6%9E%90.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          react18.2优先级和批处理场景解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-10-23 00:00:00" itemprop="dateCreated datePublished" datetime="2024-10-23T00:00:00+08:00">2024-10-23</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="事件优先级"><a href="#事件优先级" class="headerlink" title="事件优先级"></a>事件优先级</h2><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// packages\react-reconciler\src\ReactEventPriorities.js</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 优先级从上往下，越来越小</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> DiscreteEventPriority: EventPriority = SyncLane; <span class="comment">// 2</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> ContinuousEventPriority: EventPriority = InputContinuousLane; <span class="comment">// 8</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> DefaultEventPriority: EventPriority = DefaultLane; <span class="comment">// 页面初次渲染的lane 32, transition</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> IdleEventPriority: EventPriority = IdleLane;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// packages\react-reconciler\src\ReactFiberLane.js</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> NoLane: Lane = <span class="comment">/*                          */</span> <span class="number">0b0000000000000000000000000000000</span>; <span class="comment">// 0</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> SyncLane: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000000000000010</span>; <span class="comment">// 2</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> InputContinuousLane: Lane = <span class="comment">/*             */</span> <span class="number">0b0000000000000000000000000001000</span>; <span class="comment">// 8</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> DefaultLane: Lane = <span class="comment">/*                     */</span> <span class="number">0b0000000000000000000000000100000</span>; <span class="comment">// 32</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> IdleLane: Lane = <span class="comment">/*                        */</span> <span class="number">0b0010000000000000000000000000000</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="各种批处理操作场景和结果"><a href="#各种批处理操作场景和结果" class="headerlink" title="各种批处理操作场景和结果"></a>各种批处理操作场景和结果</h2><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="function"><span class="keyword">function</span> <span class="title">App</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> [count, setCount] = useState(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'render'</span>)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> onPerform = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="comment">// !情况1 点击：页面变成1 + render 1次，划入：页面变成1 + render 1次</span></span><br><span class="line">    <span class="comment">// setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// setCount(count + 1) // 1</span></span><br><span class="line">    <span class="comment">// !情况2 点击：页面变成3 + render 1次，划入：页面变成3 + render 1次</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; prev + 1)</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; prev + 1)</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; prev + 1) // 3</span></span><br><span class="line">    <span class="comment">// !情况3 点击：页面变成1 + render 1次，划入：页面变成1 + render 1次</span></span><br><span class="line">    <span class="comment">// setTimeout(() =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// !情况4 点击：页面变成1 + render 2次，划入：页面变成1 + render 2次</span></span><br><span class="line">    <span class="comment">// setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// setTimeout(() =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// !情况5 点击：页面变成2 + render 1次，划入：页面变成2 + render 1次</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   console.log('hook update 1')</span></span><br><span class="line">    <span class="comment">//   return prev + 1</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   console.log('hook update 2')</span></span><br><span class="line">    <span class="comment">//   return prev + 1</span></span><br><span class="line">    <span class="comment">// &#125;) // 2</span></span><br><span class="line">    <span class="comment">// !情况6 点击：页面变成1 + render 2次，划入：页面变成1 + render 1次</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   console.log('hook update 1') // hook update 1</span></span><br><span class="line">    <span class="comment">//   return prev + 1</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   console.log('hook update 2') // hook update 2</span></span><br><span class="line">    <span class="comment">//   return prev + 1</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// setTimeout(() =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// !情况7 点击：页面变成4 + render 2次，划入：页面变成4 + render 1次</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   console.log('hook update 1') // hook update 1</span></span><br><span class="line">    <span class="comment">//   return prev + 1</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   console.log('hook update 2') // hook update 2</span></span><br><span class="line">    <span class="comment">//   return prev + 1</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// setTimeout(() =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//     console.log('hook update 3') // hook update 3</span></span><br><span class="line">    <span class="comment">//     return prev + 1</span></span><br><span class="line">    <span class="comment">//   &#125;)</span></span><br><span class="line">    <span class="comment">//   setCount((prev) =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//     console.log('hook update 4') // hook update 4</span></span><br><span class="line">    <span class="comment">//     return prev + 1</span></span><br><span class="line">    <span class="comment">//   &#125;)</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// !情况8 点击：页面变成2 + render 2次，划入：页面变成2 + render 2次</span></span><br><span class="line">    <span class="comment">// flushSync(() =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// setCount(count + 2)</span></span><br><span class="line">    <span class="comment">// !情况9 点击：页面变成2 + render 2次，划入：页面变成2 + render 2次</span></span><br><span class="line">    <span class="comment">// flushSync(() =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">    <span class="comment">// sleep(1000)</span></span><br><span class="line">    <span class="comment">// setCount(count + 2)</span></span><br><span class="line">    <span class="comment">// !情况10 点击：页面变成2 + render 2次，划入：页面变成2 + render 1次</span></span><br><span class="line">    <span class="comment">// setCount(count + 1)</span></span><br><span class="line">    <span class="comment">// Promise.resolve().then(() =&gt; &#123;</span></span><br><span class="line">    <span class="comment">//   setCount(count + 2)</span></span><br><span class="line">    <span class="comment">// &#125;)</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// !情况11 页面变成1 + render 1次</span></span><br><span class="line">  <span class="comment">//   const changeValue = () =&gt; &#123;</span></span><br><span class="line">  <span class="comment">//     // setCount((prevState, props) =&gt; (&#123;</span></span><br><span class="line">  <span class="comment">//     //   count: prevState.count + 1,</span></span><br><span class="line">  <span class="comment">//     // &#125;));</span></span><br><span class="line">  <span class="comment">//     // setCount((prevState, props) =&gt; (&#123;</span></span><br><span class="line">  <span class="comment">//     //   count: prevState.count + 1,</span></span><br><span class="line">  <span class="comment">//     // &#125;));</span></span><br><span class="line">  <span class="comment">//     // setCount((prevState, props) =&gt; (&#123;</span></span><br><span class="line">  <span class="comment">//     //   count: prevState.count + 1,</span></span><br><span class="line">  <span class="comment">//     // &#125;));</span></span><br><span class="line">  <span class="comment">//     setCount(count + 1)</span></span><br><span class="line">  <span class="comment">//     setCount(count + 1)</span></span><br><span class="line">  <span class="comment">//     setCount(count + 1)</span></span><br><span class="line">  <span class="comment">//     console.log(count) // react18 输出的是更新前的值 --&gt; 0</span></span><br><span class="line">  <span class="comment">//   &#125;</span></span><br><span class="line">  <span class="comment">//   document.body.addEventListener('click', changeValue, false)</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">sleep</span>(<span class="params">milliseconds</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> now = <span class="built_in">Date</span>.now()</span><br><span class="line">    <span class="keyword">while</span> (<span class="built_in">Date</span>.now() - now &lt; milliseconds) &#123;&#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (</span><br><span class="line">    &lt;&gt;</span><br><span class="line">      &lt;h1 onClick=&#123;onPerform&#125; onMouseEnter=&#123;onPerform&#125;&gt;</span><br><span class="line">        Hello CodeSandbox &#123;count&#125;</span><br><span class="line">      &lt;<span class="regexp">/h1&gt;</span></span><br><span class="line"><span class="regexp">    &lt;/</span>&gt;</span><br><span class="line">  )</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="执行流程和原理"><a href="#执行流程和原理" class="headerlink" title="执行流程和原理"></a>执行流程和原理</h2><p><code>dispatchSetState</code> 的源码在 setState文章中 展示过一次。这里只是重复什么是批-更新的说法，通过点击事件或者鼠标划入事件触发setState，其实就是调用 <code>dispatchSetState</code> 方法。<code>dispatchSetState</code> 所做的就是：</p>
+<ol>
+<li>将 <code>hook</code> 更新加入更新队列</li>
+<li>尝试调度一次 <code>react更新</code></li>
+</ol>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">dispatchSetState</span>&lt;<span class="title">S</span>, <span class="title">A</span>&gt;(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  fiber: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  queue: UpdateQueue&lt;S, A&gt;,</span></span></span><br><span class="line"><span class="function"><span class="params">  action: A,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">void</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> lane = requestUpdateLane(fiber);</span><br><span class="line">  <span class="comment">// ! 1. 创建update</span></span><br><span class="line">  <span class="keyword">const</span> update: Update&lt;S, A&gt; = &#123;</span><br><span class="line">    lane,</span><br><span class="line">    revertLane: NoLane,</span><br><span class="line">    action,</span><br><span class="line">    hasEagerState: <span class="literal">false</span>,</span><br><span class="line">    eagerState: <span class="literal">null</span>,</span><br><span class="line">    next: (<span class="literal">null</span>: any),</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (isRenderPhaseUpdate(fiber)) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ! 2. 把update暂存到concurrentQueues数组中</span></span><br><span class="line">    <span class="keyword">const</span> root = enqueueConcurrentHookUpdate(fiber, queue, update, lane);</span><br><span class="line">    <span class="keyword">if</span> (root !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="comment">// ! 3. 调度更新</span></span><br><span class="line">      scheduleUpdateOnFiber(root, fiber, lane);</span><br><span class="line">      entangleTransitionUpdate(root, queue, lane);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果不纠结 <code>fiber</code> 和 <code>queue</code> 的细节的话，就批处理而言，这就是 <code>setState</code>的全部了。</p>
+<h3 id="requestUpdateLane"><a href="#requestUpdateLane" class="headerlink" title="requestUpdateLane"></a>requestUpdateLane</h3><p><code>dispatchSetState</code> 方法在 <code>创建update</code> 前，会通过 <code>requestUpdateLane</code> 方法取到 <code>update</code> 的优先级。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">requestUpdateLane</span>(<span class="params">fiber: Fiber</span>): <span class="title">Lane</span> </span>&#123;</span><br><span class="line">  <span class="comment">// Special cases</span></span><br><span class="line">  <span class="keyword">const</span> mode = fiber.mode;</span><br><span class="line">  <span class="comment">// 1. 非ConcurrentMode模式 2. 目前不支持</span></span><br><span class="line">  <span class="keyword">if</span> ((mode &amp; ConcurrentMode) === NoMode) &#123;</span><br><span class="line">    <span class="keyword">return</span> (SyncLane: Lane);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (</span><br><span class="line">    (executionContext &amp; RenderContext) !== NoContext &amp;&amp;</span><br><span class="line">    workInProgressRootRenderLanes !== NoLanes</span><br><span class="line">  ) &#123;</span><br><span class="line">    <span class="comment">// This is a render phase update. These are not officially supported. The</span></span><br><span class="line">    <span class="comment">// old behavior is to give this the same "thread" (lanes) as</span></span><br><span class="line">    <span class="comment">// whatever is currently rendering. So if you call `setState` on a component</span></span><br><span class="line">    <span class="comment">// that happens later in the same render, it will flush. Ideally, we want to</span></span><br><span class="line">    <span class="comment">// remove the special case and treat them as if they came from an</span></span><br><span class="line">    <span class="comment">// interleaved event. Regardless, this pattern is not officially supported.</span></span><br><span class="line">    <span class="comment">// This behavior is only a fallback. The flag only exists until we can roll</span></span><br><span class="line">    <span class="comment">// out the setState warning, since existing code might accidentally rely on</span></span><br><span class="line">    <span class="comment">// the current behavior.</span></span><br><span class="line">    <span class="keyword">return</span> pickArbitraryLane(workInProgressRootRenderLanes);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 普通更新与非紧急更新(18)</span></span><br><span class="line">  <span class="keyword">const</span> transition = requestCurrentTransition();</span><br><span class="line">  <span class="comment">// 如果有transition</span></span><br><span class="line">  <span class="keyword">if</span> (transition !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> actionScopeLane = peekEntangledActionLane();</span><br><span class="line">    <span class="keyword">return</span> actionScopeLane !== NoLane</span><br><span class="line">      ? <span class="comment">// We're inside an async action scope. Reuse the same lane.</span></span><br><span class="line">        actionScopeLane</span><br><span class="line">      : <span class="comment">// We may or may not be inside an async action scope. If we are, this</span></span><br><span class="line">        <span class="comment">// is the first update in that scope. Either way, we need to get a</span></span><br><span class="line">        <span class="comment">// fresh transition lane.</span></span><br><span class="line">        requestTransitionLane(transition);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// React内部的一些update，比如flushSync，会通过上下文变量来跟踪其优先级</span></span><br><span class="line">  <span class="keyword">const</span> updateLane: Lane = (getCurrentUpdatePriority(): any);</span><br><span class="line">  <span class="keyword">if</span> (updateLane !== NoLane) &#123;</span><br><span class="line">    <span class="comment">// ? sy setState click 2</span></span><br><span class="line">    <span class="keyword">return</span> updateLane;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// React外部的update，根据事件类型，向当前环境获取对应的优先级。</span></span><br><span class="line">  <span class="keyword">const</span> eventLane: Lane = (getCurrentEventPriority(): any);</span><br><span class="line">  <span class="keyword">return</span> eventLane;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="getCurrentEventPriority"><a href="#getCurrentEventPriority" class="headerlink" title="getCurrentEventPriority"></a>getCurrentEventPriority</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">getCurrentEventPriority</span>(<span class="params"></span>): <span class="title">EventPriority</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> currentEvent = <span class="built_in">window</span>.event;</span><br><span class="line">  <span class="keyword">if</span> (currentEvent === <span class="literal">undefined</span>) &#123;</span><br><span class="line">    <span class="comment">// ? sy 页面初次渲染</span></span><br><span class="line">    <span class="keyword">return</span> DefaultEventPriority;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> getEventPriority(currentEvent.type);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="getEventPriority"><a href="#getEventPriority" class="headerlink" title="getEventPriority"></a>getEventPriority</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">getEventPriority</span>(<span class="params">domEventName: DOMEventName</span>): <span class="title">EventPriority</span> </span>&#123;</span><br><span class="line">  <span class="keyword">switch</span> (domEventName) &#123;</span><br><span class="line">    <span class="comment">// Used by SimpleEventPlugin:</span></span><br><span class="line">    <span class="keyword">case</span> <span class="string">'cancel'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'click'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'close'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'contextmenu'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'copy'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'cut'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'auxclick'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dblclick'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragend'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragstart'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'drop'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'focusin'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'focusout'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'input'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'invalid'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'keydown'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'keypress'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'keyup'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mousedown'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseup'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'paste'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pause'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'play'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointercancel'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointerdown'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointerup'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'ratechange'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'reset'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'resize'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'seeked'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'submit'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'touchcancel'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'touchend'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'touchstart'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'volumechange'</span>:</span><br><span class="line">    <span class="comment">// Used by polyfills: (fall through)</span></span><br><span class="line">    <span class="keyword">case</span> <span class="string">'change'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'selectionchange'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'textInput'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'compositionstart'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'compositionend'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'compositionupdate'</span>:</span><br><span class="line">    <span class="comment">// Only enableCreateEventHandleAPI: (fall through)</span></span><br><span class="line">    <span class="keyword">case</span> <span class="string">'beforeblur'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'afterblur'</span>:</span><br><span class="line">    <span class="comment">// Not used by React but could be by user code: (fall through)</span></span><br><span class="line">    <span class="keyword">case</span> <span class="string">'beforeinput'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'blur'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'fullscreenchange'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'focus'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'hashchange'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'popstate'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'select'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'selectstart'</span>:</span><br><span class="line">      <span class="keyword">return</span> DiscreteEventPriority;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'drag'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragenter'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragexit'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragleave'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragover'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mousemove'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseout'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseover'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointermove'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointerout'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointerover'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'scroll'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'toggle'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'touchmove'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'wheel'</span>:</span><br><span class="line">    <span class="comment">// Not used by React but could be by user code: (fall through)</span></span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseenter'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseleave'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointerenter'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'pointerleave'</span>:</span><br><span class="line">      <span class="keyword">return</span> ContinuousEventPriority;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'message'</span>: &#123;</span><br><span class="line">      <span class="comment">// We might be in the Scheduler callback.</span></span><br><span class="line">      <span class="comment">// Eventually this mechanism will be replaced by a check</span></span><br><span class="line">      <span class="comment">// of the current priority on the native scheduler.</span></span><br><span class="line">      <span class="keyword">const</span> schedulerPriority = getCurrentSchedulerPriorityLevel();</span><br><span class="line">      <span class="keyword">switch</span> (schedulerPriority) &#123;</span><br><span class="line">        <span class="keyword">case</span> ImmediateSchedulerPriority:</span><br><span class="line">          <span class="keyword">return</span> DiscreteEventPriority;</span><br><span class="line">        <span class="keyword">case</span> UserBlockingSchedulerPriority:</span><br><span class="line">          <span class="keyword">return</span> ContinuousEventPriority;</span><br><span class="line">        <span class="keyword">case</span> NormalSchedulerPriority:</span><br><span class="line">        <span class="keyword">case</span> LowSchedulerPriority:</span><br><span class="line">          <span class="comment">// <span class="doctag">TODO:</span> Handle LowSchedulerPriority, somehow. Maybe the same lane as hydration.</span></span><br><span class="line">          <span class="keyword">return</span> DefaultEventPriority;</span><br><span class="line">        <span class="keyword">case</span> IdleSchedulerPriority:</span><br><span class="line">          <span class="keyword">return</span> IdleEventPriority;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">          <span class="keyword">return</span> DefaultEventPriority;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">return</span> DefaultEventPriority;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，通过一系列操作：</p>
+<ul>
+<li><code>click</code> 事件对应的优先级是 <code>DiscreteEventPriority</code>，优先级值也就是 <code>2</code></li>
+<li><code>mouseenter</code> 对应的优先级是 <code>ContinuousEventPriority</code>，优先级值也就是 <code>8</code></li>
+<li><code>setTimeout</code> 对应的优先级的值是默认优先级 <code>32</code></li>
+</ul>
+<blockquote>
+<p>一般在合成事件创建之初，就会通过 <code>createEventListenerWrapperWithPriority</code> 各个事件的设置优先级，所以一般 <code>click</code>、<code>mouseenter</code> 等react内部的事件，都会通过 <code>getCurrentUpdatePriority</code> 拿到 <code>updateLane</code>。<br>类似 <code>setTimeout</code>，会走到 <code>getCurrentEventPriority</code> 返回 <code>DefaultEventPriority</code><br>如果是通过 <code>document.body.addEventListener(&#39;click&#39;, changeValue, false)</code> 触发的事件，也会走到 <code>getCurrentEventPriority</code>，通过<code>getEventPriority</code> 拿到 <code>window.event</code> 所对应的优先级</p>
+</blockquote>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p><code>requestUpdateLane</code> 中获取优先级：</p>
+<ol>
+<li>先通过requestCurrentTransition请求并判断是否有非紧急更新</li>
+<li>再通过getCurrentUpdatePriority</li>
+<li>最后通过getCurrentEventPriority根据事件类型，项当前环境获取对应的优先级。</li>
+</ol>
+<h3 id="scheduleUpdateOnFiber"><a href="#scheduleUpdateOnFiber" class="headerlink" title="scheduleUpdateOnFiber"></a>scheduleUpdateOnFiber</h3><p>忽略一些琐碎的细节后，你可以发现这个函数的核心逻辑甚至更简单：</p>
+<ul>
+<li>标记一次具有某一优先级的更新（markRootUpdated）</li>
+<li>调用ensureRootIsScheduled</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">scheduleUpdateOnFiber</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  root: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  fiber: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  lane: Lane,</span></span></span><br><span class="line"><span class="function"><span class="params">  eventTime: number,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  markRootUpdated(root, lane, eventTime);</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  ensureRootIsScheduled(root, eventTime);</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="ensureRootIsScheduled"><a href="#ensureRootIsScheduled" class="headerlink" title="ensureRootIsScheduled"></a>ensureRootIsScheduled</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">ensureRootIsScheduled</span>(<span class="params">root: FiberRoot, currentTime: number</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  <span class="comment">// 这里是多次调用不再调度微任务触发processRootScheduleInMicrotask</span></span><br><span class="line">  <span class="keyword">if</span> (!didScheduleMicrotask) &#123;</span><br><span class="line">      <span class="comment">// ? sy</span></span><br><span class="line">      didScheduleMicrotask = <span class="literal">true</span>;</span><br><span class="line">      scheduleImmediateTask(processRootScheduleInMicrotask);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="processRootScheduleInMicrotask"><a href="#processRootScheduleInMicrotask" class="headerlink" title="processRootScheduleInMicrotask"></a>processRootScheduleInMicrotask</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (root !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">const</span> nextLanes = scheduleTaskForRootDuringMicrotask(root, currentTime);</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在microtask结束时，flush任何pending的同步work。这必须放在最后，因为它执行实际的可能会抛出异常的渲染工作。</span></span><br><span class="line"><span class="comment">// onClick count</span></span><br><span class="line">flushSyncWorkOnAllRoots();</span><br></pre></td></tr></table></figure>
+
+<h4 id="scheduleTaskForRootDuringMicrotask"><a href="#scheduleTaskForRootDuringMicrotask" class="headerlink" title="scheduleTaskForRootDuringMicrotask"></a>scheduleTaskForRootDuringMicrotask</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前所有优先级中最高的优先级</span></span><br><span class="line"><span class="keyword">const</span> nextLanes = getNextLanes(</span><br><span class="line">    root,</span><br><span class="line">    root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (includesSyncLane(nextLanes)) &#123;</span><br><span class="line">    <span class="comment">// 同步工作始终在微任务结束时刷新，因此我们不需要安排额外的任务。</span></span><br><span class="line">    <span class="keyword">if</span> (existingCallbackNode !== <span class="literal">null</span>) &#123;</span><br><span class="line">      cancelCallback(existingCallbackNode);</span><br><span class="line">    &#125;</span><br><span class="line">    root.callbackPriority = SyncLane;</span><br><span class="line">    root.callbackNode = <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">return</span> SyncLane;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 本次要调度的优先级</span></span><br><span class="line">    <span class="keyword">const</span> newCallbackPriority = getHighestPriorityLane(nextLanes);</span><br><span class="line">    <span class="comment">// 已经存在的调度的优先级</span></span><br><span class="line">    <span class="keyword">const</span> existingCallbackPriority = root.callbackPriority;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (existingCallbackPriority === newCallbackPriority) &#123;</span><br><span class="line">        <span class="comment">// 这里就是同等优先级做批处理</span></span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ... 高优先级打断低优先级</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 调度更新流程</span></span><br><span class="line">    newCallbackNode = scheduleCallback(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(<span class="literal">null</span>, root));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ...实际的调度，最后会给root.callbackPriority赋值</span></span><br><span class="line">    root.callbackPriority = newCallbackPriority;</span><br><span class="line">    root.callbackNode = newCallbackNode;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">scheduleTaskForRootDuringMicrotask</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  root: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  currentTime: number,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">Lane</span> </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'%c [ scheduleTaskForRootDuringMicrotask ]-331'</span>, <span class="string">'font-size:13px; background:pink; color:#bf2c9f;'</span>, )</span><br><span class="line">  <span class="comment">// 这个函数总是在microtask中被调用，或者在渲染任务的最后，在我们将控制权交还给主线程之前被调用。它绝对不应该被同步调用。</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 检查是否有任何lanes被其他work饿死。如果是，将它们标记为过期，这样我们就知道下一个要处理的是它们。</span></span><br><span class="line">  markStarvedLanesAsExpired(root, currentTime);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Determine the next lanes to work on, and their priority.</span></span><br><span class="line">  <span class="keyword">const</span> workInProgressRoot = getWorkInProgressRoot();</span><br><span class="line">  <span class="keyword">const</span> workInProgressRootRenderLanes = getWorkInProgressRootRenderLanes();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获取当前所有优先级中最高的优先级</span></span><br><span class="line">  <span class="keyword">const</span> nextLanes = getNextLanes(</span><br><span class="line">    root,</span><br><span class="line">    root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> existingCallbackNode = root.callbackNode;</span><br><span class="line">  <span class="keyword">if</span> (</span><br><span class="line">    <span class="comment">// Check if there's nothing to work on</span></span><br><span class="line">    nextLanes === NoLanes ||</span><br><span class="line">    <span class="comment">// If this root is currently suspended and waiting for data to resolve, don't</span></span><br><span class="line">    <span class="comment">// schedule a task to render it. We'll either wait for a ping, or wait to</span></span><br><span class="line">    <span class="comment">// receive an update.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Suspended render phase</span></span><br><span class="line">    (root === workInProgressRoot &amp;&amp; isWorkLoopSuspendedOnData()) ||</span><br><span class="line">    <span class="comment">// Suspended commit phase</span></span><br><span class="line">    root.cancelPendingCommit !== <span class="literal">null</span></span><br><span class="line">  ) &#123;</span><br><span class="line">    <span class="comment">// Fast path: There's nothing to work on.</span></span><br><span class="line">    <span class="keyword">if</span> (existingCallbackNode !== <span class="literal">null</span>) &#123;</span><br><span class="line">      cancelCallback(existingCallbackNode);</span><br><span class="line">    &#125;</span><br><span class="line">    root.callbackNode = <span class="literal">null</span>;</span><br><span class="line">    root.callbackPriority = NoLane;</span><br><span class="line">    <span class="keyword">return</span> NoLane;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Schedule a new callback in the host environment.</span></span><br><span class="line">  <span class="keyword">if</span> (includesSyncLane(nextLanes)) &#123;</span><br><span class="line">    <span class="comment">// sy- setState</span></span><br><span class="line">    <span class="comment">// sy-no 初次渲染</span></span><br><span class="line">    <span class="comment">// 同步工作始终在微任务结束时刷新，因此我们不需要安排额外的任务。</span></span><br><span class="line">    <span class="keyword">if</span> (existingCallbackNode !== <span class="literal">null</span>) &#123;</span><br><span class="line">      cancelCallback(existingCallbackNode);</span><br><span class="line">    &#125;</span><br><span class="line">    root.callbackPriority = SyncLane;</span><br><span class="line">    root.callbackNode = <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">return</span> SyncLane;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// We use the highest priority lane to represent the priority of the callback.</span></span><br><span class="line">    <span class="keyword">const</span> existingCallbackPriority = root.callbackPriority;</span><br><span class="line">    <span class="keyword">const</span> newCallbackPriority = getHighestPriorityLane(nextLanes);</span><br><span class="line">    <span class="keyword">if</span> (</span><br><span class="line">      newCallbackPriority === existingCallbackPriority &amp;&amp;</span><br><span class="line">      <span class="comment">// Special case related to `act`. If the currently scheduled task is a</span></span><br><span class="line">      <span class="comment">// Scheduler task, rather than an `act` task, cancel it and re-schedule</span></span><br><span class="line">      <span class="comment">// on the `act` queue.</span></span><br><span class="line">      !(</span><br><span class="line">        __DEV__ &amp;&amp;</span><br><span class="line">        ReactCurrentActQueue.current !== <span class="literal">null</span> &amp;&amp;</span><br><span class="line">        existingCallbackNode !== fakeActCallbackNode</span><br><span class="line">      )</span><br><span class="line">    ) &#123;</span><br><span class="line">      <span class="comment">// The priority hasn't changed. We can reuse the existing task.</span></span><br><span class="line">      <span class="keyword">return</span> newCallbackPriority;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Cancel the existing callback. We'll schedule a new one below.</span></span><br><span class="line">      cancelCallback(existingCallbackNode);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> schedulerPriorityLevel;</span><br><span class="line">    <span class="keyword">switch</span> (lanesToEventPriority(nextLanes)) &#123;</span><br><span class="line">      <span class="keyword">case</span> DiscreteEventPriority:</span><br><span class="line">        schedulerPriorityLevel = ImmediateSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> ContinuousEventPriority:</span><br><span class="line">        schedulerPriorityLevel = UserBlockingSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> DefaultEventPriority: <span class="comment">// 32</span></span><br><span class="line">        <span class="comment">// ? sy 页面初次渲染、transition(128)</span></span><br><span class="line">        schedulerPriorityLevel = NormalSchedulerPriority; <span class="comment">// 3</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> IdleEventPriority:</span><br><span class="line">        schedulerPriorityLevel = IdleSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        schedulerPriorityLevel = NormalSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ? sy 页面初次渲染</span></span><br><span class="line">    <span class="keyword">const</span> newCallbackNode = scheduleCallback(</span><br><span class="line">      schedulerPriorityLevel,</span><br><span class="line">      performConcurrentWorkOnRoot.bind(<span class="literal">null</span>, root),</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    root.callbackPriority = newCallbackPriority;</span><br><span class="line">    root.callbackNode = newCallbackNode;</span><br><span class="line">    <span class="keyword">return</span> newCallbackPriority;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="执行流程总结"><a href="#执行流程总结" class="headerlink" title="执行流程总结"></a>执行流程总结</h4><p>通过微任务调度 <code>processRootScheduleInMicrotask</code> 方法，此方法核心就是调用 <code>scheduleTaskForRootDuringMicrotask</code>，而在 <code>microtask</code> 结束时，调用 <code>flushSyncWorkOnAllRoots</code> 方法 <code>flush</code> 任何 <code>pending</code> 的同步 <code>work</code>。这必须放在最后，因为它执行实际的可能会抛出异常的渲染工作。</p>
+<p>在 <code>scheduleTaskForRootDuringMicrotask</code> 中：</p>
+<ol>
+<li>先是检查是否有饿死的任务，如果是，将它们标记为过期，这样我们就知道下一个要处理的是它们</li>
+<li>获取当前所有优先级中最高的优先级 <code>nextLanes</code></li>
+<li>先判断是否包含同步优先级，如果包含，取消其它任务并返回，不包含就继续执行</li>
+<li>再判断现存的任务优先级和新任务的优先级，如果相等，就合并执行且 <code>return</code></li>
+<li>如果不相等，就取消现存任务</li>
+<li>继续根据 <code>nextLanes</code>，通过 <code>lanesToEventPriority</code> 方法，获取 <code>schedulerPriorityLevel</code> 调度的优先级，最后通过 <code>scheduleCallback</code> 进行调度</li>
+</ol>
+<h2 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h2><p>所以通过对执行流程和原理的分析，对与以上提到的这么多批处理的场景也就能通过eventloop和react源码解释的通了。</p>
+<p>关于批处理的逻辑，主要有两点：</p>
+<ul>
+<li>通过 <code>getNextLanes</code> 和 <code>getHighestPriorityLane</code> 拿到本次应该（不一定是setState时的那个）更新的优先级 <code>newCallbackPriority</code></li>
+<li>对比上次等待的更新和本次更新的优先级，即 <code>newCallbackPriority === existingCallbackPriority</code>，如果相等，则提前 <code>return</code></li>
+</ul>
+<p>在 <code>scheduleUpdateOnFiber</code> 中已经对 <code>setState</code> 对应的优先级做了标记，所以那个优先级在这里是可以被读取到的。如果两次更新的优先级相同，批处理就会起作用。</p>
+<blockquote>
+<p>批处理的发生当然意味着代码进入上述的 <code>newCallbackPriority === existingCallbackPriority</code> 分支内。但是即使是其他情形也有可能进入这个分支。<br>例如，当连续的两次 <code>setState</code> 被调用，前者优先级高于后者，那么当第二次 <code>setState</code> 被调用，从而进入 <code>ensureRootIsScheduled</code> 时，<code>existingCallbackPriority与newCallbackPriority</code> 都是第一次调用时的优先级（每次所取的都是最高优先级），导致函数提前返回。这并不意味着低优先级的更新被忽略，在高优先级的更新即将完成时，<code>ensureRootIsScheduled</code> 会被再次调用，确保所有更新会被执行。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react18-2/" rel="tag"># react18.2</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/react18.2%E5%92%8Creact16%E6%89%B9%E5%A4%84%E7%90%86%E5%AE%9E%E7%8E%B0%E5%92%8C%E5%AF%B9%E6%AF%94.html" rel="prev" title="react18.2和react16批处理实现和对比">
+      <i class="fa fa-chevron-left"></i> react18.2和react16批处理实现和对比
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#事件优先级"><span class="nav-number">1.</span> <span class="nav-text">事件优先级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#各种批处理操作场景和结果"><span class="nav-number">2.</span> <span class="nav-text">各种批处理操作场景和结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#执行流程和原理"><span class="nav-number">3.</span> <span class="nav-text">执行流程和原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#requestUpdateLane"><span class="nav-number">3.1.</span> <span class="nav-text">requestUpdateLane</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#getCurrentEventPriority"><span class="nav-number">3.1.1.</span> <span class="nav-text">getCurrentEventPriority</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#getEventPriority"><span class="nav-number">3.1.2.</span> <span class="nav-text">getEventPriority</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结"><span class="nav-number">3.1.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scheduleUpdateOnFiber"><span class="nav-number">3.2.</span> <span class="nav-text">scheduleUpdateOnFiber</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ensureRootIsScheduled"><span class="nav-number">3.2.1.</span> <span class="nav-text">ensureRootIsScheduled</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#processRootScheduleInMicrotask"><span class="nav-number">3.2.2.</span> <span class="nav-text">processRootScheduleInMicrotask</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#scheduleTaskForRootDuringMicrotask"><span class="nav-number">3.2.3.</span> <span class="nav-text">scheduleTaskForRootDuringMicrotask</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#执行流程总结"><span class="nav-number">3.2.4.</span> <span class="nav-text">执行流程总结</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结-1"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
