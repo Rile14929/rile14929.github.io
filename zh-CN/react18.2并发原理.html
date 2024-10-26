@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="并发和并行 并发指的是：多个任务，在同一时间段内同时发生，多个任务会有互相抢占资源的情况。 并行指的是：多个任务，在同一时间点上同时发生，多个任务之间不会互相抢占资源。  在这里，我们千万不要理解 Concurrent Mode 是在同时执行多个任务，相信很多人包括我在内都理解混淆，在看源码后，才恍然大悟。 它是同一段时间内，可以执行多个任务：  因为高优先级任务可以插队并打断低优先级任务 或当时">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react18.2并发模式（Concurrent Mode）分析">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/react18.2%E5%B9%B6%E5%8F%91%E5%8E%9F%E7%90%86.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="并发和并行 并发指的是：多个任务，在同一时间段内同时发生，多个任务会有互相抢占资源的情况。 并行指的是：多个任务，在同一时间点上同时发生，多个任务之间不会互相抢占资源。  在这里，我们千万不要理解 Concurrent Mode 是在同时执行多个任务，相信很多人包括我在内都理解混淆，在看源码后，才恍然大悟。 它是同一段时间内，可以执行多个任务：  因为高优先级任务可以插队并打断低优先级任务 或当时">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-10-25T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="react18.2">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/react18.2%E5%B9%B6%E5%8F%91%E5%8E%9F%E7%90%86.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>react18.2并发模式（Concurrent Mode）分析 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react18.2%E5%B9%B6%E5%8F%91%E5%8E%9F%E7%90%86.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          react18.2并发模式（Concurrent Mode）分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-10-26 00:00:00" itemprop="dateCreated datePublished" datetime="2024-10-26T00:00:00+08:00">2024-10-26</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="并发和并行"><a href="#并发和并行" class="headerlink" title="并发和并行"></a>并发和并行</h2><ul>
+<li>并发指的是：多个任务，在同一时间段内同时发生，多个任务会有互相抢占资源的情况。</li>
+<li>并行指的是：多个任务，在同一时间点上同时发生，多个任务之间不会互相抢占资源。</li>
+</ul>
+<p>在这里，我们千万不要理解 <code>Concurrent Mode</code> 是在同时执行多个任务，相信很多人包括我在内都理解混淆，在看源码后，才恍然大悟。</p>
+<p>它是同一段时间内，可以执行多个任务：</p>
+<ul>
+<li>因为高优先级任务可以插队并打断低优先级任务</li>
+<li>或当时间切片的某一条任务执行超时后，将执行权交给主线程，当主线程执行完成，又继续执行之前的切片任务</li>
+</ul>
+<h2 id="为什么需要并发模式"><a href="#为什么需要并发模式" class="headerlink" title="为什么需要并发模式"></a>为什么需要并发模式</h2><p>我们知道在同步模式下，从 <code>setState</code> 到 <code>虚拟DOM遍历</code>，再到 <code>真实DOM</code> 更新，整个过程都是同步执行且无法被中断的，这样可能就会出现一个问题 —— 用户事件触发的更新被阻塞。</p>
+<p>因为我们期望一些不重要的更新不会影响一些重要的更新，比如长列表渲染不会阻塞用户 <code>input</code> 输入，从而提升用户体验。</p>
+<h2 id="并发模式特点"><a href="#并发模式特点" class="headerlink" title="并发模式特点"></a>并发模式特点</h2><h3 id="可中断"><a href="#可中断" class="headerlink" title="可中断"></a>可中断</h3><p>对于 <code>React</code> 来说，任务可能很多，如果不区分优先级，那就是先来后到的顺序。如果高优先级任务来了，但是低优先级任务还没有处理完毕，就会造成高优先级任务等待的局面。</p>
+<p>由此可见，对于复杂项目来说，任务可中断这件事情很重要。那么问题来了，<code>React</code> 是如何做到的呢，其实基础还是 <code>fiber</code>，<code>fiber</code> 本身链表结构，就是指针，想指向别的地方加个属性值就行了。</p>
+<h3 id="可遗弃"><a href="#可遗弃" class="headerlink" title="可遗弃"></a>可遗弃</h3><p>在 <code>Concurrent 模式</code>下，有些update可能会被遗弃掉。</p>
+<p>比如我想在淘宝搜索“老人与海”，那么我在输入框输入“老人与海”的过程中，“老人”会有对应的模糊查询结果，但是不一定是我想要的结果，所以这个时候的模糊查询框的update就是低优先级，“老人”对应UI的update相对input的update，优先级就会低一些。在现在React18中，这个模糊查询相关的UI可以被当做transition。</p>
+<h3 id="状态复用"><a href="#状态复用" class="headerlink" title="状态复用"></a>状态复用</h3><p>在 <code>Concurrent 模式</code> 下，还支持状态的复用。某些情况下，比如用户走了，又回来，那么上一次的页面状态应当被保存下来，而不是完全从头再来。当然实际情况下不能缓存所有的页面，不然内存不得爆炸，所以还得做成可选的。</p>
+<p>目前， <code>React</code> 正在用 <code>Offscreen</code> 组件来实现这个功能。</p>
+<p>另外，使用 <code>OffScreen</code>，除了可以复用原先的状态，我们也可以使用它来当做新UI的缓存准备，就是虽然新UI还没登场，但是可以先在后台准备着，这样一旦轮到它，就可以立马快速地渲染出来。</p>
+<h2 id="如何实现并发模式（Concurrent-Mode）"><a href="#如何实现并发模式（Concurrent-Mode）" class="headerlink" title="如何实现并发模式（Concurrent Mode）"></a>如何实现并发模式（Concurrent Mode）</h2><p><code>Concurrent Mode</code> 这种中断渲染的行为，带来了几个关键问题：</p>
+<ul>
+<li>怎样做到中断渲染？</li>
+<li>怎样定义任务的重要程度和执行顺序？</li>
+<li>何时中断任务，怎样划分时间片？</li>
+</ul>
+<p>个人总结主要通过三个方面完成：</p>
+<ul>
+<li>颗粒化更新节点来解决递归不可中断问题；</li>
+<li>任务增加优先级来解决任务执行顺序；</li>
+<li>创建任务调度机制来解决时间分片和任务中断，任务恢复；</li>
+</ul>
+<p>对应到React的实现就是：<code>Fiber架构</code>，<code>lane模型</code>，<code>scheduler任务调度</code></p>
+<h3 id="Fiber架构"><a href="#Fiber架构" class="headerlink" title="Fiber架构"></a>Fiber架构</h3><p>在重构 <code>Fiber</code> 架构之前，<code>React</code> 是没办法解决这些问题的。因为在此之前，<code>React</code> 的渲染更新主要是通过对比更新前后的 <code>虚拟DOM</code>，找出不同进行更新，而对比的过程因为 <code>虚拟DOM</code> 树结构的限制，只能采用递归更新，我们知道递归一旦开始，中途就无法中断。</p>
+<p>那 <code>Fiber</code> 架构为什么能解决这个问题呢？</p>
+<ul>
+<li>每个 <code>Fiber</code> 节点对应一个 <code>React Element</code>，保存有该组件的所有基本状态信息；</li>
+<li>每个 <code>Fiber</code> 节点保存有该组件的更新信息；</li>
+</ul>
+<p>因为 <code>Fiber</code> 节点承载了基本状态和更新信息，这样 <code>React</code> 就可以将 <code>Fiber</code> 节点视为最小的工作单元，可以实现 <code>Fiber</code> 节点这种粒度的更新，因为粒度的细化也就使得异步可中断更新成为了可能。</p>
+<p><code>Fiber</code> 节点的基本状态保存了它的父节点，子节点，兄弟节点信息，这样可以将之前的递归遍历改变为循环遍历，使渲染中断成为可能。</p>
+<h3 id="Lane模型"><a href="#Lane模型" class="headerlink" title="Lane模型"></a>Lane模型</h3><p><code>lane模型</code> 主要解决的是任务优先级问题。</p>
+<p>我们想中断渲染的本质是想让有更高优先级的任务可以中断低优先级任务来插队执行。</p>
+<p>那怎么定义任务优先级呢，<code>lane模型</code> 通过31位的位运算符来定义：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// * lane 值越小，优先级越高</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> TotalLanes = <span class="number">31</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 没有优先级</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> NoLanes: Lanes = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000000000000000</span>;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> NoLane: Lane = <span class="comment">/*                          */</span> <span class="number">0b0000000000000000000000000000000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 同步优先级，表示同步的任务一次只能执行一个，例如：用户的交互事件产生的更新任务</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> SyncLane: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000000000000001</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 连续触发优先级，例如：滚动事件，拖动事件等</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> InputContinuousHydrationLane: Lane = <span class="comment">/*    */</span> <span class="number">0b0000000000000000000000000000010</span>;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> InputContinuousLane: Lanes = <span class="comment">/*            */</span> <span class="number">0b0000000000000000000000000000100</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 默认优先级，例如使用setTimeout，请求数据返回等造成的更新</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> DefaultHydrationLane: Lane = <span class="comment">/*            */</span> <span class="number">0b0000000000000000000000000001000</span>;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> DefaultLane: Lanes = <span class="comment">/*                    */</span> <span class="number">0b0000000000000000000000000010000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 过渡优先级，例如: Suspense、useTransition、useDeferredValue等拥有的优先级</span></span><br><span class="line"><span class="keyword">const</span> TransitionHydrationLane: Lane = <span class="comment">/*                */</span> <span class="number">0b0000000000000000000000000100000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLanes: Lanes = <span class="comment">/*                       */</span> <span class="number">0b0000000001111111111111111000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane1: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000000001000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane2: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000000010000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane3: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000000100000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane4: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000010000000000</span>; <span class="comment">// 1024</span></span><br><span class="line"><span class="keyword">const</span> TransitionLane5: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000000100000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane6: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000001000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane7: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000010000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane8: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000000100000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane9: Lane = <span class="comment">/*                        */</span> <span class="number">0b0000000000000001000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane10: Lane = <span class="comment">/*                       */</span> <span class="number">0b0000000000000010000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane11: Lane = <span class="comment">/*                       */</span> <span class="number">0b0000000000000100000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane12: Lane = <span class="comment">/*                       */</span> <span class="number">0b0000000000001000000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane13: Lane = <span class="comment">/*                       */</span> <span class="number">0b0000000000010000000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane14: Lane = <span class="comment">/*                       */</span> <span class="number">0b0000000000100000000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> TransitionLane15: Lane = <span class="comment">/*                       */</span> <span class="number">0b0000000001000000000000000000000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> RetryLanes: Lanes = <span class="comment">/*                            */</span> <span class="number">0b0000011110000000000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> RetryLane1: Lane = <span class="comment">/*                             */</span> <span class="number">0b0000000010000000000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> RetryLane2: Lane = <span class="comment">/*                             */</span> <span class="number">0b0000000100000000000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> RetryLane3: Lane = <span class="comment">/*                             */</span> <span class="number">0b0000001000000000000000000000000</span>;</span><br><span class="line"><span class="keyword">const</span> RetryLane4: Lane = <span class="comment">/*                             */</span> <span class="number">0b0000010000000000000000000000000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> SelectiveHydrationLane: Lane = <span class="comment">/*          */</span> <span class="number">0b0000100000000000000000000000000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> IdleHydrationLane: Lane = <span class="comment">/*               */</span> <span class="number">0b0001000000000000000000000000000</span>;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> IdleLane: Lane = <span class="comment">/*                        */</span> <span class="number">0b0010000000000000000000000000000</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> OffscreenLane: Lane = <span class="comment">/*                   */</span> <span class="number">0b0100000000000000000000000000000</span>;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> DeferredLane: Lane = <span class="comment">/*                    */</span> <span class="number">0b1000000000000000000000000000000</span>;</span><br></pre></td></tr></table></figure>
+<p>可以看到 <code>React</code> 定义的优先级：</p>
+<p>同步任务 &gt; 连续触发事件任务 &gt; setTimeout，请求更新任务 &gt; 过渡任务（React18新特性）</p>
+<h4 id="事件优先级"><a href="#事件优先级" class="headerlink" title="事件优先级"></a>事件优先级</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">getEventPriority</span>(<span class="params">domEventName: DOMEventName</span>): * </span>&#123;</span><br><span class="line">  <span class="keyword">switch</span> (domEventName) &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'cancel'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'click'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'copy'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragend'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'dragstart'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'drop'</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'focusin'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'focusout'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'input'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'change'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'textInput'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'blur'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'focus'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'select'</span>:</span><br><span class="line">      <span class="comment">// 同步优先级</span></span><br><span class="line">      <span class="keyword">return</span> DiscreteEventPriority;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'drag'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mousemove'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseout'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseover'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'scroll'</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'touchmove'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'wheel'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseenter'</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'mouseleave'</span>:</span><br><span class="line">      <span class="comment">// 连续触发优先级</span></span><br><span class="line">      <span class="keyword">return</span> ContinuousEventPriority;</span><br><span class="line">   ...</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">return</span> DefaultEventPriority;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>EventPriority</th>
+<th></th>
+<th>Lane</th>
+<th>数值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DiscreteEventPriority</td>
+<td>离散事件。click、keydown、focusin等，事件的触发不是连续，可以做到快速响应</td>
+<td>SyncLane</td>
+<td>1</td>
+</tr>
+<tr>
+<td>ContinuousEventPriority</td>
+<td>连续事件。drag、scroll、mouseover等，事件的是连续触发的，快速响应可能会阻塞渲染，优先级较离散事件低</td>
+<td>InputContinuousLane</td>
+<td>4</td>
+</tr>
+<tr>
+<td>DefaultEventPriority</td>
+<td>默认的事件优先级</td>
+<td>DefaultLane</td>
+<td>16</td>
+</tr>
+<tr>
+<td>IdleEventPriority</td>
+<td>空闲的优先级</td>
+<td>IdleLane</td>
+<td>536870912</td>
+</tr>
+</tbody></table>
+<h4 id="调度优先级"><a href="#调度优先级" class="headerlink" title="调度优先级"></a>调度优先级</h4><table>
+<thead>
+<tr>
+<th>SchedulerPriority</th>
+<th>EventPriority</th>
+<th>大于&gt;17.0.2</th>
+<th>小于&gt;17.0.2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ImmediatePriority</td>
+<td>DiscreteEventPriority</td>
+<td>1</td>
+<td>99</td>
+</tr>
+<tr>
+<td>UserblockingPriority</td>
+<td>Userblocking</td>
+<td>2</td>
+<td>98</td>
+</tr>
+<tr>
+<td>NormalPriority</td>
+<td>DefaultEventPriority</td>
+<td>3</td>
+<td>97</td>
+</tr>
+<tr>
+<td>LowPriority</td>
+<td>DefaultEventPriority</td>
+<td>4</td>
+<td>96</td>
+</tr>
+<tr>
+<td>IdlePriority</td>
+<td>IdleEventPriority</td>
+<td>5</td>
+<td>95</td>
+</tr>
+<tr>
+<td>NoPriority</td>
+<td></td>
+<td>0</td>
+<td>90</td>
+</tr>
+</tbody></table>
+<h4 id="优先级间的转换"><a href="#优先级间的转换" class="headerlink" title="优先级间的转换"></a>优先级间的转换</h4><ul>
+<li><p>lane优先级 转 event优先级（参考 lanesToEventPriority 函数）</p>
+<ul>
+<li>转换规则：以区间的形式根据传入的lane返回对应的 event 优先级。比如传入的优先级不大于 Discrete 优先级，就返回 Discrete 优先级，以此类推</li>
+</ul>
+</li>
+<li><p>event优先级 转 scheduler优先级（参考 ensureRootIsScheduled 函数下的 lanesToEventPriority）</p>
+<ul>
+<li>转换规则：可以参考上面调度优先级表</li>
+</ul>
+</li>
+<li><p>event优先级 转 lane优先级（参考 getEventPriority 函数）</p>
+<ul>
+<li>转换规则：对于非离散、连续的事件，会根据一定规则作转换，具体课参考上面 event 优先级表</li>
+</ul>
+</li>
+</ul>
+<h4 id="任务饥饿"><a href="#任务饥饿" class="headerlink" title="任务饥饿"></a>任务饥饿</h4><p>任务饥饿是讲一个低优先级的任务一直被高优先级的任务插队，导致这个任务已经过了执行期限依然没有得到执行，在这种情况下，<code>React</code> 会将该任务置为同步渲染任务，在下次更新时立即执行。</p>
+<h4 id="任务插队"><a href="#任务插队" class="headerlink" title="任务插队"></a>任务插队</h4><p>具体可查看这篇文章</p>
+<h3 id="scheduler任务调度"><a href="#scheduler任务调度" class="headerlink" title="scheduler任务调度"></a>scheduler任务调度</h3><p>具体可查看这篇文章 <a href="https://rile14929.github.io/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html">《react18.2调度器scheduler源码分析》</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react18-2/" rel="tag"># react18.2</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/react18.2%E4%BC%98%E5%85%88%E7%BA%A7%E5%92%8C%E6%89%B9%E5%A4%84%E7%90%86%E5%9C%BA%E6%99%AF%E8%A7%A3%E6%9E%90.html" rel="prev" title="react18.2批处理场景原理并结合优先级进行的分析">
+      <i class="fa fa-chevron-left"></i> react18.2批处理场景原理并结合优先级进行的分析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#并发和并行"><span class="nav-number">1.</span> <span class="nav-text">并发和并行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么需要并发模式"><span class="nav-number">2.</span> <span class="nav-text">为什么需要并发模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#并发模式特点"><span class="nav-number">3.</span> <span class="nav-text">并发模式特点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#可中断"><span class="nav-number">3.1.</span> <span class="nav-text">可中断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可遗弃"><span class="nav-number">3.2.</span> <span class="nav-text">可遗弃</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#状态复用"><span class="nav-number">3.3.</span> <span class="nav-text">状态复用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何实现并发模式（Concurrent-Mode）"><span class="nav-number">4.</span> <span class="nav-text">如何实现并发模式（Concurrent Mode）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Fiber架构"><span class="nav-number">4.1.</span> <span class="nav-text">Fiber架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Lane模型"><span class="nav-number">4.2.</span> <span class="nav-text">Lane模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#事件优先级"><span class="nav-number">4.2.1.</span> <span class="nav-text">事件优先级</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#调度优先级"><span class="nav-number">4.2.2.</span> <span class="nav-text">调度优先级</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#优先级间的转换"><span class="nav-number">4.2.3.</span> <span class="nav-text">优先级间的转换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#任务饥饿"><span class="nav-number">4.2.4.</span> <span class="nav-text">任务饥饿</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#任务插队"><span class="nav-number">4.2.5.</span> <span class="nav-text">任务插队</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scheduler任务调度"><span class="nav-number">4.3.</span> <span class="nav-text">scheduler任务调度</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">36</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
