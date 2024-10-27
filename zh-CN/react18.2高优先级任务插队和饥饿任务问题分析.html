@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="时间切片是 Concurrent Mode 的核心机制之一。它的主要目的是将长任务分解为小的任务单元,每个单元只执行一小段时间,然后让出控制权,避免长时间阻塞主线程。 react 的并发模式在 render 阶段 每处理一个 fiber 就会根据以下两点判断一次是否应该打断并把控制权交换给主线程：  是否超过分片时间（5ms） 根据 isInputPending 判断是否有用户输入  但是并不会根">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react18.2高优先级任务插队和饥饿任务问题分析">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/react18.2%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E4%BB%BB%E5%8A%A1%E6%8F%92%E9%98%9F%E5%92%8C%E9%A5%A5%E9%A5%BF%E4%BB%BB%E5%8A%A1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="时间切片是 Concurrent Mode 的核心机制之一。它的主要目的是将长任务分解为小的任务单元,每个单元只执行一小段时间,然后让出控制权,避免长时间阻塞主线程。 react 的并发模式在 render 阶段 每处理一个 fiber 就会根据以下两点判断一次是否应该打断并把控制权交换给主线程：  是否超过分片时间（5ms） 根据 isInputPending 判断是否有用户输入  但是并不会根">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-10-27T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="react18.2">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/react18.2%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E4%BB%BB%E5%8A%A1%E6%8F%92%E9%98%9F%E5%92%8C%E9%A5%A5%E9%A5%BF%E4%BB%BB%E5%8A%A1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>react18.2高优先级任务插队和饥饿任务问题分析 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react18.2%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E4%BB%BB%E5%8A%A1%E6%8F%92%E9%98%9F%E5%92%8C%E9%A5%A5%E9%A5%BF%E4%BB%BB%E5%8A%A1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          react18.2高优先级任务插队和饥饿任务问题分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2024-10-28T00:00:00+08:00">2024-10-28</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>时间切片是 <code>Concurrent Mode</code> 的核心机制之一。它的主要目的是将长任务分解为小的任务单元,每个单元只执行一小段时间,然后让出控制权,避免长时间阻塞主线程。</p>
+<p>react 的并发模式在 render 阶段 <strong>每处理一个 fiber 就会根据以下两点判断一次是否应该打断并把控制权交换给主线程：</strong></p>
+<ol>
+<li>是否超过分片时间（5ms）</li>
+<li>根据 <code>isInputPending</code> 判断是否有用户输入</li>
+</ol>
+<p>但是并不会根据优先级来打断，优先级只会影响任务队列的任务排序，所以按照按优先级排序好的任务顺序来执行，也就能让高优先级任务得到及时处理。</p>
+<p>当一个任务开始执行时, <code>Scheduler</code> 会为其分配一个时间片 (通常为 5ms)。在这个时间片内,任务可以连续执行。</p>
+<ul>
+<li>如果任务在时间片内完成，则直接结束</li>
+<li>如果任务执行时间超过了时间片，则 <code>Scheduler</code> 会中断任务的执行，保存当前的进度，并让出控制权给浏览器，以便响应用户交互或执行其他高优先级的任务</li>
+<li>如果任务执行中，遇到用户输入等需要浏览器及时反馈的操作，会通过判断 <a href="https://developer.mozilla.org/en-US/docs/Web/API/Scheduling/isInputPending" target="_blank" rel="noopener"><code>isInputPending</code></a>，会中断当前任务，并让出控制权给浏览器，以便响应用户交互或执行其他高优先级的任务</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">workLoopConcurrent</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="comment">// Perform work until Scheduler asks us to yield</span></span><br><span class="line">  <span class="keyword">while</span> (workInProgress !== <span class="literal">null</span> &amp;&amp; !shouldYield()) &#123;</span><br><span class="line">    <span class="comment">// $FlowFixMe[incompatible-call] found when upgrading Flow</span></span><br><span class="line">    performUnitOfWork(workInProgress);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过 <code>shouldYield</code> 判断，具体方法就详细说明了，可以去看<a href="https://rile14929.github.io/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html">《react调度器scheduler源码分析》</a></p>
+<h2 id="scheduleTaskForRootDuringMicrotask"><a href="#scheduleTaskForRootDuringMicrotask" class="headerlink" title="scheduleTaskForRootDuringMicrotask"></a>scheduleTaskForRootDuringMicrotask</h2><p><code>scheduleTaskForRootDuringMicrotask</code> 每次执行都会判断上一次中断任务优先级和root下的最高优先级是否一样。</p>
+<ul>
+<li>如果一样，说明没有更高优先级的更新产生，可以继续上次未完成的协调；</li>
+<li>如果不一样，说明有更高优先级的更新进来，要清空之前已开始的协调过程，从根节点开始重新协调。等高优先级更新处理完成以后，再次从根节点开始处理低优先级更新。</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// packages/react-reconciler/src/ReactFiberRootScheduler.js</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">scheduleTaskForRootDuringMicrotask</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  root: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  currentTime: number,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">Lane</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 这个函数总是在microtask中被调用，或者在渲染任务的最后，在我们将控制权交还给主线程之前被调用。它绝对不应该被同步调用。</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 检查是否有任何lanes被其他work饿死。如果是，将它们标记为过期，这样我们就知道下一个要处理的是它们。</span></span><br><span class="line">  markStarvedLanesAsExpired(root, currentTime);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Determine the next lanes to work on, and their priority.</span></span><br><span class="line">  <span class="keyword">const</span> workInProgressRoot = getWorkInProgressRoot();</span><br><span class="line">  <span class="keyword">const</span> workInProgressRootRenderLanes = getWorkInProgressRootRenderLanes();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获取当前所有优先级中最高的优先级</span></span><br><span class="line">  <span class="keyword">const</span> nextLanes = getNextLanes(</span><br><span class="line">    root,</span><br><span class="line">    root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> existingCallbackNode = root.callbackNode;</span><br><span class="line">  <span class="keyword">if</span> (</span><br><span class="line">    <span class="comment">// Check if there's nothing to work on</span></span><br><span class="line">    nextLanes === NoLanes ||</span><br><span class="line">    <span class="comment">// If this root is currently suspended and waiting for data to resolve, don't</span></span><br><span class="line">    <span class="comment">// schedule a task to render it. We'll either wait for a ping, or wait to</span></span><br><span class="line">    <span class="comment">// receive an update.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Suspended render phase</span></span><br><span class="line">    (root === workInProgressRoot &amp;&amp; isWorkLoopSuspendedOnData()) ||</span><br><span class="line">    <span class="comment">// Suspended commit phase</span></span><br><span class="line">    root.cancelPendingCommit !== <span class="literal">null</span></span><br><span class="line">  ) &#123;</span><br><span class="line">    <span class="comment">// Fast path: There's nothing to work on.</span></span><br><span class="line">    <span class="keyword">if</span> (existingCallbackNode !== <span class="literal">null</span>) &#123;</span><br><span class="line">      cancelCallback(existingCallbackNode);</span><br><span class="line">    &#125;</span><br><span class="line">    root.callbackNode = <span class="literal">null</span>;</span><br><span class="line">    root.callbackPriority = NoLane;</span><br><span class="line">    <span class="keyword">return</span> NoLane;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Schedule a new callback in the host environment.</span></span><br><span class="line">  <span class="keyword">if</span> (includesSyncLane(nextLanes)) &#123;</span><br><span class="line">    <span class="comment">// sy- setState</span></span><br><span class="line">    <span class="comment">// sy-no 初次渲染</span></span><br><span class="line">    <span class="comment">// 同步工作始终在微任务结束时刷新，因此我们不需要安排额外的任务。</span></span><br><span class="line">    <span class="keyword">if</span> (existingCallbackNode !== <span class="literal">null</span>) &#123;</span><br><span class="line">      cancelCallback(existingCallbackNode);</span><br><span class="line">    &#125;</span><br><span class="line">    root.callbackPriority = SyncLane;</span><br><span class="line">    root.callbackNode = <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">return</span> SyncLane;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// We use the highest priority lane to represent the priority of the callback.</span></span><br><span class="line">    <span class="keyword">const</span> existingCallbackPriority = root.callbackPriority;</span><br><span class="line">    <span class="keyword">const</span> newCallbackPriority = getHighestPriorityLane(nextLanes);</span><br><span class="line">    <span class="keyword">if</span> (</span><br><span class="line">      newCallbackPriority === existingCallbackPriority &amp;&amp;</span><br><span class="line">      <span class="comment">// Special case related to `act`. If the currently scheduled task is a</span></span><br><span class="line">      <span class="comment">// Scheduler task, rather than an `act` task, cancel it and re-schedule</span></span><br><span class="line">      <span class="comment">// on the `act` queue.</span></span><br><span class="line">      !(</span><br><span class="line">        __DEV__ &amp;&amp;</span><br><span class="line">        ReactCurrentActQueue.current !== <span class="literal">null</span> &amp;&amp;</span><br><span class="line">        existingCallbackNode !== fakeActCallbackNode</span><br><span class="line">      )</span><br><span class="line">    ) &#123;</span><br><span class="line">      <span class="comment">// The priority hasn't changed. We can reuse the existing task.</span></span><br><span class="line">      <span class="keyword">return</span> newCallbackPriority;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Cancel the existing callback. We'll schedule a new one below.</span></span><br><span class="line">      cancelCallback(existingCallbackNode);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> schedulerPriorityLevel;</span><br><span class="line">    <span class="keyword">switch</span> (lanesToEventPriority(nextLanes)) &#123;</span><br><span class="line">      <span class="keyword">case</span> DiscreteEventPriority:</span><br><span class="line">        schedulerPriorityLevel = ImmediateSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> ContinuousEventPriority:</span><br><span class="line">        schedulerPriorityLevel = UserBlockingSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> DefaultEventPriority: <span class="comment">// 32</span></span><br><span class="line">        <span class="comment">// ? sy 页面初次渲染、transition(128)</span></span><br><span class="line">        schedulerPriorityLevel = NormalSchedulerPriority; <span class="comment">// 3</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> IdleEventPriority:</span><br><span class="line">        schedulerPriorityLevel = IdleSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        schedulerPriorityLevel = NormalSchedulerPriority;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ? sy 页面初次渲染</span></span><br><span class="line">    <span class="keyword">const</span> newCallbackNode = scheduleCallback(</span><br><span class="line">      schedulerPriorityLevel,</span><br><span class="line">      performConcurrentWorkOnRoot.bind(<span class="literal">null</span>, root),</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    root.callbackPriority = newCallbackPriority;</span><br><span class="line">    root.callbackNode = newCallbackNode;</span><br><span class="line">    <span class="keyword">return</span> newCallbackPriority;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-高优先级打断低优先级"><a href="#1-高优先级打断低优先级" class="headerlink" title="1. 高优先级打断低优先级"></a>1. 高优先级打断低优先级</h2><h3 id="cancelCallback"><a href="#cancelCallback" class="headerlink" title="cancelCallback"></a>cancelCallback</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">unstable_cancelCallback</span>(<span class="params">task: Task</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">  task.callback = <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>cancelCallback(existingCallbackNode)</code>，<code>cancelCallback</code> 函数就是将 <code>root.callbackNode</code> 赋值为 <code>null</code></p>
+<h3 id="performConcurrentWorkOnRoot"><a href="#performConcurrentWorkOnRoot" class="headerlink" title="performConcurrentWorkOnRoot"></a>performConcurrentWorkOnRoot</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">performConcurrentWorkOnRoot</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  root: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  didTimeout: boolean,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">RenderTaskFn</span> | <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// Flush any pending passive effects before deciding which lanes to work on,</span></span><br><span class="line">  <span class="comment">// in case they schedule additional work.</span></span><br><span class="line">  <span class="keyword">const</span> originalCallbackNode = root.callbackNode;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 在某些情况下，我们会禁用时间片切片：如果work过长时间做计算（为了防止饥饿而将其视为“过期”的work），或者我们处于默认启用同步更新模式。</span></span><br><span class="line">  <span class="keyword">const</span> shouldTimeSlice =</span><br><span class="line">    !includesBlockingLane(root, lanes) &amp;&amp;</span><br><span class="line">    !includesExpiredLane(root, lanes) &amp;&amp; <span class="comment">// 参考这个例子，UseDeferredValuePage</span></span><br><span class="line">    (disableSchedulerTimeoutInWorkLoop || !didTimeout);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ! 1. render</span></span><br><span class="line">  <span class="keyword">let</span> exitStatus = shouldTimeSlice</span><br><span class="line">    ? renderRootConcurrent(root, lanes) <span class="comment">// 参考这个例子，UseDeferredValuePage</span></span><br><span class="line">    : renderRootSync(root, lanes); <span class="comment">// ? sy, 不用时间切片</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (exitStatus !== RootInProgress) &#123;</span><br><span class="line">    <span class="keyword">let</span> renderWasConcurrent = shouldTimeSlice;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (exitStatus === RootDidNotComplete) &#123;</span><br><span class="line">        <span class="comment">// The render unwound without completing the tree. This happens in special</span></span><br><span class="line">        <span class="comment">// cases where need to exit the current render without producing a</span></span><br><span class="line">        <span class="comment">// consistent tree or committing.</span></span><br><span class="line">        markRootSuspended(root, lanes, NoLane);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// ! 2. render结束，做一些检查</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// !3. commit</span></span><br><span class="line">        <span class="comment">// 我们现在有了一个一致的树。下一步要么是commit，要么是，如果有什么被暂停了，就等待一段时间后再commit。</span></span><br><span class="line">        root.finishedWork = finishedWork;</span><br><span class="line">        root.finishedLanes = lanes;</span><br><span class="line">        finishConcurrentRender(root, exitStatus, finishedWork, lanes);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    &#125; <span class="keyword">while</span> (<span class="literal">true</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  ensureRootIsScheduled(root);</span><br><span class="line">  <span class="keyword">return</span> getContinuationForRoot(root, originalCallbackNode);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">getContinuationForRoot</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  root: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  originalCallbackNode: mixed,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">RenderTaskFn</span> | <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="comment">// This is called at the end of `performConcurrentWorkOnRoot` to determine</span></span><br><span class="line">  <span class="comment">// if we need to schedule a continuation task.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// Usually `scheduleTaskForRootDuringMicrotask` only runs inside a microtask;</span></span><br><span class="line">  <span class="comment">// however, since most of the logic for determining if we need a continuation</span></span><br><span class="line">  <span class="comment">// versus a new task is the same, we cheat a bit and call it here. This is</span></span><br><span class="line">  <span class="comment">// only safe to do because we know we're at the end of the browser task.</span></span><br><span class="line">  <span class="comment">// So although it's not an actual microtask, it might as well be.</span></span><br><span class="line">  scheduleTaskForRootDuringMicrotask(root, now());</span><br><span class="line">  <span class="keyword">if</span> (root.callbackNode === originalCallbackNode) &#123;</span><br><span class="line">    <span class="comment">// The task node scheduled for this root is the same one that's</span></span><br><span class="line">    <span class="comment">// currently executed. Need to return a continuation.</span></span><br><span class="line">    <span class="keyword">return</span> performConcurrentWorkOnRoot.bind(<span class="literal">null</span>, root);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>performConcurrentWorkOnRoot</code> 函数是每个并发任务的入口，下面简要分析以下它的运行流程：</p>
+<ol>
+<li>会先把 <code>root.callbackNode</code> 缓存起来，存在 <code>originalCallbackNode</code> 变量中</li>
+<li>并发模式下会使用 <code>renderRootConcurrent</code> 执行<ol>
+<li>在 <code>render</code> 阶段中也有可能在代码执行中，触发更高优先级事件，例如点击事件，高优先级事件又触发了 <code>setState</code> 就是相对高优先级的</li>
+<li><code>setState</code> 执行 <code>scheduleUpdateOnFiber</code> 的 <code>prepareFreshStack</code>和 <code>markRootUpdated</code> 函数，就已经把 <code>update</code> 添加到 <code>fiber</code> 上并且将更新优先级标记到 <code>root</code> 的 <code>pendingLanes</code> 上了</li>
+</ol>
+</li>
+<li>如果render阶段结束，做一些检查，commit阶段，如果render阶段中断，会直接跳过上述操作，走到函数的末尾</li>
+<li>在函数末尾会调用 <code>getContinuationForRoot</code> 函数，先执行 <code>scheduleTaskForRootDuringMicrotask</code> 就是把 <code>render</code> 中目前最高优先级事件和当前任务优先级作对比，进行 <code>cancelCallback</code> 或者 <code>scheduleCallback</code>，同时 <code>root.callbackNode</code> 也可能被改掉了</li>
+<li>再判断 <code>root.callbackNode</code> 和开始缓存起来的值  <code>originalCallbackNode</code>  是否一样，如果不一样，就代表 <code>root.callbackNode</code> 被赋值为 <code>null</code> 或者其他的<code>task</code> 值，代表有更高优先级任务进来。</li>
+<li>此时 <code>performConcurrentWorkOnRoot</code> 返回值为 <code>null</code></li>
+</ol>
+<h3 id="pop-taskQueue"><a href="#pop-taskQueue" class="headerlink" title="pop(taskQueue)"></a>pop(taskQueue)</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> callback = currentTask.callback;</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">typeof</span> callback === <span class="string">'function'</span>) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">const</span> continuationCallback = callback(didUserCallbackTimeout);</span><br><span class="line">    <span class="comment">// 返回值continuationCallback是函数，也就是performConcurrentWorkOnRoot执行后的返回值performConcurrentWorkOnRoot.bind(null, root)或null，如果是函数就继续，不是的话，如果判断如果currentTask === peek(taskQueue)，currentTask 出队</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">typeof</span> continuationCallback === <span class="string">'function'</span>) &#123;</span><br><span class="line">        <span class="comment">// If a continuation is returned, immediately yield to the main thread</span></span><br><span class="line">        <span class="comment">// regardless of how much time is left in the current time slice.</span></span><br><span class="line">        <span class="comment">// $FlowFixMe[incompatible-use] found when upgrading Flow</span></span><br><span class="line">        currentTask.callback = continuationCallback;</span><br><span class="line">        <span class="keyword">if</span> (enableProfiling) &#123;</span><br><span class="line">          <span class="comment">// $FlowFixMe[incompatible-call] found when upgrading Flow</span></span><br><span class="line">          markTaskYield(currentTask, currentTime);</span><br><span class="line">        &#125;</span><br><span class="line">        advanceTimers(currentTime);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (enableProfiling) &#123;</span><br><span class="line">          <span class="comment">// $FlowFixMe[incompatible-call] found when upgrading Flow</span></span><br><span class="line">          markTaskCompleted(currentTask, currentTime);</span><br><span class="line">          <span class="comment">// $FlowFixMe[incompatible-use] found when upgrading Flow</span></span><br><span class="line">          currentTask.isQueued = <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (currentTask === peek(taskQueue)) &#123;</span><br><span class="line">          pop(taskQueue);</span><br><span class="line">        &#125;</span><br><span class="line">        advanceTimers(currentTime);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  pop(taskQueue);</span><br><span class="line">&#125;</span><br><span class="line">currentTask = peek(taskQueue);</span><br></pre></td></tr></table></figure>
+
+<p>上面是 <code>Scheduler</code> 模块里面 <code>workLoop</code> 函数的代码片段，<code>currentTask.callback</code> 就是 <code>scheduleCallback</code> 的第二个参数，也就是<code>performConcurrentWorkOnRoot</code> 函数。</p>
+<p>承接上个主题，如果 <code>performConcurrentWorkOnRoot</code> 函数返回了 <code>null</code>，<code>workLoop</code> 内部就会执行 <code>pop(taskQueue)</code>，将当前的任务从 <code>taskQueue</code>中弹出。</p>
+<h3 id="低优先级任务重启"><a href="#低优先级任务重启" class="headerlink" title="低优先级任务重启"></a>低优先级任务重启</h3><p>上一步中说道一个低优先级任务从 <code>taskQueue</code> 中被弹出。那高优先级任务执行完毕之后，如何重启回之前的低优先级任务呢？</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);</span><br><span class="line">markRootFinished(root, remainingLanes, spawnedLane);</span><br><span class="line"></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Always call this before exiting `commitRoot`, to ensure that any</span></span><br><span class="line"><span class="comment">// additional work on this root is scheduled.</span></span><br><span class="line">ensureRootIsScheduled(root, now());</span><br></pre></td></tr></table></figure>
+
+<p><code>markRootFinished</code> 函数刚刚上面说了是释放已完成任务的 <code>Lane</code>，那也就是说未完成任务依然会存在 <code>lanes</code> 中，所以我们可以重新调用 <code>ensureRootIsScheduled</code> 发起一次新的调度，去重启低优先级任务的执行。我们可以看下重启部分的判断：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> workInProgressRoot = getWorkInProgressRoot();</span><br><span class="line"><span class="keyword">const</span> workInProgressRootRenderLanes = getWorkInProgressRootRenderLanes();</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> nextLanes = getNextLanes(</span><br><span class="line">    root,</span><br><span class="line">    root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,</span><br><span class="line">);</span><br><span class="line"><span class="comment">// 如果 nextLanes 为 NoLanes，就证明所有任务都执行完毕了</span></span><br><span class="line"><span class="keyword">if</span> (nextLanes === NoLanes) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    root.callbackNode = <span class="literal">null</span>;</span><br><span class="line">    root.callbackPriority = NoLane;</span><br><span class="line">    <span class="comment">// 只要 nextLanes 为 NoLanes，就可以结束调度了</span></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 如果 nextLanes 不为 NoLanes，就代表还有任务未执行完，也就是那些被打断的低优先级任务</span></span><br><span class="line"><span class="comment">// ...</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="流程总结"><a href="#流程总结" class="headerlink" title="流程总结"></a>流程总结</h3><ol>
+<li>任务通过 <code>unstable_scheduleCallback</code> 进行调度，将任务添加到 <code>taskQueue</code> 中，如果是首次加载通过 <code>requestHostCallback</code> 调度宏任务</li>
+<li><code>Scheduler</code> 里执行 <code>flush</code> 后执行 <code>workLoop</code> 方法，在 <code>workLoop</code> 方法中取出第一个任务，判断是否超出切片时间或者有更需要及时反馈的用户操作，如果没有，那当执行任务的 <code>callback</code> 时，也就是 <code>performConcurrentWorkOnRoot</code> 方法，执行流程可以看上面。所以我们知道 <code>performConcurrentWorkOnRoot</code> 方法可能会返回null，也可能会返回 <code>performConcurrentWorkOnRoot</code></li>
+<li>当返回 <code>null</code> 时候，<code>Scheduler</code> 会执行 <code>pop(taskQueue)</code>，将当前的任务从 <code>taskQueue</code>中弹出</li>
+<li>低优先级任务重启，<code>commitRootImpl</code> 最后会再次调用 <code>ensureRootIsScheduled(root, now())</code>，判断如果 <code>nextLanes</code> 为 <code>NoLanes</code>，就证明所有任务都执行完毕了，如果 <code>nextLanes</code> 不为 <code>NoLanes</code>，就代表还有任务未执行完，也就是那些被打断的低优先级任务，会重新进行调度</li>
+</ol>
+<h2 id="2-饥饿任务问题"><a href="#2-饥饿任务问题" class="headerlink" title="2. 饥饿任务问题"></a>2. 饥饿任务问题</h2><p>上面说到，在高优先级任务执行完毕之后，低优先级任务就会被重启，但假设如果持续有高优先级任务持续进来，那低优先级任务岂不是没有重启之日？</p>
+<p>所以 <code>react</code> 为了处理解决饥饿任务问题，在 <code>ensureRootIsScheduled</code> 函数开始的时候做了以下处理：（参考markStarvedLanesAsExpired函数）</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在 调度更新的过程中会被调用</span></span><br><span class="line"><span class="comment">// 检查是有lanes挨饿，如果有，则标记他们过期，即提升优先级（以便下次执行）。</span></span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">markStarvedLanesAsExpired</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  root: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  currentTime: number,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="comment">// <span class="doctag">TODO:</span> This gets called every time we yield. We can optimize by storing</span></span><br><span class="line">  <span class="comment">// the earliest expiration time on the root. Then use that to quickly bail out</span></span><br><span class="line">  <span class="comment">// of this function.</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> pendingLanes = root.pendingLanes;</span><br><span class="line">  <span class="keyword">const</span> suspendedLanes = root.suspendedLanes;</span><br><span class="line">  <span class="keyword">const</span> pingedLanes = root.pingedLanes;</span><br><span class="line">  <span class="keyword">const</span> expirationTimes = root.expirationTimes; <span class="comment">// 数组，初始化的时候，值都是-1</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// Iterate through the pending lanes and check if we've reached their</span></span><br><span class="line">  <span class="comment">// expiration time. If so, we'll assume the update is being starved and mark</span></span><br><span class="line">  <span class="comment">// it as expired to force it to finish.</span></span><br><span class="line">  <span class="comment">// 遍历pending lanes，并检查是否已经达到它们的过期时间。</span></span><br><span class="line">  <span class="comment">// 如果是，我们就认为这个update挨饿了，并将其标记为已过期，以强制其完成。</span></span><br><span class="line">  <span class="comment">// <span class="doctag">TODO:</span> We should be able to replace this with upgradePendingLanesToSync</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// We exclude retry lanes because those must always be time sliced, in order</span></span><br><span class="line">  <span class="comment">// to unwrap uncached promises.</span></span><br><span class="line">  <span class="comment">// <span class="doctag">TODO:</span> Write a test for this</span></span><br><span class="line">  <span class="keyword">let</span> lanes = enableRetryLaneExpiration</span><br><span class="line">    ? pendingLanes <span class="comment">//  ? sy</span></span><br><span class="line">    : pendingLanes &amp; ~RetryLanes;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (lanes &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 下面两行代码的作用是找到lanes中最低位的1，即优先级最</span></span><br><span class="line">    <span class="keyword">const</span> index = pickArbitraryLaneIndex(lanes);</span><br><span class="line">    <span class="comment">// 把1左移index位，即得到一个只有第index位为1的子掩码</span></span><br><span class="line">    <span class="keyword">const</span> lane = <span class="number">1</span> &lt;&lt; index;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> expirationTime = expirationTimes[index];</span><br><span class="line">    <span class="keyword">if</span> (expirationTime === NoTimestamp) &#123;</span><br><span class="line">      <span class="comment">// sy- console.log('%c [  ]-1469', 'font-size:13px; background:pink; color:#bf2c9f;', lane)</span></span><br><span class="line">      <span class="comment">// Found a pending lane with no expiration time. If it's not suspended, or</span></span><br><span class="line">      <span class="comment">// if it's pinged, assume it's CPU-bound. Compute a new expiration time</span></span><br><span class="line">      <span class="comment">// using the current time.</span></span><br><span class="line">      <span class="comment">// 如果这个 pending lane 没有过期时间</span></span><br><span class="line">      <span class="comment">// 如果它没有被挂起且需要更新，我们就认为它是CPU密集型操作。</span></span><br><span class="line">      <span class="comment">// 用当前时间计算出一个新的过期时间给它。</span></span><br><span class="line">      <span class="comment">// CPU bound  / IO Bound</span></span><br><span class="line">      <span class="keyword">if</span> (</span><br><span class="line">        (lane &amp; suspendedLanes) === NoLanes ||</span><br><span class="line">        (lane &amp; pingedLanes) !== NoLanes</span><br><span class="line">      ) &#123;</span><br><span class="line">        <span class="comment">// sy- console.log('%c [ 饿死 ]-482', 'font-size:13px; background:pink; color:#bf2c9f;', lane)</span></span><br><span class="line">        <span class="comment">// Assumes timestamps are monotonically increasing.</span></span><br><span class="line">        <span class="comment">// 假设timestamps(时间戳)是单调递增的</span></span><br><span class="line">        expirationTimes[index] = computeExpirationTime(lane, currentTime);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (expirationTime &lt;= currentTime) &#123;</span><br><span class="line">      <span class="comment">// 这个 pending lane 已经过期了</span></span><br><span class="line">      <span class="comment">// This lane expired</span></span><br><span class="line">      root.expiredLanes |= lane;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 把lane从lanes中移除，计算下一个lane</span></span><br><span class="line">    lanes &amp;= ~lane;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以参考 <code>render</code> 阶段执行的函数 <code>performConcurrentWorkOnRoot</code> 中的代码片段</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ! 1. render</span></span><br><span class="line"><span class="keyword">let</span> exitStatus = shouldTimeSlice</span><br><span class="line">    ? renderRootConcurrent(root, lanes)</span><br><span class="line">    : renderRootSync(root, lanes); <span class="comment">// 不用时间切片</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到只要 <code>shouldTimeSlice</code> 只要返回 <code>false</code>，就会执行 <code>renderRootSync</code>，也就是以同步优先级进入 <code>render</code> 阶段。而 <code>shouldTimeSlice</code> 的逻辑也就是刚刚的 <code>expiredLanes</code> 属性相关</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> shouldTimeSlice =</span><br><span class="line">    !includesBlockingLane(root, lanes) &amp;&amp;</span><br><span class="line">    !includesExpiredLane(root, lanes) &amp;&amp;</span><br><span class="line">    (disableSchedulerTimeoutInWorkLoop || !didTimeout);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 检查root是否包含过期的lane</span></span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">includesExpiredLane</span>(<span class="params">root: FiberRoot, lanes: Lanes</span>): <span class="title">boolean</span> </span>&#123;</span><br><span class="line">  <span class="comment">// This is a separate check from includesBlockingLane because a lane can</span></span><br><span class="line">  <span class="comment">// expire after a render has already started.</span></span><br><span class="line">  <span class="keyword">return</span> (lanes &amp; root.expiredLanes) !== NoLanes;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react18-2/" rel="tag"># react18.2</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/react18.2%E5%B9%B6%E5%8F%91%E5%8E%9F%E7%90%86.html" rel="prev" title="react18.2并发模式（Concurrent Mode）分析">
+      <i class="fa fa-chevron-left"></i> react18.2并发模式（Concurrent Mode）分析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#scheduleTaskForRootDuringMicrotask"><span class="nav-number">1.</span> <span class="nav-text">scheduleTaskForRootDuringMicrotask</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-高优先级打断低优先级"><span class="nav-number">2.</span> <span class="nav-text">1. 高优先级打断低优先级</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cancelCallback"><span class="nav-number">2.1.</span> <span class="nav-text">cancelCallback</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#performConcurrentWorkOnRoot"><span class="nav-number">2.2.</span> <span class="nav-text">performConcurrentWorkOnRoot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pop-taskQueue"><span class="nav-number">2.3.</span> <span class="nav-text">pop(taskQueue)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#低优先级任务重启"><span class="nav-number">2.4.</span> <span class="nav-text">低优先级任务重启</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#流程总结"><span class="nav-number">2.5.</span> <span class="nav-text">流程总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-饥饿任务问题"><span class="nav-number">3.</span> <span class="nav-text">2. 饥饿任务问题</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">37</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

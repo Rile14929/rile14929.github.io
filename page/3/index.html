@@ -164,6 +164,103 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/chrome%20performance%E9%9D%A2%E6%9D%BF.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/chrome%20performance%E9%9D%A2%E6%9D%BF.html" class="post-title-link" itemprop="url">chrome performance 面板解析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-15 00:00:00" itemprop="dateCreated datePublished" datetime="2023-06-15T00:00:00+08:00">2023-06-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="概况图"><a href="#概况图" class="headerlink" title="概况图"></a>概况图</h2><p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/B31D1703-5E66-4F19-8D12-448E4D283BC9.png" alt="71d6a82a01519413ca2a1be4b957c544"></p>
+<h4 id="无痕模式"><a href="#无痕模式" class="headerlink" title="无痕模式"></a>无痕模式</h4><p>无痕模式可以保证 Chrome 在一个相对干净的环境下运行，避免 chrome 上安装的插件影响性能分析结果。<br>文件—&gt;打开新的无痕式窗口，或使用快捷键 ctrl + shift + N 打开无痕模式下的 chrome 新标签页</p>
+<h4 id="性能记录"><a href="#性能记录" class="headerlink" title="性能记录"></a>性能记录</h4><p>点击面板里的 ○，可以记录运行时的性能记录，如下图：<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8B1B5662-14CE-47BA-A799-07447D14021C.png" alt="0b82ba7820c6d3ec5b21fe563191a08d"></p>
+<p>再次点击 Record 或者点击 Stop 停止记录。</p>
+<h4 id="加载时性能记录录制"><a href="#加载时性能记录录制" class="headerlink" title="加载时性能记录录制"></a>加载时性能记录录制</h4><p>若要分析页面记载时性能需要录制加载时性能。</p>
+<ol>
+<li>打开待分析性能的页面。</li>
+<li>打开 Devtools 中 Performance 窗口。</li>
+<li>点击左上角重新加载按钮。DevTools 会自动记录页面加载是各项性能指标，加载完成几秒后自动停止记录。<br>Devtools 记录会自动增加<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/8BE55FF4-23D8-4373-9700-6FC306487719.png" alt="bcc3faa215dab1b20aefba15f42fa29d"></li>
+</ol>
+<p>页面加载时记录<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/2E1306AE-F26B-4DE5-8E02-96106AA7CA11.png" alt="8faf902b1637f885df323e7791713c33"></p>
+<h4 id="清除记录"><a href="#清除记录" class="headerlink" title="清除记录"></a>清除记录</h4><p>清除 Performance 窗口中的记录数据。</p>
+<h4 id="抓取运行时屏幕快照"><a href="#抓取运行时屏幕快照" class="headerlink" title="抓取运行时屏幕快照"></a>抓取运行时屏幕快照</h4><p>点选 Screenshots 选项开启为每一帧记录屏幕快照功能。</p>
+<h4 id="查看内存度量值"><a href="#查看内存度量值" class="headerlink" title="查看内存度量值"></a>查看内存度量值</h4><p>点选 Memory 选项打开内存度量功能。<br>DevTools 在 Summary 面板上侧显示一个新的 Memory 图表。在 NET 图表下边也显示一个 HEAP 图表。HEAP 图表提供的信息同 Memory 面板中 JS Heap 提供的信息相同。</p>
+<h4 id="开启加速渲染工具"><a href="#开启加速渲染工具" class="headerlink" title="开启加速渲染工具"></a>开启加速渲染工具</h4><p>点选 Enable advanced paint instrumentation 选项（会带来大量的性能开销）</p>
+<h4 id="控制录制过程中-CPU-工作频率"><a href="#控制录制过程中-CPU-工作频率" class="headerlink" title="控制录制过程中 CPU 工作频率"></a>控制录制过程中 CPU 工作频率</h4><p>将 CPU 设置为需要的运算速度模式。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9DD1F5C8-9131-4F02-BDA0-8D5DCB6095A3.png" alt="886c6b4d80132d8e286af2d6ed89cdb9"></p>
+<p>CPU 工作频率的控制结果跟实际使用的机器能力有关。例如，4x slowdown 选项会使你本地 CPU 运算速率比正常情况下降低 4 倍。不同设备由于设计架构不同，Devtools 不能精确模拟移动端设备的 CPU 运算模式。</p>
+<h4 id="保存记录"><a href="#保存记录" class="headerlink" title="保存记录"></a>保存记录</h4><p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/F4D6D133-2769-4173-9090-79276AFC56D4.png" alt="da01643afd3f94a7927b96b2ddd7a044"><br>会生成 JSON 文件</p>
+<h4 id="加载记录"><a href="#加载记录" class="headerlink" title="加载记录"></a>加载记录</h4><p>单击鼠标右键选择 Load Profile 加载记录</p>
+<h2 id="分析性能记录"><a href="#分析性能记录" class="headerlink" title="分析性能记录"></a>分析性能记录</h2><p>运行时或者加载时性能录制结束后，在 Performance 窗口中会显示相关数据，从而对于记录过程中的情况进行分析。</p>
+<h4 id="选择记录中的一部分"><a href="#选择记录中的一部分" class="headerlink" title="选择记录中的一部分"></a>选择记录中的一部分</h4><p>在 Overview 窗口中，可以选中记录的某一部分。 Overview 窗口指的是包含 FPS, CPU 和 NET 图表部分。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/7D7EC5FB-7086-4767-99DB-4BCB7AE4E430.png" alt="3c66d685cee9f55228ca867b5a07a88e"></p>
+<h4 id="查看主线程活动"><a href="#查看主线程活动" class="headerlink" title="查看主线程活动"></a>查看主线程活动</h4><p>利用 Main 区域查看页面主线程加载时的主要活动。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/A2BE4509-9F3E-4AAC-90D2-E0F68820471A.png" alt="26247567fd6f9281d4a16d8fcbcba32f"></p>
+<p>点击某一函数在 Summary 窗口中查看更多详细信息。如图中所示 DevTools 选中_getRequestData 事件。<br>DevTools 采用随机的颜色标识脚本信息，如上面图中浅绿色标识函数调用，深黄色标识脚本活动。<br>若想隐藏火焰图中的 JavaScript 中调用的详细信息，请查看前面介绍的禁用 JavaScript 样例功能。若禁用 JavaScript 样例功能，你只可以看到初始调用事件。比如，图中标识的 Timer fired 和 Function Call 。</p>
+<h4 id="在表格中查看活动"><a href="#在表格中查看活动" class="headerlink" title="在表格中查看活动"></a>在表格中查看活动</h4><p>录制结束后，利用 Main 窗口中信息不是分析数据的唯一方式。DevTools 另外提供了三种表格式分析活动方式，每种方式都是从不同的角度出发:<br>若想分析那些活动占用时间更多时，可以利用 Bottom-Up 窗口。<br>若想分析导致更多活动的根活动时，可以采用 Call Tree。<br>若想按顺序分析记录中发生的活动时，可以利用 Event Log 窗口。</p>
+<h4 id="根活动"><a href="#根活动" class="headerlink" title="根活动"></a>根活动</h4><p>根活动指的是浏览器触发的一系列流程。例如，当你点击页面内容，浏览器触发一个 Event 作为根活动，该 Event 可能回调一个事件处理事件。<br>在 Main 面板中的火焰图中，根活动展示在上部，在 Call Tree 和 Event Log 面板中，根活动展示在顶层。</p>
+<h4 id="Call-Tree-标签页"><a href="#Call-Tree-标签页" class="headerlink" title="Call Tree 标签页"></a>Call Tree 标签页</h4><p>Call Tree 标签页中展示记录中被选中部分的活动信息。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9E98C9B1-90D8-4D50-A6BC-FDCB4EB51B0F.png" alt="6f4e0500bac02ec6143b950c159c63ae"></p>
+<p>图中 Activity 列中显示的 Timer fired、 Paint、Recalculate Style 和 Layout 代表根活动。层级嵌套表示代表回调栈。如图中 Function Call 调用 u，再调用 getImageUrl，继续调用 getLinkUrl 等等。<br>Self Time 表示对应活动消耗的时间，Total Time 表示对应活动以及子活动共同消耗的时间。<br>点击 Self Time，Total Time 或者 Activity 表头区域，可按对应列排序。<br>利用 Filter 输入框区域，输入活动名过滤事件。<br>Grouping 分组菜单默认为 No Grouping，利用该功能可以根据不同的分类将活动进行分组。<br>点击右侧 Show Heaviest Stack，在右侧展示当前选中活动中占用时间最多的子活动信息。</p>
+<p><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/BBFE6629-C9A4-4901-A79C-3E850194B322.png" alt="6562aca6f7e21ca7a5746f1cff491455"></p>
+<h4 id="Bottom-Up-标签页"><a href="#Bottom-Up-标签页" class="headerlink" title="Bottom-Up 标签页"></a>Bottom-Up 标签页</h4><p>利用 Bottom-Up 标签查看占用最多时间的活动。<br>Self Time 表示对应活动消耗的时间。<br>Total Time 表示对应活动以及子活动共同消耗的时间。</p>
+<h4 id="Event-Log-标签页"><a href="#Event-Log-标签页" class="headerlink" title="Event Log 标签页"></a>Event Log 标签页</h4><p>Event Log 标签页按顺序展示记录中发生的活动。<br>Start Time 列表示该项活动的开始时间，该时间相对于记录开始时间计算。例如图中选中项开始时间为 1566.2 ms，代表该活动在记录开始之后 1566.2 ms 后开始。<br>Self Time 表示对应活动消耗的时间。<br>Total Time 表示对应活动以及子活动共同消耗的时间。<br>点击 Start Time 、Self Time、Total Time 表头区域，可按对应列排序。<br>利用 Filter 输入框区域，输入活动名过滤事件。<br>利用 Duration 下拉菜单过滤&gt;=1ms 或者&gt;=15ms 的活动。该菜单默认选中 All 选项，展示所有活动。<br>利用 Loading、Experience、Scripting、Rendering、Painting 选项进行分类过滤。<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/9278865D-99FC-4945-A7DA-55264A743F15.png" alt="58c29a0d627c26c7d9fc1afd80a348ef"></p>
+<h4 id="分析每秒传输帧数（FPS）"><a href="#分析每秒传输帧数（FPS）" class="headerlink" title="分析每秒传输帧数（FPS）"></a>分析每秒传输帧数（FPS）</h4><ul>
+<li>查看 FPS 图表了解整个记录中 FPS 的概况。</li>
+<li>Frames 模块查看每一帧时间消耗。</li>
+<li>利用 FPS meter 工具(MoreTools—&gt;Rendering)在页面运行时实时查看 FPS 信息。</li>
+</ul>
+<h4 id="FPS-图表"><a href="#FPS-图表" class="headerlink" title="FPS 图表"></a>FPS 图表</h4><p>FPS 图表显示了整个记录过程中帧率的概况。图表中绿色折线越高代表帧率越好。<br>FPS 折线图上测出现的红色横线为一条性能警示线，表示帧率低于该值会严重影响用户体验。</p>
+<h4 id="Frames-模块"><a href="#Frames-模块" class="headerlink" title="Frames 模块"></a>Frames 模块</h4><p>Frames 模块清晰表明每个帧消耗时间。<br>鼠标在某一帧上悬停可以查看更多详细信息。</p>
+<h4 id="查看交互信息"><a href="#查看交互信息" class="headerlink" title="查看交互信息"></a>查看交互信息</h4><p>利用 Interactions 模块查看并分析记录过程中用户的交互操作。</p>
+<h4 id="查看-GPU-活动"><a href="#查看-GPU-活动" class="headerlink" title="查看 GPU 活动"></a>查看 GPU 活动</h4><p>在 GPU 模块查看 GPU 活动信息<br><img src="/images/chromeperformance%E9%9D%A2%E6%9D%BF.resources/DCF59BFE-D663-4BF2-B581-1562C15B425E.png" alt="69c660e3d248b30ffc310f2813525e08"></p>
+<h4 id="查看栅格活动"><a href="#查看栅格活动" class="headerlink" title="查看栅格活动"></a>查看栅格活动</h4><p>在 Raster 模块查看栅格活动信息</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/%E5%89%8D%E7%AB%AF%E8%84%9A%E6%89%8B%E6%9E%B6%E6%90%AD%E5%BB%BA.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1359,96 +1456,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react-docgen.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/react-docgen.html" class="post-title-link" itemprop="url">react组件文档生成介绍 & 业务实践</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-01-26 00:00:00" itemprop="dateCreated datePublished" datetime="2022-01-26T00:00:00+08:00">2022-01-26</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于业务快速发展，业务组件库也在快速迭代。当组件Props等发生变化时，开发人员需要额外的消耗一定精力去保持代码和文档的统一。<br>此时，我们就可以利用TypeScript的静态类型检查与代码提示能力，通过自动生成文档工具，来增强开发的生产力，解放双手，提高工作效率。</p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>团队内部组件库文档年久失修，组件规范不统一，导致对很多组件的修改是牵一发而动全身，痛定思痛，于是经过小组商议后决定从组件文档着手，逐 步统一业务组件风格规范和组件文档。</p>
-<h2 id="调研"><a href="#调研" class="headerlink" title="调研"></a>调研</h2><p>通过调研以及过往经验，发现市面上有几款插件可供选择，分别是Docz、StoryBook、dumi、react-docgen、react-docgen-typescript，根据与目前项目匹配度最终dumi和react-docgen-typescript进入了决赛圈，最终根据灵活的和对目前的项目整体的副作用，选择了<a href="https://github.com/styleguidist/react-docgen-typescript" target="_blank" rel="noopener">react-docgen-typescript</a>和<a href="https://github.com/styleguidist/react-styleguidist" target="_blank" rel="noopener">react-styleguidist</a>配合生成文档。</p>
-<h3 id="dumi"><a href="#dumi" class="headerlink" title="dumi"></a>dumi</h3><p>dumi，中文发音嘟米，是一款为组件开发场景而生的文档工具，与 father 一起为开发者提供一站式的组件开发体验，father 负责构建，而 dumi 负责组件开发及组件文档生成。</p>
-<ul>
-<li>特性<ul>
-<li>开箱即用，将注意力集中在组件开发和文档编写上</li>
-<li>基于 TypeScript 类型定义，自动生成组件 API</li>
-<li>丰富的 Markdown 扩展，不止于渲染组件 demo</li>
-<li>支持移动端组件库研发，内置移动端高清渲染方案</li>
-<li>一行命令将组件资产数据化，与下游生产力工具串联</li>
-</ul>
-</li>
-</ul>
-<h3 id="react-docgen"><a href="#react-docgen" class="headerlink" title="react-docgen"></a>react-docgen</h3><ul>
-<li>来自Facebook开源</li>
-<li>基于Babel解析源码，对propTypes支持良好</li>
-<li>虽然新版本支持 TypeScript，但从其它文件导入的类型信息无法被获取</li>
-<li>不解析JSDoc部分，整个注释都作为描述部分，不过可以添加自己handler来补充解析</li>
-</ul>
-<h3 id="react-docgen-typescript"><a href="#react-docgen-typescript" class="headerlink" title="react-docgen-typescript"></a>react-docgen-typescript</h3><ul>
-<li>来自styleguidist开源，主要目标是服务TS React组件的API文档生成</li>
-<li>基于TS解析源码，不支持propTypes，Props interface继承的类型都可以拿到</li>
-<li>会读取JSDoc的@type、@default作为类型和默认值信息</li>
-</ul>
-<h2 id="业务实践阶段"><a href="#业务实践阶段" class="headerlink" title="业务实践阶段"></a>业务实践阶段</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package.json</span></span><br><span class="line"><span class="string">"devDependencies"</span>: &#123;</span><br><span class="line">  <span class="string">"react-docgen-typescript"</span>: <span class="string">"^1.9.0"</span>,</span><br><span class="line">  <span class="string">"react-styleguidist"</span>: <span class="string">"^7.3.7"</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 可根据配置文件，自行设置、执行启动和构建命令</span></span><br><span class="line"><span class="string">"scripts"</span>: &#123;</span><br><span class="line">  <span class="string">"styleguide:dev"</span>: <span class="string">"cross-env STYLEGUIDE_ENV=development styleguidist server --config styleguide.config.js"</span>,</span><br><span class="line">  <span class="string">"styleguide:build"</span>: <span class="string">"cross-env STYLEGUIDE_ENV=production styleguidist build --config styleguide.config.js"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// styleguide.config.js</span></span><br><span class="line"><span class="keyword">const</span> path = <span class="built_in">require</span>(<span class="string">'path'</span>);</span><br><span class="line"><span class="keyword">const</span> glob = <span class="built_in">require</span>(<span class="string">'glob'</span>);</span><br><span class="line"><span class="keyword">const</span> STYLEGUIDE_ENV = process.env.STYLEGUIDE_ENV</span><br><span class="line"></span><br><span class="line"><span class="built_in">module</span>.exports = &#123;</span><br><span class="line">  title: <span class="string">'components'</span>,</span><br><span class="line">  styleguideDir: <span class="string">'dist'</span>,</span><br><span class="line">  components: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> glob.sync(path.resolve(__dirname, <span class="string">'src/componets/**/*.tsx'</span>))</span><br><span class="line">      .filter(<span class="function"><span class="keyword">function</span> (<span class="params">module</span>) </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="regexp">/\/[A-Za-z]\w*\.tsx$/</span>.test(<span class="built_in">module</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;,</span><br><span class="line">  resolver: <span class="built_in">require</span>(<span class="string">'react-docgen'</span>).resolver.findAllComponentDefinitions,</span><br><span class="line">  propsParser: <span class="built_in">require</span>(<span class="string">'react-docgen-typescript'</span>).withDefaultConfig(&#123; <span class="attr">propFilter</span>: &#123; <span class="attr">skipPropsWithoutDoc</span>: <span class="literal">true</span> &#125; &#125;).parse,</span><br><span class="line">  webpackConfig: <span class="built_in">Object</span>.assign(&#123;&#125;, STYLEGUIDE_ENV === <span class="string">'production'</span> ? <span class="built_in">require</span>(<span class="string">'./config/styleguide.webpack.config.prod'</span>) : <span class="built_in">require</span>(<span class="string">'./config/styleguide.webpack.config.dev'</span>)),</span><br><span class="line">  dangerouslyUpdateWebpackConfig: <span class="function"><span class="keyword">function</span> (<span class="params">config, env</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">      ...config,</span><br><span class="line">      output: &#123;</span><br><span class="line">        ...config.output,</span><br><span class="line">        filename: <span class="string">'build/[name].bundle.js'</span>, <span class="comment">// 默认是生成hash，公司部署平台要求入口文件不带hash</span></span><br><span class="line">        chunkFilename: <span class="string">'build/[name].js'</span>,</span><br><span class="line">      &#125;,</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<h3 id="组件内部配置"><a href="#组件内部配置" class="headerlink" title="组件内部配置"></a>组件内部配置</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> React <span class="keyword">from</span> <span class="string">'react'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在原有interface基础上，每个属性添加上jsdoc即可</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Select properties.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">export</span> interface ISelectProps &#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 传入的数据源，可以动态渲染子项</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  dataSource: string[];</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Select发生改变时触发的回调</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  onChange?: <span class="function">(<span class="params">item: string</span>) =&gt;</span> <span class="keyword">void</span>;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 是否只读，只读模式下可以展开弹层但不能选</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  readOnly?: boolean;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 选择器尺寸</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  size?: <span class="string">'small'</span> | <span class="string">'medium'</span> | <span class="string">'large'</span>;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 当前值，用于受控模式</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  value?: string | number;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Component is described here.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@visibleName <span class="variable">Select</span></span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Select</span> <span class="keyword">extends</span> <span class="title">React</span>.<span class="title">Component</span>&lt;<span class="title">ISelectProps</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> defaultProps = &#123;</span><br><span class="line">    readOnly: <span class="literal">false</span>,</span><br><span class="line">    size: <span class="string">'medium'</span>,</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  render() &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="xml"><span class="tag">&lt;<span class="name">div</span>&gt;</span>Test<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> Select;</span><br></pre></td></tr></table></figure>
-
-<h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><p>执行build命令后，会生成dist文件，可根据自己的需求部署到指定位置。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>TypeScript给js带来了类型，做到静态类型检查和代码提示，经过上面一顿的折腾，把类型又用了一遍。整个过程中，我们已经拿到了组件中的所有想要拿到的数据并生成文档，不足的是子属性的类型并不能很好的显示，还需要后续完善，但是已经满足基础的需求。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1521,7 +1528,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">36</span>
+          <span class="site-state-item-count">37</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
