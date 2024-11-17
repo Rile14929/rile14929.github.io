@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="问题112345678910111213141516171819202122232425262728293031323334353637&#x2F;&#x2F; 2 3 4 5 7 6 1(当前调度未超出时间切片)&#x2F;&#x2F; 2 3 4 5 6 1 7（当前调度超出时间切片, 在后面加sleep也可以看出来，effect的调度放在了之后的宏任务中执行）import &amp;#123; useEffect &amp;#125; from">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react18.2代码打印顺序和流程分析">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/react18.2%E4%BB%A3%E7%A0%81%E6%89%93%E5%8D%B0%E9%A1%BA%E5%BA%8F%E5%92%8C%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="问题112345678910111213141516171819202122232425262728293031323334353637&#x2F;&#x2F; 2 3 4 5 7 6 1(当前调度未超出时间切片)&#x2F;&#x2F; 2 3 4 5 6 1 7（当前调度超出时间切片, 在后面加sleep也可以看出来，effect的调度放在了之后的宏任务中执行）import &amp;#123; useEffect &amp;#125; from">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-01-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-01-02T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="react18.2">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/react18.2%E4%BB%A3%E7%A0%81%E6%89%93%E5%8D%B0%E9%A1%BA%E5%BA%8F%E5%92%8C%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>react18.2代码打印顺序和流程分析 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react18.2%E4%BB%A3%E7%A0%81%E6%89%93%E5%8D%B0%E9%A1%BA%E5%BA%8F%E5%92%8C%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          react18.2代码打印顺序和流程分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-01-03 00:00:00" itemprop="dateCreated datePublished" datetime="2025-01-03T00:00:00+08:00">2025-01-03</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="问题1"><a href="#问题1" class="headerlink" title="问题1"></a>问题1</h2><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 2 3 4 5 7 6 1(当前调度未超出时间切片)</span></span><br><span class="line"><span class="comment">// 2 3 4 5 6 1 7（当前调度超出时间切片, 在后面加sleep也可以看出来，effect的调度放在了之后的宏任务中执行）</span></span><br><span class="line"><span class="keyword">import</span> &#123; useEffect &#125; <span class="keyword">from</span> <span class="string">"react"</span>;</span><br><span class="line"><span class="keyword">import</span> &#123; createRoot &#125; <span class="keyword">from</span> <span class="string">"react-dom/client"</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> App = <span class="function">(<span class="params">&#123; name &#125;</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">6</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  useEffect(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">7</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (</span><br><span class="line">    &lt;div&gt;</span><br><span class="line">      &lt;h1&gt;Hello &#123;name&#125;!&lt;<span class="regexp">/h1&gt;</span></span><br><span class="line"><span class="regexp">      &lt;p&gt;Start editing to see some magic happen :)&lt;/</span>p&gt;</span><br><span class="line">    &lt;<span class="regexp">/div&gt;</span></span><br><span class="line"><span class="regexp">  );</span></span><br><span class="line"><span class="regexp">&#125;;</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">const root = createRoot(document.getElementById("root"));</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">console.log("log:", 2);</span></span><br><span class="line"><span class="regexp">root.render(&lt;App name="StackBlitz" /</span>&gt;);</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">4</span>);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">1</span>);</span><br><span class="line">&#125;, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题2"><a href="#问题2" class="headerlink" title="问题2"></a>问题2</h2><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 把setTimeout放在render之前的执行顺序</span></span><br><span class="line"><span class="comment">// 2 3 4 1 5 7 6</span></span><br><span class="line"><span class="comment">// 2 3 4 1 5 6 7</span></span><br><span class="line"><span class="keyword">import</span> &#123; useEffect &#125; <span class="keyword">from</span> <span class="string">"react"</span>;</span><br><span class="line"><span class="keyword">import</span> &#123; createRoot &#125; <span class="keyword">from</span> <span class="string">"react-dom/client"</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> App = <span class="function">(<span class="params">&#123; name &#125;</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">6</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  useEffect(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">7</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (</span><br><span class="line">    &lt;div&gt;</span><br><span class="line">      &lt;h1&gt;Hello &#123;name&#125;!&lt;<span class="regexp">/h1&gt;</span></span><br><span class="line"><span class="regexp">      &lt;p&gt;Start editing to see some magic happen :)&lt;/</span>p&gt;</span><br><span class="line">    &lt;<span class="regexp">/div&gt;</span></span><br><span class="line"><span class="regexp">  );</span></span><br><span class="line"><span class="regexp">&#125;;</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">const root = createRoot(document.getElementById("root"));</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">console.log("log:", 2);</span></span><br><span class="line"><span class="regexp">setTimeout(() =&gt; &#123;</span></span><br><span class="line"><span class="regexp">  console.log("log:", 1);</span></span><br><span class="line"><span class="regexp">&#125;, 0);</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">root.render(&lt;App name="StackBlitz" /</span>&gt;);</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">4</span>);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题3"><a href="#问题3" class="headerlink" title="问题3"></a>问题3</h2><p>从源码来看，<code>effect</code> 的 <code>create</code> 函数是在一个被调度的 <code>callback</code> 里面去执行的，为什么它还是会比 <code>Promise.then()</code> 的 <code>callback</code> 函数先执行？</p>
+<p><code>useEffect</code> 是在 <code>commit</code> 阶段被 <code>scheduler</code> 加入到 <code>taskQueue</code> 中的，一个时间切片（5ms）内，如果时间允许，可能会执行很多个 <code>task</code>。</p>
+<p><code>taskQueue</code> 中的任务又是在宏任务中被执行的，先于微任务。</p>
+<p>总之，当前时间切片时间允许就是 <code>effect</code> 在 <code>Promise.then()</code>前，如果时间不够 <code>effect</code> 在 <code>Promise.then()</code> 后。</p>
+<h2 id="问题4"><a href="#问题4" class="headerlink" title="问题4"></a>问题4</h2><p>如果中间加了个sleep呢？如果不加呢？</p>
+<p><code>useEffect</code> 是在 <code>commit</code> 阶段被 <code>scheduler</code> 加入到 <code>taskQueue</code> 中的。</p>
+<ul>
+<li>加sleep，导致超出时间切片5ms，<code>taskQueue</code>中的调度就要等到下一个宏任务再去调度</li>
+<li>不加sleep，可能在5ms之内，<code>useEffect</code>的调度就被执行了，也有可能有各种高优先级的任务在 <code>useEffect</code> 前导致以后得调度再执行 <code>useEffect</code></li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 加：2 3 4 5 6 1 7</span></span><br><span class="line"><span class="comment">// 不加：2 3 4 5 7 6 1 或者 2 3 4 5 6 1 7</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> &#123; useEffect &#125; <span class="keyword">from</span> <span class="string">"react"</span>;</span><br><span class="line"><span class="keyword">import</span> &#123; createRoot &#125; <span class="keyword">from</span> <span class="string">"react-dom/client"</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">sleep</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> start = performance.now();</span><br><span class="line">  <span class="keyword">while</span> (performance.now() - start &lt; <span class="number">10</span>) &#123;</span><br><span class="line">    <span class="comment">// block</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> Child = <span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">  useEffect(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">7</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> App = <span class="function">(<span class="params">&#123; name &#125;</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">6</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// sleep();</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (</span><br><span class="line">    &lt;div&gt;</span><br><span class="line">      &lt;h1&gt;Hello &#123;name&#125;!&lt;<span class="regexp">/h1&gt;</span></span><br><span class="line"><span class="regexp">      &lt;p&gt;Start editing to see some magic happen :)&lt;/</span>p&gt;</span><br><span class="line">      &lt;Child /&gt;</span><br><span class="line">    &lt;<span class="regexp">/div&gt;</span></span><br><span class="line"><span class="regexp">  );</span></span><br><span class="line"><span class="regexp">&#125;;</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">const root = createRoot(document.getElementById("root"));</span></span><br><span class="line"><span class="regexp"></span></span><br><span class="line"><span class="regexp">console.log("log:", 2);</span></span><br><span class="line"><span class="regexp">root.render(&lt;App name="StackBlitz" /</span>&gt;);</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">4</span>);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">"log:"</span>, <span class="number">1</span>);</span><br><span class="line">&#125;, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题5"><a href="#问题5" class="headerlink" title="问题5"></a>问题5</h2><h3 id="5-1-刷新页面，console-log打印了几次？"><a href="#5-1-刷新页面，console-log打印了几次？" class="headerlink" title="5.1 刷新页面，console.log打印了几次？"></a>5.1 刷新页面，console.log打印了几次？</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123; useState, useEffect &#125; <span class="keyword">from</span> <span class="string">'react'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="function"><span class="keyword">function</span> <span class="title">UseABC</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> [count, setCount] = useState(<span class="number">-1</span>)</span><br><span class="line">  <span class="keyword">const</span> [count1, setCount1] = useState(<span class="number">-100</span>)</span><br><span class="line"></span><br><span class="line">  useEffect(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">    setCount1(<span class="number">0</span>)</span><br><span class="line">  &#125;)</span><br><span class="line"></span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'x'</span>) <span class="comment">//sy-log</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (</span><br><span class="line">    &lt;&gt;</span><br><span class="line">      &lt;h3&gt;UseEffectPage &#123;count1&#125;&lt;<span class="regexp">/h3&gt;</span></span><br><span class="line"><span class="regexp">    &lt;/</span>&gt;</span><br><span class="line">  )</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>答案：3次。</p>
+<ul>
+<li><p>第一次：函数组件初次渲染，执行log函数，并且此次由于useEffect函数执行，在fiber节点上记录了包含create函数的effect对象；</p>
+</li>
+<li><p>第二次：源于组件初次渲染完成之后，延迟useEffect的create函数，此时create函数中执行的是setState事件。setState导致函数组件更新，那么再次执行函数组件这个函数，log再次打印。并且此次又记录了create函数的effect对象。</p>
+</li>
+<li><p>第三次：基本同第二次，不同的地方在于第三次的时候，前后两次状态值相同，函数组件检测到没有更新发生，bailout了。</p>
+</li>
+<li><p>详细过程：</p>
+<ul>
+<li>初始化执行UseABC组件函数，flush -&gt; workloop -&gt; performConcurrentWorkOnRoot，进到render阶段，在当前fiber的updateQueue上记录了要更新的effect，打印一次log</li>
+<li>初始化到了commit阶段，通过 scheduleCallback 向 taskQueue 加入一个优先级为 NormalPriority 的 flushPassiveEffects 任务<ul>
+<li>/* commit的最后还是会ensureRootIsScheduled调度一次微任务<code>scheduleImmediateTask(processRootScheduleInMicrotask);</code>或者performConcurrentWorkOnRoot的最后调度scheduleTaskForRootDuringMicrotask是否要加入高优先级任务，可能涉及到其它高优先级任务插队执行的问题，在flushWork结束的finally里判断如果有任务再次发起宏任务调度 */</li>
+</ul>
+</li>
+<li>不考虑高优先级任务插队或者其他各种情况的话，正常执行完毕后回到 workloop 中，会取出task 或者在下次切片中取出task执行，所以 flushPassiveEffects 任务得以执行，在从root开始遍历，执行各个fiber上的updateQueue的effect</li>
+<li>执行到setCount1时候，等于执行dispatchSetState.bind(null,currentlyRenderingFiber,queue)，相当于增加了一个调度更新scheduleUpdateOnFiber，cheduleUpdateOnFiber执行时会标记root上的更新也会把对应的update添加到对应fiber上，最后通过 ensureRootIsScheduled 发起微任务调度，但是commit已经发起过了，就不重复发起了，最终是通过微任务把setCount1加入到了taskQueue中</li>
+<li>不管中间发生了什么，当再次执行与setCount1任务相同优先级的调度时候，从root开始遍历，再次执行UseABC组件函数，count1变成了0，且再打印一次log（执行UseABC组件函数的过程中又遇到了useEffect执行setCount1，又添加了调度更新）</li>
+<li>当再次执行与此次任务相同优先级的调度时候，那就再次同上执行UseABC组件函数，再打印一次log，但是不同的是，现在count1的值没变化，bailout了</li>
+</ul>
+</li>
+</ul>
+<h3 id="5-2-如果useEffect依赖为-，console-log打印了几次？"><a href="#5-2-如果useEffect依赖为-，console-log打印了几次？" class="headerlink" title="5.2 如果useEffect依赖为[]，console.log打印了几次？"></a>5.2 如果useEffect依赖为[]，console.log打印了几次？</h3><p>答案：2次</p>
+<ul>
+<li>第一次：函数组件初次渲染，执行log函数，并且此次由于useEffect函数执行，在fiber节点上记录了包含create函数的effect对象；</li>
+<li>第二次：源于组件初次渲染完成之后，延迟useEffect的create函数，此时create函数中执行的是setState事件。setState导致函数组件更新，那么再次执行函数组件这个函数，log再次打印。但是此次useEffect没有变化，故不再后续执行。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react18-2/" rel="tag"># react18.2</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86.html" rel="prev" title="react18.2hook之useEffect和useLayoutEffect原理">
+      <i class="fa fa-chevron-left"></i> react18.2hook之useEffect和useLayoutEffect原理
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题1"><span class="nav-number">1.</span> <span class="nav-text">问题1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题2"><span class="nav-number">2.</span> <span class="nav-text">问题2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题3"><span class="nav-number">3.</span> <span class="nav-text">问题3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题4"><span class="nav-number">4.</span> <span class="nav-text">问题4</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题5"><span class="nav-number">5.</span> <span class="nav-text">问题5</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-刷新页面，console-log打印了几次？"><span class="nav-number">5.1.</span> <span class="nav-text">5.1 刷新页面，console.log打印了几次？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-如果useEffect依赖为-，console-log打印了几次？"><span class="nav-number">5.2.</span> <span class="nav-text">5.2 如果useEffect依赖为[]，console.log打印了几次？</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

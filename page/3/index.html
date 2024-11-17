@@ -164,6 +164,327 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/semantic-release.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/semantic-release.html" class="post-title-link" itemprop="url">团队敏捷实践 —— 使用 semantic-release 实现自动化发布</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-09-01 00:00:00" itemprop="dateCreated datePublished" datetime="2023-09-01T00:00:00+08:00">2023-09-01</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在之前的分享中，我们团队已经成功运用了 Gitlab CI，并且已经结构化提交 git commit 记录，我们希望更进一步，自动管理发布版本，自动生成更新日志，自动发布 NPM 包，因此我们引入了 semantic-release 进一步自动化管理我们的发布流程。</p>
+<h2 id="semantic-release-概述"><a href="#semantic-release-概述" class="headerlink" title="semantic-release 概述"></a>semantic-release 概述</h2><p>有关<a href="https://semantic-release.gitbook.io/semantic-release/" target="_blank" rel="noopener">semantic-release</a>的详细介绍可以阅读官方文档，这里只做一些概述性的总结。和 standard-version 相比，semantic-release 更适合在 CI 环境中运行，它自带支持各种 git server 的认证支持，如 Github，Gitlab，Bitbucket 等等，此外，还支持插件，以便完成其他后续的流程步骤，比如自动生成 git tag 和 release note 之后再 push 回中央仓库，自动发布 npm 包等等。</p>
+<p>semantic-release 会根据规范化的 commit 信息生成发布日志，默认使用 angular 规则，其他规则可以配置插件完成。</p>
+<p>semantic-release 大致的工作流如下:</p>
+<ul>
+<li>提交到特定的分支触发 release 流程</li>
+<li>验证 commit 信息，生成 release note，打 git tag</li>
+<li>其他后续流程，如生成 CHANGELOG.md，npm publish 等等（通过插件完成）</li>
+</ul>
+<p><strong>由 CI 自动执行之后的效果就像这样，在 Git tag 页面可以看到 tag 信息，同时包含更新记录:</strong><br><img src="/images/semantic-release.resources/4AC0ED82-F6DB-47DF-BF40-55D3D102E62E.png" alt="86f880f284d3072ec2179cbc46c32396"></p>
+<p><strong>如果启用了@semantic-release/git 插件，还会将生成的 CHANGELOG.md  反向 push 回中央仓库:</strong><br><img src="/images/semantic-release.resources/0ECB644A-F473-44BD-B48D-88C694133D7C.png" alt="6cfc655f89c58bc6a2faa5e3aee6eea1"></p>
+<p><strong>commit history 的实际效果如下</strong><br><img src="/images/semantic-release.resources/6FB7CB34-8D1F-46EB-98EA-801CABF7D39F.png" alt="c15015e5517056c98eca17829d479a12"></p>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><p>在项目工程中添加 release.config.js 配置如下:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br></pre></td><td class="code"><pre><span class="line">parserOpts = &#123;</span><br><span class="line">  mergePattern: <span class="regexp">/^Merge pull request #(\d+) from (.*)$/</span>,</span><br><span class="line">  mergeCorrespondence: [<span class="string">'id'</span>, <span class="string">'source'</span>],</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Copied from https://github.com/conventional-changelog/conventional-changelog/blob/master/packages/conventional-changelog-angular/writer-opts.js#L27</span></span><br><span class="line"><span class="comment">// and modified to support adding all commit types to the release notes</span></span><br><span class="line">customTransform = <span class="function">(<span class="params">commit, context</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="keyword">const</span> issues = []</span><br><span class="line">  commit.notes.forEach(<span class="function">(<span class="params">note</span>) =&gt;</span> &#123;</span><br><span class="line">    note.title = <span class="string">`BREAKING CHANGES`</span></span><br><span class="line">  &#125;)</span><br><span class="line">  <span class="keyword">if</span> (commit.type === <span class="string">`feat`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`✨ Features`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`fix`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🐞 Bug Fixes`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`perf`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🎈 Performance Improvements`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`revert`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`Reverts`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`docs`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`📃 Documentation`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`style`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🌈 Styles`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`refactor`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🦄 Code Refactoring`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`test`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🧪 Tests`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`build`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🔧 Build System`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (commit.type === <span class="string">`ci`</span>) &#123;</span><br><span class="line">    commit.type = <span class="string">`🐎 Continuous Integration`</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (commit.scope === <span class="string">`*`</span>) &#123;</span><br><span class="line">    commit.scope = <span class="string">``</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> commit.hash === <span class="string">`string`</span>) &#123;</span><br><span class="line">    commit.shortHash = commit.hash.substring(<span class="number">0</span>, <span class="number">7</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> commit.subject === <span class="string">`string`</span>) &#123;</span><br><span class="line">    commit.subject = commit.subject.substring(<span class="number">2</span>)</span><br><span class="line">    <span class="keyword">let</span> url = context.repository</span><br><span class="line">      ? <span class="string">`<span class="subst">$&#123;context.host&#125;</span>/<span class="subst">$&#123;context.owner&#125;</span>/<span class="subst">$&#123;context.repository&#125;</span>`</span></span><br><span class="line">      : context.repoUrl</span><br><span class="line">    <span class="keyword">if</span> (url) &#123;</span><br><span class="line">      url = <span class="string">`<span class="subst">$&#123;url&#125;</span>/issues/`</span> <span class="comment">// Issue URLs.</span></span><br><span class="line">      commit.subject = commit.subject.replace(<span class="regexp">/#([0-9]+)/g</span>, (_, issue) =&gt; &#123;</span><br><span class="line">        issues.push(issue)</span><br><span class="line">        <span class="keyword">return</span> <span class="string">`[#<span class="subst">$&#123;issue&#125;</span>](<span class="subst">$&#123;url&#125;</span><span class="subst">$&#123;issue&#125;</span>)`</span></span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (context.host) &#123;</span><br><span class="line">      <span class="comment">// User URLs.</span></span><br><span class="line">      commit.subject = commit.subject.replace(</span><br><span class="line">        /\B@([a-z0<span class="number">-9</span>](?:-?[a-z0<span class="number">-9</span>/])&#123;<span class="number">0</span>,<span class="number">38</span>&#125;)/g,</span><br><span class="line">        (_, username) =&gt; &#123;</span><br><span class="line">          <span class="keyword">if</span> (username.includes(<span class="string">'/'</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">`@<span class="subst">$&#123;username&#125;</span>`</span></span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">return</span> <span class="string">`[@<span class="subst">$&#123;username&#125;</span>](<span class="subst">$&#123;context.host&#125;</span>/<span class="subst">$&#123;username&#125;</span>)`</span></span><br><span class="line">        &#125;</span><br><span class="line">      )</span><br><span class="line">    &#125;</span><br><span class="line">    commit.subject = <span class="string">`<span class="subst">$&#123;commit.subject&#125;</span> (by @<span class="subst">$&#123;commit.committer.name&#125;</span>)`</span></span><br><span class="line">  &#125; <span class="comment">// remove references that already appear in the subject</span></span><br><span class="line">  commit.references = commit.references.filter(<span class="function">(<span class="params">reference</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (issues.indexOf(reference.issue) === <span class="number">-1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">  &#125;)</span><br><span class="line">  <span class="keyword">return</span> commit</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">module</span>.exports = &#123;</span><br><span class="line">  branches: <span class="string">'master'</span>,</span><br><span class="line">  parserOpts,</span><br><span class="line">  writerOpts: &#123; <span class="attr">transform</span>: customTransform &#125;,</span><br><span class="line">  plugins: [</span><br><span class="line">    [</span><br><span class="line">      <span class="string">'@semantic-release/commit-analyzer'</span>,</span><br><span class="line">      &#123;</span><br><span class="line">        preset: <span class="string">'angular'</span>,</span><br><span class="line">        releaseRules: [</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'docs'</span>, <span class="attr">scope</span>: <span class="string">'README'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'refactor'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'style'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'test'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'build'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">          &#123; <span class="attr">type</span>: <span class="string">'ci'</span>, <span class="attr">release</span>: <span class="string">'patch'</span> &#125;,</span><br><span class="line">        ],</span><br><span class="line">      &#125;,</span><br><span class="line">    ],</span><br><span class="line">    <span class="string">'@semantic-release/release-notes-generator'</span>,</span><br><span class="line">    [<span class="string">'@semantic-release/changelog'</span>, &#123; <span class="attr">changelogFile</span>: <span class="string">'CHANGELOG.md'</span> &#125;],</span><br><span class="line">    <span class="string">'@semantic-release/npm'</span>,</span><br><span class="line">    [</span><br><span class="line">      <span class="string">'@semantic-release/git'</span>,</span><br><span class="line">      &#123;</span><br><span class="line">        assets: [<span class="string">'package.json'</span>, <span class="string">'CHANGELOG.md'</span>],</span><br><span class="line">      &#125;,</span><br><span class="line">    ],</span><br><span class="line">    [</span><br><span class="line">      <span class="string">'@semantic-release/gitlab'</span>,</span><br><span class="line">      &#123;</span><br><span class="line">        gitlabUrl: <span class="string">'http://git.example.com'</span>,</span><br><span class="line">        assets: [],</span><br><span class="line">      &#125;,</span><br><span class="line">    ],</span><br><span class="line">  ],</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>完成  .gitlab-ci.yml  配置如下（仅部分关键的配置片段）:</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">stages:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">lint</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">release</span></span><br><span class="line"><span class="attr">commitlint:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">lint</span></span><br><span class="line">    <span class="attr">rules:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">'$CI_COMMIT_TITLE =~ /^chore\(release\)/'</span></span><br><span class="line">          <span class="attr">when:</span> <span class="string">never</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">'$CI_COMMIT_TITLE =~ /^Merge branch/'</span></span><br><span class="line">          <span class="attr">when:</span> <span class="string">never</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">$CI_COMMIT_BRANCH</span> <span class="string">==</span> <span class="string">$CI_DEFAULT_BRANCH</span> <span class="comment"># 一般当分支master有 push 或 merge 时才会执行该工作</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">sh</span> <span class="string">bin/commitlint-gitlab-ci.sh</span></span><br><span class="line"><span class="attr">release:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">release</span></span><br><span class="line">    <span class="attr">rules:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">if:</span> <span class="string">$CI_COMMIT_BRANCH</span> <span class="string">==</span> <span class="string">$CI_DEFAULT_BRANCH</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">semantic-release</span></span><br></pre></td></tr></table></figure>
+
+<p>commitlint 脚本请参考<a href="https://gitlab.com/dmoonfire/commitlint-gitlab-ci/-/blob/main/bin/commitlint-gitlab-ci.sh" target="_blank" rel="noopener">commitlint-gitlab-ci.sh</a></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>至此，我们完成了通过 CI 自动管理版本号和发布日志的需求，大大节省了人力，同时，还留下了发布痕迹，方便追溯历史版本。<br>另外，需要注意的是上述的配置并不会修改源码部分的版本号配置内容（如 build.gradle 或 package.json 等），如果需要自动管理这些地方的版本，与 git tag 版本保持一致，可以引入@semantic-release/exec 插件，自己写脚本，通过脚本自动化修改这些地方的版本号。<br>还需要注意的是 semantic-release 默认产生的 commit 记录为了避免不必要的 CI 流程，会在 commit 记录加上[skip ci]（见上面的截图）来跳过 CI，如果你的流水线需要由 git tag 触发，可以配置@semantic-release/git 插件，自定义 commit 记录，去掉[skip ci]。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/eventloop.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/zh-CN/eventloop.html" class="post-title-link" itemprop="url">EventLoop规范 阅读和总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-08-07 00:00:00" itemprop="dateCreated datePublished" datetime="2023-08-07T00:00:00+08:00">2023-08-07</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="异步的思考"><a href="#异步的思考" class="headerlink" title="异步的思考"></a>异步的思考</h2><p>提起异步，相信每个人都知道。异步背后的“靠山”就是 event loops。这里的异步准确的说应该叫浏览器的 event loops 或者说是 javaScript 运行环境的 event loops，因为<a href="https://tc39.es/ecma262/" target="_blank" rel="noopener">ECMAScript</a>中没有 event loops，event loops 是在<a href="https://html.spec.whatwg.org/#event-loops" target="_blank" rel="noopener">HTML Standard</a>定义的。</p>
+<h4 id="（1）单线程的-JavaScript"><a href="#（1）单线程的-JavaScript" class="headerlink" title="（1）单线程的 JavaScript"></a>（1）单线程的 JavaScript</h4><p>我们知道，JavaScript 是一种单线程语言，它主要用来与用户互动，以及操作 DOM。<br>JavaScript 有同步和异步的概念，这就解决了代码阻塞的问题：</p>
+<pre><code>- 同步：如果在一个函数返回的时候，调用者就能够得到预期结果，那么这个函数就是同步的；
+- 异步：如果在函数返回的时候，调用者还不能够得到预期结果，而是需要在将来通过一定的手段得到，那么这个函数就是异步的。</code></pre><h5 id="那单线程有什么好处呢？"><a href="#那单线程有什么好处呢？" class="headerlink" title="那单线程有什么好处呢？"></a>那单线程有什么好处呢？</h5><pre><code>在 JS 运行的时候可能会阻止 UI 渲染，这说明了两个线程是互斥的。这是因为 JS 可以修改 DOM，如果在 JS 执行的时候 UI 线程还在工作，就可能导致不能安全的渲染 UI。
+得益于 JS 是单线程运行的，可以达到节省内存，节约上下文切换时间的好处。</code></pre><h4 id="（2）多线程的浏览器"><a href="#（2）多线程的浏览器" class="headerlink" title="（2）多线程的浏览器"></a>（2）多线程的浏览器</h4><p>JS 是单线程的，在同一个时间只能做一件事情，那为什么浏览器可以同时执行异步任务呢？</p>
+<p>这是因为浏览器是多线程的，当 JS 需要执行异步任务时，浏览器会另外启动一个线程去执行该任务。也就是说，JavaScript 是单线程的指的是执行 JavaScript 代码的线程只有一个，是浏览器提供的 JavaScript 引擎线程（主线程）。除此之外，浏览器中还有定时器线程、 HTTP 请求线程等线程，这些线程主要不是来执行 JS 代码的。</p>
+<p>比如主线程中需要发送数据请求，就会把这个任务交给异步 HTTP 请求线程去执行，等请求数据返回之后，再将 callback 里需要执行的 JS 回调交给 JS 引擎线程去执行。也就是说，浏览器才是真正执行发送请求这个任务的角色，而 JS 只是负责执行最后的回调处理。所以这里的异步不是 JS 自身实现的，而是浏览器为其提供的能力。</p>
+<p><img src="../images/eventloop/image.png" alt="alt text"></p>
+<p>可以看到，Chrome 不仅拥有多个进程，还有多个线程。以渲染进程为例，就包含 GUI 渲染线程、JS 引擎线程、事件触发线程、定时器触发线程、异步 HTTP 请求线程。这些线程为 JS 在浏览器中完成异步任务提供了基础。</p>
+<h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>我们来看看 event loop 在 <a href="https://html.spec.whatwg.org/multipage/webappapis.html#event-loop" target="_blank" rel="noopener">HTML Standard</a> 中的定义章节:</p>
+<p>第一句话：</p>
+<blockquote>
+<p>为了协调事件，用户交互，脚本，渲染，网络等，用户代理必须使用本节所述的 event loop。</p>
+</blockquote>
+<p><strong>事件</strong>，<strong>用户交互</strong>，<strong>脚本</strong>，<strong>渲染</strong>，<strong>网络</strong>这些都是我们所熟悉的东西，他们都是由 event loop 协调的。触发一个 click 事件，进行一次 ajax 请求，背后都有 event loop 在运作。</p>
+<h3 id="task-queues"><a href="#task-queues" class="headerlink" title="task queues"></a>task queues</h3><blockquote>
+<p>一个 event loop 有一个或者多个 task 队列。</p>
+</blockquote>
+<blockquote>
+<p>当用户代理安排一个任务，必须将该任务增加到相应的 event loop 的一个 tsak 队列中。</p>
+</blockquote>
+<blockquote>
+<p>每一个 task 都来源于指定的任务源，比如可以为鼠标、键盘事件提供一个 task 队列，其他事件又是一个单独的队列。可以为鼠标、键盘事件分配更多的时间，保证交互的流畅。</p>
+</blockquote>
+<h3 id="哪些是-task-任务源呢？"><a href="#哪些是-task-任务源呢？" class="headerlink" title="哪些是 task 任务源呢？"></a>哪些是 task 任务源呢？</h3><p>规范在<a href="https://html.spec.whatwg.org/multipage/webappapis.html#generic-task-sources" target="_blank" rel="noopener">Generic task sources</a>中有提及：</p>
+<blockquote>
+<p>DOM 操作任务源：<br>此任务源被用来相应 dom 操作，例如一个元素以非阻塞的方式插入文档。</p>
+</blockquote>
+<blockquote>
+<p>用户交互任务源：<br>此任务源用于对用户交互作出反应，例如键盘或鼠标输入。响应用户操作的事件（例如 click）必须使用 task 队列。</p>
+</blockquote>
+<blockquote>
+<p>网络任务源：<br>网络任务源被用来响应网络活动。</p>
+</blockquote>
+<blockquote>
+<p>history traversal 任务源：<br>当调用 history.back()等类似的 api 时，将任务插进 task 队列。</p>
+</blockquote>
+<p>task 任务源非常宽泛，比如 ajax 的 onload，click 事件，基本上我们经常绑定的各种事件都是 task 任务源，还有数据库操作（IndexedDB ），需要注意的是 setTimeout、setInterval、setImmediate 也是 task 任务源。总结来说 task 任务源：</p>
+<ul>
+<li>setTimeout</li>
+<li>setInterval</li>
+<li>setImmediate</li>
+<li>I/O</li>
+<li>UI rendering</li>
+</ul>
+<h3 id="microtask"><a href="#microtask" class="headerlink" title="microtask"></a>microtask</h3><blockquote>
+<p>微任务队列不是任务队列。</p>
+</blockquote>
+<blockquote>
+<p>每个事件循环都有一个微任务队列，这是一个微任务队列，最初是空的。微任务是一种口语化的方式，指的是通过微任务算法队列创建的任务。</p>
+</blockquote>
+<blockquote>
+<p>如果在初期执行时，<a href="https://html.spec.whatwg.org/multipage/webappapis.html#spin-the-event-loop" target="_blank" rel="noopener">spin the event loop</a>，microtasks 有可能被移动到常规的 task 队列，在这种情况下，microtasks 任务源会被 task 任务源所用。通常情况，task 任务源和 microtasks 是不相关的。</p>
+</blockquote>
+<p>microtask 队列和 task 队列有些相似，都是先进先出的队列，由指定的任务源去提供任务，不同的是一个 event loop 里只有一个 microtask 队列。</p>
+<p>HTML Standard 没有具体指明哪些是 microtask 任务源，通常认为是 microtask 任务源有：</p>
+<ul>
+<li>process.nextTick</li>
+<li>promises</li>
+<li>Object.observe</li>
+<li>MutationObserver</li>
+</ul>
+<h2 id="处理流程（processing-model）"><a href="#处理流程（processing-model）" class="headerlink" title="处理流程（processing model）"></a><a href="https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model" target="_blank" rel="noopener">处理流程（processing model）</a></h2><ol>
+<li><p>在 tasks 队列中选择最老的一个 task，用户代理可以选择任何 task 队列，如果没有可选的任务，则跳到下边的 microtasks 步骤。(从任务队列中取出一个宏任务并执行)</p>
+<p>1.1 将上边选择的 task 设置为正在运行的 task</p>
+<p>1.2 Run: 运行被选择的 task。</p>
+<p>1.3 将 event loop 的 currently running task 变为 null。</p>
+<p>1.4 从 task 队列里移除前边运行的 task。</p>
+</li>
+<li><p>Microtasks: 执行 <a href="https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint" target="_blank" rel="noopener">microtasks 任务检查点</a>。（检查微任务队列，执行并清空微任务队列，如果在微任务的执行中又加入了新的微任务，也会在这一步一起执行。）</p>
+</li>
+<li><p>进入更新渲染阶段，判断是否需要渲染，这里有一个 rendering opportunity 的概念，也就是说不一定每一轮 event loop 都会对应一次浏览 器渲染，要根据屏幕刷新率、页面性能、页面是否在后台运行来共同决定，通常来说这个渲染间隔是固定的。（所以多个 task 很可能在一次渲染之间执行）</p>
+<ul>
+<li>浏览器会尽可能的保持帧率稳定，例如页面性能无法维持 60fps（每 16.66ms 渲染一次）的话，那么浏览器就会选择 30fps 的更新速率，而不是偶尔丢帧。</li>
+<li>如果浏览器上下文不可见，那么页面会降低到 4fps 左右甚至更低。</li>
+<li>如果满足以下条件，也会跳过渲染：<ul>
+<li>浏览器判断更新渲染不会带来视觉上的改变。</li>
+<li>map of animation frame callbacks 为空，也就是帧动画回调为空，可以通过 requestAnimationFrame 来请求帧动画。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>如果上述的判断决定本轮不需要渲染，那么下面的几步也不会继续运行：</p>
+</li>
+</ol>
+<blockquote>
+<p>This step enables the user agent to prevent the steps below from running for other reasons, for example, to ensure certain tasks are executed immediately after each other, with only microtask checkpoints interleaved (and without, e.g., animation frame callbacks interleaved). Concretely, a user agent might wish to coalesce timer callbacks together, with no intermediate rendering updates.<br>有时候浏览器希望两次「定时器任务」是合并的，他们之间只会穿插着 microTask 的执行，而不会穿插屏幕渲染相关的流程</p>
+</blockquote>
+<ol start="5">
+<li><p>对于需要渲染的文档，如果窗口的大小发生了变化，执行监听的 resize 方法。</p>
+</li>
+<li><p>对于需要渲染的文档，如果页面发生了滚动，执行 scroll 方法。</p>
+</li>
+<li><p>对于需要渲染的文档，执行帧动画回调，也就是 requestAnimationFrame 的回调。（后文会详解）</p>
+</li>
+<li><p>对于需要渲染的文档， 执行 IntersectionObserver 的回调。</p>
+</li>
+<li><p>对于需要渲染的文档，重新渲染绘制用户界面。</p>
+</li>
+<li><p>判断 task 队列和 microTask 队列是否都为空，如果是的话，则进行 Idle 空闲周期的算法，判断是否要执行 requestIdleCallback 的回调函数。（后文会详解）</p>
+</li>
+</ol>
+<p>对于 resize 和 scroll 来说，并不是到了这一步才去执行滚动和缩放，那岂不是要延迟很多？浏览器当然会立刻帮你滚动视图，根据 CSSOM 规范所讲，浏览器会保存一个 pending scroll event targets，等到事件循环中的 scroll 这一步，去派发一个事件到对应的目标上，驱动它去执行监听的回调函数而已。resize 也是同理。</p>
+<h2 id="microtasks-检查点（microtask-checkpoint）"><a href="#microtasks-检查点（microtask-checkpoint）" class="headerlink" title="microtasks 检查点（microtask checkpoint）"></a>microtasks 检查点（microtask checkpoint）</h2><p>上文 event loop 处理流程第 2 步，执行了一个 microtask checkpoint，看看规范如何描述 microtask checkpoint：</p>
+<p>当用户代理去执行一个 microtask checkpoint，如果 microtask checkpoint 的 flag（标识）为 false，用户代理必须运行下面的步骤：</p>
+<ol>
+<li>将 microtask checkpoint 的 flag 设为 true。</li>
+<li>Microtask queue handling: 如果 event loop 的 microtask 队列为空，直接跳到第八步（Done）。</li>
+<li>在 microtask 队列中选择最老的一个任务。</li>
+<li>将上一步选择的任务设为 event loop 的 currently running task。</li>
+<li>运行选择的任务。</li>
+<li>将 event loop 的 currently running task 变为 null。</li>
+<li>将前面运行的 microtask 从 microtask 队列中删除，然后返回到第二步（Microtask queue handling）。</li>
+<li>Done: 每一个 environment settings object 它们的 responsible event loop 就是当前的 event loop，会给 environment settings object 发一个 rejected promises 的通知。</li>
+<li>清理 IndexedDB 的事务。</li>
+<li>将 microtask checkpoint 的 flag 设为 flase。</li>
+</ol>
+<p>microtask checkpoint 所做的就是执行 microtask 队列里的任务。什么时候会调用 microtask checkpoint 呢?</p>
+<ul>
+<li>当上下文执行栈为空时，执行一个 microtask checkpoint。</li>
+<li>在 event loop 的第六步（Microtasks: Perform a microtask checkpoint）执行 checkpoint，也就是在运行 task 之后，更新渲染之前。</li>
+</ul>
+<h2 id="多任务队列"><a href="#多任务队列" class="headerlink" title="多任务队列"></a>多任务队列</h2><p>上文也提到了，每一个 task 都来源于指定的任务源， 所以 task 队列并不是我们想象中的那样只有一个，根据规范里的描述：</p>
+<blockquote>
+<p>An event loop has one or more task queues. For example, a user agent could have one task queue for mouse and key events (to which the user interaction task source is associated), and another to which all other task sources are associated. Then, using the freedom granted in the initial step of the event loop processing model, it could give keyboard and mouse events preference over other tasks three-quarters of the time, keeping the interface responsive but not starving other task queues. Note that in this setup, the processing model still enforces that the user agent would never process events from any one task source out of order.</p>
+</blockquote>
+<p>事件循环中可能会有一个或多个任务队列，这些队列分别为了处理：</p>
+<ol>
+<li>鼠标和键盘事件</li>
+<li>其他的一些 Task</li>
+</ol>
+<p>浏览器会在保持任务顺序的前提下，可能分配四分之三的优先权给鼠标和键盘事件，保证用户的输入得到最高优先级的响应，而剩下的优先级交给其他 Task，并且保证不会“饿死”它们。</p>
+<p>这个规范也导致 vue 的这个<a href="https://github.com/vuejs/vue/issues/3771" target="_blank" rel="noopener">Issue</a>。简单描述一下就是采用了 task 实现的 nextTick，在用户持续滚动的情况下 nextTick 任务被延后了很久才去执行，导致动画跟不上滚动了。</p>
+<p>迫于无奈，尤大还是改回了 microTask 去实现 nextTick，目前来说 promise.then 微任务已经很稳定并且 vue3 就是这样实现的，并且 Chrome 也已经实现了 queueMicroTask 这个官方 API。我们想要调用微任务队列的话，也可以节省掉实例化 Promise 在开销了。</p>
+<p>从这个 Issue 的例子中我们可以看出，稍微去深入了解一下规范还是比较有好处的，以免在遇到这种比较复杂的 Bug 的时候一脸懵逼。</p>
+<h2 id="执行栈（JavaScript-execution-context-stack）"><a href="#执行栈（JavaScript-execution-context-stack）" class="headerlink" title="执行栈（JavaScript execution context stack）"></a>执行栈（JavaScript execution context stack）</h2><p>task 和 microtask 都是推入栈中执行的，要完整了解 event loops 还需要认识 JavaScript execution context stack，它的规范位于<a href="https://tc39.github.io/ecma262/#execution-context-stack。" target="_blank" rel="noopener">https://tc39.github.io/ecma262/#execution-context-stack。</a></p>
+<p>javaScript 是单线程，也就是说只有一个主线程，主线程有一个栈，每一个函数执行的时候，都会生成新的 execution context（执行上下文），执行上下文会包含一些当前函数的参数、局部变量之类的信息，它会被推入栈中， running execution context（正在执行的上下文）始终处于栈的顶部。当函数执行完后，它的执行上下文会从栈弹出。</p>
+<p><img src="../images/eventloop/image-1.png" alt="alt text"></p>
+<p>举个简单的例子：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">bar</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'bar'</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'foo'</span>)</span><br><span class="line">  bar()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">foo()</span><br></pre></td></tr></table></figure>
+
+<p>执行过程中栈的变化：<br><img src="../images/eventloop/image-2.png" alt="alt text"></p>
+<h4 id="完整异步过程"><a href="#完整异步过程" class="headerlink" title="完整异步过程"></a>完整异步过程</h4><p>主线程类似一个加工厂，它只有一条流水线，待执行的任务就是流水线上的原料，只有前一个加工完，后一个才能进行。event loops 就是把原料放上流水线的工人。只要已经放在流水线上的，它们会被依次处理，称为同步任务。一些待处理的原料，工人会按照它们的种类排序，在适当的时机放上流水线，这些称为异步任务。</p>
+<p><img src="../images/eventloop/image-3.png" alt="alt text"></p>
+<p>举个简单的例子，假设一个 script 标签的代码如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">promise1</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'promise1'</span>)</span><br><span class="line">&#125;)</span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout1</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'setTimeout1'</span>)</span><br><span class="line">  <span class="built_in">Promise</span>.resolve().then(<span class="function"><span class="keyword">function</span> <span class="title">promise2</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'promise2'</span>)</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">setTimeout2</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'setTimeout2'</span>)</span><br><span class="line">&#125;, <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+<p>运行过程：</p>
+<p>script 里的代码被列为一个 task，放入 task 队列。</p>
+<ul>
+<li><p><strong>循环 1</strong>：</p>
+</li>
+<li><p>【task 队列：script ；microtask 队列：】</p>
+<ul>
+<li>1.从 task 队列中取出 script 任务，推入栈中执行。</li>
+<li>2.promise1 列为 microtask，setTimeout1 列为 task，setTimeout2 列为 task。</li>
+</ul>
+</li>
+<li><p>task 队列：setTimeout1 setTimeout2；microtask 队列：promise1】</p>
+<ul>
+<li>3.script 任务执行完毕，执行 microtask checkpoint，取出 microtask 队列的 promise1 执行。</li>
+</ul>
+</li>
+<li><p><strong>循环 2</strong>：</p>
+</li>
+<li><p>【task 队列：setTimeout1 setTimeout2；microtask 队列：】</p>
+<ul>
+<li>4.从 task 队列中取出 setTimeout1，推入栈中执行，将 promise2 列为 microtask。</li>
+</ul>
+</li>
+<li><p>【task 队列：setTimeout2；microtask 队列：promise2】</p>
+<ul>
+<li>5.执行 microtask checkpoint，取出 microtask 队列的 promise2 执行。</li>
+</ul>
+</li>
+<li><p><strong>循环 3</strong>：</p>
+</li>
+<li><p>【task 队列：setTimeout2；microtask 队列：】</p>
+<ul>
+<li>6.从 task 队列中取出 setTimeout2，推入栈中执行。</li>
+<li>7.setTimeout2 任务执行完毕，执行 microtask checkpoint。</li>
+</ul>
+</li>
+<li><p>【task 队列：；microtask 队列：】</p>
+</li>
+</ul>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>以上就是对 event loop 规范 和一些运行的流程做的总结。但是包括 requestAnimationFrame，requestIdleCallback 和 浏览器中 js 的执行机制等细节的总结将会单独写文章进行归纳总结。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/Gitlab%20CI_CD%20%E5%AE%9E%E8%B7%B5.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1114,228 +1435,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/Git%E4%BB%93%E5%BA%93%E8%BF%81%E7%A7%BB%E6%96%B9%E6%A1%88.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/Git%E4%BB%93%E5%BA%93%E8%BF%81%E7%A7%BB%E6%96%B9%E6%A1%88.html" class="post-title-link" itemprop="url">Git仓库迁移方案</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-30 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-30T00:00:00+08:00">2022-10-30</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>公司有一些前端代码在不同的托管平台上，为了统一管理和维护的效率，所以要将其他托管平台的代码全部快捷平迁到公司的私有 gitlab 上。</p>
-<h1 id="迁移方式"><a href="#迁移方式" class="headerlink" title="迁移方式"></a>迁移方式</h1><blockquote>
-<p>在你把原来的仓库推到你的仓库的新副本或镜像之前，你必须在新的托管平台上创建新的仓库。<br>在以下的这些示例中，exampleuser/new-repository 或 exampleuser/mirrored 是镜像。</p>
-</blockquote>
-<h3 id="镜像存储库"><a href="#镜像存储库" class="headerlink" title="镜像存储库"></a>镜像存储库</h3><ol>
-<li>创建存储库的裸克隆</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git clone --bare https:&#x2F;&#x2F;github.com&#x2F;EXAMPLE-USER&#x2F;OLD-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>镜像推送到新的存储库</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cd OLD-REPOSITORY.git</span><br><span class="line">$ git push --mirror https:&#x2F;&#x2F;github.com&#x2F;EXAMPLE-USER&#x2F;NEW-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>删除前面创建的临时本地存储库</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cd ..</span><br><span class="line">$ rm -rf OLD-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<ol start="4">
-<li>拉取新存储库或者更改本地项目的源为新的存储库的地址</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git remote set-url origin https:&#x2F;&#x2F;github.com&#x2F;EXAMPLE-USER&#x2F;NEW-REPOSITORY.git</span><br></pre></td></tr></table></figure>
-
-<h3 id="其它方式"><a href="#其它方式" class="headerlink" title="其它方式"></a>其它方式</h3><p>由于上面的方式可以满足目前已有的迁移需求，其它方式可参考<a href="https://docs.github.com/en/repositories/creating-and-managing-repositories/duplicating-a-repository" target="_blank" rel="noopener">文档</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/rollup.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
-      <meta itemprop="name" content="rile">
-      <meta itemprop="description" content="FE">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="右耳听风">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/zh-CN/rollup.html" class="post-title-link" itemprop="url">rollup使用总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-10 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-10T00:00:00+08:00">2022-09-10</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>项目中一直用的都是 webpack，前一段需要开发几个类库， 看过很多开源库源码都是用 rollup。这次通过开发类库，于是就快速上手了 rollup。</p>
-<h2 id="定位"><a href="#定位" class="headerlink" title="定位"></a>定位</h2><p>Rollup 是一个 JavaScript 模块打包器，可以将小块代码编译成大块复杂的代码，例如 library 或应用程序。</p>
-<p>与 Webpack 偏向于应用打包的定位不同，rollup.js 更专注于 Javascript 类库打包。</p>
-<p>我们熟知的 Vue2、React 等诸多知名框架或类库都是通过 rollup.js 进行打包的。</p>
-<h2 id="常用配置"><a href="#常用配置" class="headerlink" title="常用配置"></a>常用配置</h2><h4 id="入口文件"><a href="#入口文件" class="headerlink" title="入口文件"></a>入口文件</h4><p>Rollup 既然是打包类库文件，那么它的入口也就只能是 JS 文件了（通过第三方插件可以支持 Html，这里不作展开），因此我们新建一个 main.js 作为入口文件，打包出来的文件我们命名为 bundle.js，我们可以简单的通过命令行进行打包：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 针对浏览器环境打包</span><br><span class="line">rollup main.js --file bundle.js --format iife</span><br><span class="line"></span><br><span class="line"># 针对Nodejs环境打包</span><br><span class="line">rollup main.js --file bundle.js --format cjs</span><br></pre></td></tr></table></figure>
-
-<p>推荐使用配置文件进行打包：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 默认使用rollup.config.js配置文件</span><br><span class="line">rollup --config</span><br><span class="line"></span><br><span class="line"># 使用自定义my.config.js配置文件</span><br><span class="line">$ rollup --config my.config.js</span><br></pre></td></tr></table></figure>
-
-<p>一个基础的配置文件如下</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// rollup.config.js</span></span><br><span class="line">export default &#123;</span><br><span class="line">    input: "main.js",</span><br><span class="line">    output: &#123;</span><br><span class="line">        file: "bundle.js",</span><br><span class="line">        format: "cjs"</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;;</span><br></pre></td></tr></table></figure>
-
-<p>这里的 format 字段有六种选项：</p>
-<ul>
-<li>amd： 异步模块定义，用于像 RequireJS 这样的模块加载器</li>
-<li>cjs：CommonJS，适用于 Node 和 Browserify/Webpack</li>
-<li>es：ES 模块文件</li>
-<li>iife：自执行模块，适用于浏览器环境 script 标签</li>
-<li>umd：通用模块定义，以 amd，cjs 和 iife 为一体</li>
-<li>system：SystemJS 加载器格式</li>
-</ul>
-<p>Rollup 也支持配置多个文件入口，我们新建 foo.js 和 bar.js 两个入口文件：</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> &#123;</span><br><span class="line">  input: &#123;</span><br><span class="line">    foo: <span class="string">'./foo.js'</span>,</span><br><span class="line">    bar: <span class="string">'./bar.js'</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">  output: &#123;</span><br><span class="line">    dir: <span class="string">'dist'</span>,</span><br><span class="line">    format: <span class="string">'cjs'</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这样打包出来的两个文件就放入 dist 中。</p>
-<hr>
-<h4 id="插件-plugins"><a href="#插件-plugins" class="headerlink" title="插件(plugins)"></a>插件(plugins)</h4><ul>
-<li>@rollup/plugin-json<ul>
-<li>可以读取 json 文件</li>
-</ul>
-</li>
-<li>@rollup/plugin-commonjs<ul>
-<li>第三方的模块为了能够直接使用，往往不是 ES6 模块而是用 commonjs 的模块方式编写的，<strong>将 commonjs 的模块转化为 ES6 模块</strong></li>
-</ul>
-</li>
-<li>@rollup/plugin-node-resolve<ul>
-<li><strong>帮助 rollup 查找 node_modules 里的三方模块</strong></li>
-</ul>
-</li>
-<li>@rollup-plugin-alias<ul>
-<li><strong>提供 modules 名称的 alias 和 reslove 功能</strong></li>
-</ul>
-</li>
-<li>@rollup/plugin-babel<ul>
-<li><strong>打包的时候使用 babel 编译 js 代码</strong></li>
-</ul>
-</li>
-<li>@rollup/plugin-replace<ul>
-<li>类似 Webpack 的 DefinePlugin, 可在源码中通过 process.env.NODE_ENV 用于构建区分环境.</li>
-</ul>
-</li>
-<li>rollup-plugin-typescript2<ul>
-<li>这是对原始 rollup-plugin-typescript 的重写，这个版本比原始版本慢一些，但是它将打印出打字稿的句法和语义诊断消息（毕竟使用打字稿的主要原因）。使用该插件还有一个重要的原因，该插件能生成 声明文件 首先需要提供基础安装环境, 除了 typescript 基础环境 该插件需要依赖 tslib 去编译 ts 代码</li>
-</ul>
-</li>
-<li>rollup-plugin-terser<ul>
-<li><strong>可以打包压缩 es6 的 js 代码</strong></li>
-</ul>
-</li>
-</ul>
-<hr>
-<h4 id="外链-external"><a href="#外链-external" class="headerlink" title="外链(external)"></a>外链(external)</h4><p>我们在自己的库中需要使用第三方库，例如 vue 等，又不想在最终生成的打包文件中出现 vue，这个时候我们就需要 external 属性。</p>
-<ol>
-<li>外部依赖的名称</li>
-<li>一个已被找到路径的 ID（像文件的绝对路径）</li>
-</ol>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// rollup.config.js</span></span><br><span class="line"><span class="keyword">import</span> path <span class="keyword">from</span> <span class="string">'path'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> &#123;</span><br><span class="line">  ...,</span><br><span class="line">  external: [</span><br><span class="line">    <span class="string">'some-externally-required-library'</span>,</span><br><span class="line">    path.resolve( <span class="string">'./src/some-local-file-that-should-not-be-bundled.js'</span> )</span><br><span class="line">  ]</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="全局模块-globals"><a href="#全局模块-globals" class="headerlink" title="全局模块(globals)"></a>全局模块(globals)</h4><p><code>Object</code>  形式的  <code>id: name</code> 键值对，用于<code>umd/iife</code>包。例如在这样的情况下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import $ from &#39;jquery&#39;;</span><br></pre></td></tr></table></figure>
-
-<p>我们想告诉 Rollup jquery  模块的 id 等同于  $  变量:</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// rollup.config.js</span></span><br><span class="line">export default &#123;</span><br><span class="line">  ...,</span><br><span class="line">  format: 'iife',</span><br><span class="line">  name: 'MyBundle',</span><br><span class="line">  globals: &#123;</span><br><span class="line">    jquery: '$'</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">var MyBundle = (function ($) &#123;</span></span><br><span class="line"><span class="comment">  // 代码到这里</span></span><br><span class="line"><span class="comment">&#125;(window.jQuery));</span></span><br><span class="line">*/.</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="Tree-Shaking"><a href="#Tree-Shaking" class="headerlink" title="Tree Shaking"></a>Tree Shaking</h4><p>由于 Rollup 本身支持 ES6 模块化规范，因此不需要额外配置即可进行 Tree Shaking</p>
-<hr>
-<h4 id="代码分割"><a href="#代码分割" class="headerlink" title="代码分割"></a>代码分割</h4><p>import()实现了按需加载, rollup 内部会进行代码拆分，注意 format 不能用 iife 模式，因为 iife 会把所有模块放在同一个函数中</p>
-<hr>
-<p>更多可参考<a href="https://www.rollupjs.com/guide/big-list-of-options" target="_blank" rel="noopener">大选项列表</a></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>以上就是在开发类库的过程中对 rollup 的简单总结，接下来会进一步剖析 rollup 打包流程和原理。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1408,7 +1507,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">38</span>
+          <span class="site-state-item-count">40</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

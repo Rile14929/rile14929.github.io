@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"rile14929.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="useEffect初始化先来解读下几个参数:  fiberFlags：有副作用的更新标记，用来标记hook所在的fiber； hookFlags：副作用标记； create：使用者传入的回调函数； deps：使用者传入的数组依赖；  1234567891011121314151617181920212223function mountEffectImpl(  fiberFlags: Flags,">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react18.2hook之useEffect和useLayoutEffect原理">
+<meta property="og:url" content="https://rile14929.github.io/zh-CN/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86.html">
+<meta property="og:site_name" content="右耳听风">
+<meta property="og:description" content="useEffect初始化先来解读下几个参数:  fiberFlags：有副作用的更新标记，用来标记hook所在的fiber； hookFlags：副作用标记； create：使用者传入的回调函数； deps：使用者传入的数组依赖；  1234567891011121314151617181920212223function mountEffectImpl(  fiberFlags: Flags,">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-1.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-2.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-3.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-4.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-5.png">
+<meta property="og:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-6.png">
+<meta property="article:published_time" content="2024-12-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-12-29T16:00:00.000Z">
+<meta property="article:author" content="rile">
+<meta property="article:tag" content="react18.2">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://rile14929.github.io/images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image.png">
+
+<link rel="canonical" href="https://rile14929.github.io/zh-CN/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>react18.2hook之useEffect和useLayoutEffect原理 | 右耳听风</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">右耳听风</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tag"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="name" content="rile">
+      <meta itemprop="description" content="FE">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="右耳听风">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          react18.2hook之useEffect和useLayoutEffect原理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-30 00:00:00" itemprop="dateCreated datePublished" datetime="2024-12-30T00:00:00+08:00">2024-12-30</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="useEffect"><a href="#useEffect" class="headerlink" title="useEffect"></a>useEffect</h2><h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><p>先来解读下几个参数:</p>
+<ul>
+<li><code>fiberFlags</code>：有副作用的更新标记，用来标记hook所在的fiber；</li>
+<li><code>hookFlags</code>：副作用标记；</li>
+<li><code>create</code>：使用者传入的回调函数；</li>
+<li><code>deps</code>：使用者传入的数组依赖；</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">mountEffectImpl</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  fiberFlags: Flags,</span></span></span><br><span class="line"><span class="function"><span class="params">  hookFlags: HookFlags,</span></span></span><br><span class="line"><span class="function"><span class="params">  create: (</span>) =&gt; (<span class="params">(</span>) =&gt; <span class="title">void</span>) | <span class="title">void</span>,</span></span><br><span class="line"><span class="function">  <span class="title">deps</span>: <span class="title">Array</span>&lt;<span class="title">mixed</span>&gt; | <span class="title">void</span> | <span class="title">null</span>,</span></span><br><span class="line"><span class="function">): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> hook = mountWorkInProgressHook();</span><br><span class="line">  <span class="comment">// 判断是否有传入deps，如果有会作为下次更新的deps</span></span><br><span class="line">  <span class="keyword">const</span> nextDeps = deps === <span class="literal">undefined</span> ? <span class="literal">null</span> : deps;</span><br><span class="line">  <span class="comment">// 给hook所在的fiber打上有副作用的更新的标记</span></span><br><span class="line">  currentlyRenderingFiber.flags |= fiberFlags;</span><br><span class="line">  <span class="comment">// 将副作用操作存放到fiber.memoizedState.hook.memoizedState中</span></span><br><span class="line">  hook.memoizedState = pushEffect(</span><br><span class="line">    HookHasEffect | hookFlags,</span><br><span class="line">    create,</span><br><span class="line">    createEffectInstance(),</span><br><span class="line">    nextDeps,</span><br><span class="line">  );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">createEffectInstance</span>(<span class="params"></span>): <span class="title">EffectInstance</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;<span class="attr">destroy</span>: <span class="literal">undefined</span>&#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">pushEffect</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  tag: HookFlags,</span></span></span><br><span class="line"><span class="function"><span class="params">  create: (</span>) =&gt; (<span class="params">(</span>) =&gt; <span class="title">void</span>) | <span class="title">void</span>,</span></span><br><span class="line"><span class="function">  <span class="title">inst</span>: <span class="title">EffectInstance</span>,</span></span><br><span class="line"><span class="function">  <span class="title">deps</span>: <span class="title">Array</span>&lt;<span class="title">mixed</span>&gt; | <span class="title">null</span>,</span></span><br><span class="line"><span class="function">): <span class="title">Effect</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 初始化副作用结构</span></span><br><span class="line">  <span class="keyword">const</span> effect: Effect = &#123;</span><br><span class="line">    tag,</span><br><span class="line">    create,</span><br><span class="line">    inst,</span><br><span class="line">    deps,</span><br><span class="line">    <span class="comment">// Circular</span></span><br><span class="line">    next: (<span class="literal">null</span>: any),</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="comment">// 向fiber的updateQueue上添加effect，并形成环形链表</span></span><br><span class="line">  <span class="keyword">let</span> componentUpdateQueue: <span class="literal">null</span> | FunctionComponentUpdateQueue =</span><br><span class="line">    (currentlyRenderingFiber.updateQueue: any);</span><br><span class="line">  <span class="keyword">if</span> (componentUpdateQueue === <span class="literal">null</span>) &#123;</span><br><span class="line">    componentUpdateQueue = createFunctionComponentUpdateQueue();</span><br><span class="line">    currentlyRenderingFiber.updateQueue = (componentUpdateQueue: any);</span><br><span class="line">    componentUpdateQueue.lastEffect = effect.next = effect;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> lastEffect = componentUpdateQueue.lastEffect;</span><br><span class="line">    <span class="keyword">if</span> (lastEffect === <span class="literal">null</span>) &#123;</span><br><span class="line">      componentUpdateQueue.lastEffect = effect.next = effect;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> firstEffect = lastEffect.next;</span><br><span class="line">      lastEffect.next = effect;</span><br><span class="line">      effect.next = firstEffect;</span><br><span class="line">      componentUpdateQueue.lastEffect = effect;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> effect;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面这段代码除了初始化副作用的结构代码外，还有就是操作闭环链表，向链表末尾添加新的 <code>effect</code>，该 <code>effect.next</code> 指向 <code>fisrtEffect</code>，并且链表当前的指针指向最新添加的 <code>effect</code>。</p>
+<p>简单总结一下：给 <code>hook</code> 所在的 <code>fiber</code> 打上副作用更新标记，并且 <code>fiber.memoizedState.hook.memoizedState</code> 和 <code>fiber.updateQueue</code> 存储了相关的副作用，这些副作用通过闭环链表的结构存储。</p>
+<p><img src="../images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image.png" alt="alt text"></p>
+<h3 id="更新"><a href="#更新" class="headerlink" title="更新"></a>更新</h3><p>主要功能就是创建一个带有回调函数的 <code>newHook</code> 去覆盖之前的 <code>hook</code>。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">updateEffectImpl</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  fiberFlags: Flags,</span></span></span><br><span class="line"><span class="function"><span class="params">  hookFlags: HookFlags,</span></span></span><br><span class="line"><span class="function"><span class="params">  create: (</span>) =&gt; (<span class="params">(</span>) =&gt; <span class="title">void</span>) | <span class="title">void</span>,</span></span><br><span class="line"><span class="function">  <span class="title">deps</span>: <span class="title">Array</span>&lt;<span class="title">mixed</span>&gt; | <span class="title">void</span> | <span class="title">null</span>,</span></span><br><span class="line"><span class="function">): <span class="title">void</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> hook = updateWorkInProgressHook();</span><br><span class="line">  <span class="keyword">const</span> nextDeps = deps === <span class="literal">undefined</span> ? <span class="literal">null</span> : deps;</span><br><span class="line">  <span class="keyword">const</span> effect: Effect = hook.memoizedState;</span><br><span class="line">  <span class="keyword">const</span> inst = effect.inst;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// currentHook is null on initial mount when rerendering after a render phase</span></span><br><span class="line">  <span class="comment">// state update or for strict mode.</span></span><br><span class="line">  <span class="keyword">if</span> (currentHook !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (nextDeps !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> prevEffect: Effect = currentHook.memoizedState;</span><br><span class="line">      <span class="keyword">const</span> prevDeps = prevEffect.deps;</span><br><span class="line">      <span class="comment">// 比较两次依赖数组中的值是否有变化</span></span><br><span class="line">      <span class="keyword">if</span> (areHookInputsEqual(nextDeps, prevDeps)) &#123;</span><br><span class="line">        hook.memoizedState = pushEffect(hookFlags, create, inst, nextDeps);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  currentlyRenderingFiber.flags |= fiberFlags;</span><br><span class="line"></span><br><span class="line">  hook.memoizedState = pushEffect(</span><br><span class="line">    HookHasEffect | hookFlags,</span><br><span class="line">    create,</span><br><span class="line">    inst,</span><br><span class="line">    nextDeps,</span><br><span class="line">  );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="../images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-1.png" alt="alt text"></p>
+<h3 id="create-和-destroy-函数是怎样被调用？"><a href="#create-和-destroy-函数是怎样被调用？" class="headerlink" title="create 和 destroy 函数是怎样被调用？"></a>create 和 destroy 函数是怎样被调用？</h3><p>在弄清楚怎样被调用之前，我们先来看 <code>destroy</code> 函数的存在性问题。即：在 <code>hook</code> 的 <code>mount</code> 阶段，我们创建 <code>effect</code> 对象的时候，<code>destroy</code> 函数是不存在的。因为，<code>destroy</code> 函数本来就是 <code>create</code> 函数的返回值。而此时 <code>create</code> 函数还没有被调用。</p>
+<p>而我们知道，组件 <code>mount</code> 阶段过后， <code>create</code> 函数是一定会被调用的。所以，我们也可以推理得出，在组件的 <code>update</code> 阶段，<code>effect</code> 对象的 <code>create</code> 函数和 <code>destroy</code> 函数肯定是存在的（现在我们假设用户一定定义 <code>destroy</code> 函数 ）。</p>
+<p><code>react</code> 会在 <code>commit</code> 阶段去调用我们的 <code>create</code> 函数和 <code>destroy</code> 函数。<code>commit</code> 阶段又可以分为三个子阶段:</p>
+<ul>
+<li>beforeMutation</li>
+<li>mutation</li>
+<li>layout</li>
+</ul>
+<p>回到源码的视角，<code>create</code> 函数和 <code>destroy</code> 函数调用具体是发生在 <code>commit</code> 阶段的入口函数 <code>commitRootImpl</code> 内部，而真正的调用入口函数为 <code>flushPassiveEffects</code>。</p>
+<h4 id="调用入口"><a href="#调用入口" class="headerlink" title="调用入口"></a>调用入口</h4><p>该函数在 <code>commitRootImpl</code> 出现了三次。也就是说 <code>create</code> 函数和 <code>destroy</code> 函数调用存在三个入口：</p>
+<ol>
+<li>处理由于调用 <code>flushSyncUpdateQueue()</code> 所衍生的 <code>effect</code></li>
+<li>在 <code>beforeMutation</code> 子阶段之前的对执行 <code>effect</code> 进行调度</li>
+<li>在 <code>layout</code> 子阶段完成之后的同步调用</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">commitRootImpl</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  root: FiberRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">  recoverableErrors: null | Array&lt;CapturedValue&lt;mixed&gt;&gt;,</span></span></span><br><span class="line"><span class="function"><span class="params">  transitions: Array&lt;Transition&gt; | null,</span></span></span><br><span class="line"><span class="function"><span class="params">  didIncludeRenderPhaseUpdate: boolean,</span></span></span><br><span class="line"><span class="function"><span class="params">  renderPriorityLevel: EventPriority,</span></span></span><br><span class="line"><span class="function"><span class="params">  spawnedLane: Lane,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    flushPassiveEffects();</span><br><span class="line">  &#125; <span class="keyword">while</span> (rootWithPendingPassiveEffects !== <span class="literal">null</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (</span><br><span class="line">    (finishedWork.subtreeFlags &amp; PassiveMask) !== NoFlags ||</span><br><span class="line">    (finishedWork.flags &amp; PassiveMask) !== NoFlags</span><br><span class="line">  ) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!rootDoesHavePassiveEffects) &#123;</span><br><span class="line">      rootDoesHavePassiveEffects = <span class="literal">true</span>;</span><br><span class="line">      pendingPassiveEffectsRemainingLanes = remainingLanes;</span><br><span class="line">      <span class="comment">// workInProgressTransitions might be overwritten, so we want</span></span><br><span class="line">      <span class="comment">// to store it in pendingPassiveTransitions until they get processed</span></span><br><span class="line">      <span class="comment">// We need to pass this through as an argument to commitRoot</span></span><br><span class="line">      <span class="comment">// because workInProgressTransitions might have changed between</span></span><br><span class="line">      <span class="comment">// the previous render and commit if we throttle the commit</span></span><br><span class="line">      <span class="comment">// with setTimeout</span></span><br><span class="line">      pendingPassiveTransitions = transitions;</span><br><span class="line">      scheduleCallback(NormalSchedulerPriority, () =&gt; &#123;</span><br><span class="line">        <span class="comment">// ! 1. 异步执行 passive effects</span></span><br><span class="line">        flushPassiveEffects();</span><br><span class="line">        <span class="comment">// This render triggered passive effects: release the root cache pool</span></span><br><span class="line">        <span class="comment">// *after* passive effects fire to avoid freeing a cache pool that may</span></span><br><span class="line">        <span class="comment">// be referenced by a node in the tree (HostRoot, Cache boundary etc)</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> subtreeHasEffects =</span><br><span class="line">    (finishedWork.subtreeFlags &amp;</span><br><span class="line">      (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==</span><br><span class="line">    NoFlags;</span><br><span class="line">  <span class="keyword">const</span> rootHasEffect =</span><br><span class="line">    (finishedWork.flags &amp;</span><br><span class="line">      (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==</span><br><span class="line">    NoFlags;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (subtreeHasEffects || rootHasEffect) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ! 2. 进入commit阶段</span></span><br><span class="line">    executionContext |= CommitContext;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> shouldFireAfterActiveInstanceBlur = commitBeforeMutationEffects(</span><br><span class="line">      root,</span><br><span class="line">      finishedWork,</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ! 3. mutation阶段 (包括DOM变更)</span></span><br><span class="line">    commitMutationEffects(root, finishedWork, lanes);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ! 4. layout阶段</span></span><br><span class="line">    commitLayoutEffects(finishedWork, root, lanes);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  <span class="keyword">if</span> (includesSyncLane(pendingPassiveEffectsLanes) &amp;&amp; root.tag !== LegacyRoot) &#123;</span><br><span class="line">    flushPassiveEffects();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>通过简单的 <code>react</code> 应用来测试得到的结果是：1）在组件的 <code>mount</code> 阶段，<code>react</code> 会走第二个入口；2）在组件的 <code>update</code> 阶段，<code>react</code> 会走第三个入口</p>
+</blockquote>
+<p><strong>不管是从哪个入口进入，create 函数和 destroy 函数调用都是发生了 DOM 更新之后</strong></p>
+<p>不管是从哪个入口进入，它们都是走同一个函数 <code>flushPassiveEffects</code></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">flushPassiveEffectsImpl</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> prevExecutionContext = executionContext;</span><br><span class="line">  executionContext |= CommitContext;</span><br><span class="line"></span><br><span class="line">  commitPassiveUnmountEffects(root.current); <span class="comment">// cleanup</span></span><br><span class="line">  commitPassiveMountEffects(root, root.current, lanes, transitions); <span class="comment">//setup</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>且有相同的调用栈：</p>
+<p><img src="../images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-2.png" alt="alt text"></p>
+<p>因为调用 <code>destroy</code> 和 调用 <code>create</code> 函数是分开的。所以，我们需要将两者分开来讨论。但是由于两者的调用逻辑几乎是一样的。所以，在这里，我们以调用 <code>destroy</code> 函数为例即可，<code>create</code> 函数的调用原理跟这个是一样的。<br>通过源码的阅读和调试，我将「调用 <code>destroy</code> 函数的过程」划分为两个步骤：</p>
+<ol>
+<li>遍历 <code>fiber</code> 树 - 深度优先遍历 <code>fiber</code> 树，找到身上有 <code>effect</code> 的 <code>fiber</code> 节点</li>
+<li>遍历 <code>effect</code> 链表 - 遍历当前的 <code>effect</code> 链表，根据当前 <code>effect</code> 是否满足特定的条件（是否包含特定标签）来确定是否要调用 <code>destroy</code> 函数。</li>
+</ol>
+<h4 id="1-遍历-fiber-树"><a href="#1-遍历-fiber-树" class="headerlink" title="1. 遍历 fiber 树"></a>1. 遍历 fiber 树</h4><p>我们也知道，所有的 <code>useEffect hook</code> 函数只能用 <code>function component</code> 里面使用。</p>
+<p>而 <code>fiber</code> 上可能存在多个 <code>function component</code> 类型的 <code>fiber</code> 节点使用了 <code>hook</code> 函数。所以，这一步中，遍历 <code>fiber</code> 树的目的就是要找到消费了 <code>hook</code> 函数的 <code>fiber</code> 节点。</p>
+<p>在这一步之前，<code>react</code> 其实是有做一些前置工作的。那就是：因为遍历 <code>fiber</code> 都是深度优先，在 <code>render</code> 阶段，<code>performUnitOfWork</code> 中的 <code>beginWork</code> 执行到叶子节点后会进入到 <code>completeUnitOfWork</code> 中，会执行 <code>bubbleProperties</code>，也就是 <code>react</code> 会逐步向上追溯当前消费了 <code>hook</code> 函数的 <code>fiber</code> 节点的所有的祖先 <code>fiber</code> 节点，一一给它们的 <code>subtreeFlags</code> 属性值加入一个 <code>Passive</code> 标签。这种机制类似于浏览器的事件冒泡。浏览器的事件起源于特定的 <code>DOM</code> 节点，但是它会在冒泡阶段向上传播到 <code>document</code> 这个根节点。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// packages\react-reconciler\src\ReactFiberCompleteWork.js</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">completeWork</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  current: Fiber | null,</span></span></span><br><span class="line"><span class="function"><span class="params">  workInProgress: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  renderLanes: Lanes,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">Fiber</span> | <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> newProps = workInProgress.pendingProps;</span><br><span class="line">  popTreeContext(workInProgress);</span><br><span class="line">  <span class="keyword">switch</span> (workInProgress.tag) &#123;</span><br><span class="line">    <span class="keyword">case</span> IndeterminateComponent:</span><br><span class="line">    <span class="keyword">case</span> LazyComponent:</span><br><span class="line">    <span class="keyword">case</span> SimpleMemoComponent:</span><br><span class="line">    <span class="keyword">case</span> FunctionComponent:</span><br><span class="line">    <span class="keyword">case</span> ForwardRef:</span><br><span class="line">    <span class="keyword">case</span> Fragment:</span><br><span class="line">    <span class="keyword">case</span> Mode:</span><br><span class="line">    <span class="keyword">case</span> Profiler:</span><br><span class="line">    <span class="keyword">case</span> ContextConsumer:</span><br><span class="line">    <span class="keyword">case</span> MemoComponent:</span><br><span class="line">      bubbleProperties(workInProgress);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">case</span> ClassComponent: &#123;</span><br><span class="line">      <span class="keyword">const</span> Component = workInProgress.type;</span><br><span class="line">      <span class="keyword">if</span> (isLegacyContextProvider(Component)) &#123;</span><br><span class="line">        popLegacyContext(workInProgress);</span><br><span class="line">      &#125;</span><br><span class="line">      bubbleProperties(workInProgress);</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">bubbleProperties</span>(<span class="params">completedWork: Fiber</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> didBailout =</span><br><span class="line">    completedWork.alternate !== <span class="literal">null</span> &amp;&amp;</span><br><span class="line">    completedWork.alternate.child === completedWork.child;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">let</span> newChildLanes = NoLanes;</span><br><span class="line">  <span class="keyword">let</span> subtreeFlags = NoFlags;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!didBailout) &#123;</span><br><span class="line">    <span class="comment">// ? sy</span></span><br><span class="line">    <span class="comment">// Bubble up the earliest expiration time.</span></span><br><span class="line">    <span class="comment">// “向上冒泡”最早的过期时间</span></span><br><span class="line">    <span class="keyword">if</span> (enableProfilerTimer &amp;&amp; (completedWork.mode &amp; ProfileMode) !== NoMode) &#123;</span><br><span class="line">      <span class="comment">// In profiling mode, resetChildExpirationTime is also used to reset</span></span><br><span class="line">      <span class="comment">// profiler durations.</span></span><br><span class="line">      <span class="keyword">let</span> actualDuration = completedWork.actualDuration;</span><br><span class="line">      <span class="keyword">let</span> treeBaseDuration = ((completedWork.selfBaseDuration: any): number);</span><br><span class="line">      <span class="comment">// ! 遍历completedWork的所有子节点</span></span><br><span class="line">      <span class="keyword">let</span> child = completedWork.child;</span><br><span class="line">      <span class="keyword">while</span> (child !== <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">// ! 1. 将他们的lanes和childLanes合并到newChildLanes中</span></span><br><span class="line">        newChildLanes = mergeLanes(</span><br><span class="line">          newChildLanes,</span><br><span class="line">          mergeLanes(child.lanes, child.childLanes),</span><br><span class="line">        );</span><br><span class="line">        <span class="comment">// ! 2. 将他们的subtreeFlags和flags合并到subtreeFlags中</span></span><br><span class="line">        subtreeFlags |= child.subtreeFlags;</span><br><span class="line">        subtreeFlags |= child.flags;</span><br><span class="line"></span><br><span class="line">        actualDuration += child.actualDuration;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// $FlowFixMe[unsafe-addition] addition with possible null/undefined value</span></span><br><span class="line">        treeBaseDuration += child.treeBaseDuration;</span><br><span class="line">        child = child.sibling;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      completedWork.actualDuration = actualDuration;</span><br><span class="line">      completedWork.treeBaseDuration = treeBaseDuration;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">let</span> child = completedWork.child;</span><br><span class="line">      <span class="keyword">while</span> (child !== <span class="literal">null</span>) &#123;</span><br><span class="line">        newChildLanes = mergeLanes(</span><br><span class="line">          newChildLanes,</span><br><span class="line">          mergeLanes(child.lanes, child.childLanes),</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        subtreeFlags |= child.subtreeFlags;</span><br><span class="line">        subtreeFlags |= child.flags;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Update the return pointer so the tree is consistent. This is a code</span></span><br><span class="line">        <span class="comment">// smell because it assumes the commit phase is never concurrent with</span></span><br><span class="line">        <span class="comment">// the render phase. Will address during refactor to alternate model.</span></span><br><span class="line">        child.return = completedWork;</span><br><span class="line"></span><br><span class="line">        child = child.sibling;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ! 子树的flags</span></span><br><span class="line">    completedWork.subtreeFlags |= subtreeFlags;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// Bubble up the earliest expiration time.</span></span><br><span class="line">    <span class="keyword">if</span> (enableProfilerTimer &amp;&amp; (completedWork.mode &amp; ProfileMode) !== NoMode) &#123;</span><br><span class="line">      <span class="comment">// In profiling mode, resetChildExpirationTime is also used to reset</span></span><br><span class="line">      <span class="comment">// profiler durations.</span></span><br><span class="line">      <span class="keyword">let</span> treeBaseDuration = ((completedWork.selfBaseDuration: any): number);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">let</span> child = completedWork.child;</span><br><span class="line">      <span class="keyword">while</span> (child !== <span class="literal">null</span>) &#123;</span><br><span class="line">        newChildLanes = mergeLanes(</span><br><span class="line">          newChildLanes,</span><br><span class="line">          mergeLanes(child.lanes, child.childLanes),</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        <span class="comment">// "Static" flags share the lifetime of the fiber/hook they belong to,</span></span><br><span class="line">        <span class="comment">// so we should bubble those up even during a bailout. All the other</span></span><br><span class="line">        <span class="comment">// flags have a lifetime only of a single render + commit, so we should</span></span><br><span class="line">        <span class="comment">// ignore them.</span></span><br><span class="line">        subtreeFlags |= child.subtreeFlags &amp; StaticMask;</span><br><span class="line">        subtreeFlags |= child.flags &amp; StaticMask;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// $FlowFixMe[unsafe-addition] addition with possible null/undefined value</span></span><br><span class="line">        treeBaseDuration += child.treeBaseDuration;</span><br><span class="line">        child = child.sibling;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      completedWork.treeBaseDuration = treeBaseDuration;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">let</span> child = completedWork.child;</span><br><span class="line">      <span class="comment">// ! 遍历completedWork的所有子节点</span></span><br><span class="line">      <span class="keyword">while</span> (child !== <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">// ! 1. 将他们的lanes和childLanes合并到newChildLanes中</span></span><br><span class="line">        newChildLanes = mergeLanes(</span><br><span class="line">          newChildLanes,</span><br><span class="line">          mergeLanes(child.lanes, child.childLanes),</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        <span class="comment">// "Static" flags share the lifetime of the fiber/hook they belong to,</span></span><br><span class="line">        <span class="comment">// so we should bubble those up even during a bailout. All the other</span></span><br><span class="line">        <span class="comment">// flags have a lifetime only of a single render + commit, so we should</span></span><br><span class="line">        <span class="comment">// ignore them.</span></span><br><span class="line">        <span class="comment">// “静态”标志（Static flags）与它们所属的 Fiber 或 Hook 共享生命周期，因此即使在放弃（bailout）时，也应该将这些flags向上冒泡。</span></span><br><span class="line">        <span class="comment">// 而其他所有flags仅在单次render + commit 的生命周期内存在，因此我们应该忽略它们。</span></span><br><span class="line">        <span class="comment">// ! 2. 将他们的（subtreeFlags&amp;StaticMask)和flags合并到subtreeFlags中</span></span><br><span class="line">        subtreeFlags |= child.subtreeFlags &amp; StaticMask;</span><br><span class="line">        subtreeFlags |= child.flags &amp; StaticMask;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Update the return pointer so the tree is consistent. This is a code</span></span><br><span class="line">        <span class="comment">// smell because it assumes the commit phase is never concurrent with</span></span><br><span class="line">        <span class="comment">// the render phase. Will address during refactor to alternate model.</span></span><br><span class="line">        <span class="comment">// 更新return pointer以保持树的一致性。这被描述为一种代码异味（code smell），因为它假设commit阶段永远不会与 render 阶段并发。</span></span><br><span class="line">        <span class="comment">// 在重构为交替模型（alternate model）时将会解决这个问题。</span></span><br><span class="line">        child.return = completedWork;</span><br><span class="line"></span><br><span class="line">        child = child.sibling;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    completedWork.subtreeFlags |= subtreeFlags;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ! 后代节点的lanes</span></span><br><span class="line">  completedWork.childLanes = newChildLanes;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> didBailout;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>回到 <code>useEffect</code> 这个主题。上面所提到的前置工作中，有一点特别需要注意的点是：如果「消费了 <code>hook</code> 函数的那个 <code>fiber</code> 节点」的子树之下没有其他消费了 <code>hook</code> 函数的 <code>fiber</code> 节点，它自己的 <code>subtreeFlags</code> 属性值是不会被贴上一个 <code>Passive</code> 标签的。这也不难理解，因为这恰恰是符合 <code>subtreeFlags</code> 属性名的语义的。</p>
+<p>假设只有我们的 <code>&lt;Counter /&gt;</code> 组件里面消费到 <code>useEffect</code> 这个 <code>hook</code> 函数。那么，在 <code>render</code> 阶段，经过上面所提到的前置工作后，我们会得到这样的一颗 <code>fiber</code> 树：</p>
+<p><img src="../images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-3.png" alt="alt text"></p>
+<p>好了，做完上面的前置工作后，<code>react</code> 会在 <code>commit</code> 阶段发起对 <code>flushPassiveEffects</code> 的调度，将任务加入 <code>taskQueue</code> 中，在适当的时间切片内会执行到此调度。</p>
+<p>这个遍历工作是从 <code>fiber</code> 树的根节点 - <code>hostRootFiber</code> 开始的。</p>
+<p>源码中的 <code>commitPassiveUnmountOnFiber()</code> ， <code>recursivelyTraversePassiveUnmountEffects()</code> 和 <code>commitHookPassiveUnmountEffects()</code> 这三个函数共同完成了这个过程。而这三个函数是有分工的：</p>
+<ul>
+<li>commitPassiveUnmountOnFiber() - 是遍历流程的入口</li>
+<li>recursivelyTraversePassiveUnmountEffects() - 负责实现了以深度优先的算法的「递」与「归」</li>
+<li>commitHookPassiveUnmountEffects() - 在「归」之前，尝试去调用当前 fiber 节点 effect 链表上的所有的 destroy 函数。</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">my_commitPassiveUnmountOnFiber</span>(<span class="params">parentFiber</span>)</span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (parentFiber.subtreeFlags &amp; PassiveMask) &#123;</span><br><span class="line">        <span class="keyword">const</span> child = parentFiber.child;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (child !== <span class="literal">null</span>) &#123;</span><br><span class="line">            my_commitPassiveUnmountOnFiber(child);</span><br><span class="line">            child = child.sibling;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> isfunctionComponentKind = [FunctionComponent, ForwardRef, SimpleMemoComponent].includes(parentFiber.tag);</span><br><span class="line">    <span class="keyword">const</span> hasPassiveEffect = parentFiber.flags &amp; Passive</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(isfunctionComponentKind &amp;&amp; hasPassiveEffect)&#123;</span><br><span class="line">        commitHookPassiveUnmountEffects(</span><br><span class="line">            parentFiber,</span><br><span class="line">            parentFiber.return,</span><br><span class="line">            Passive | HasEffect</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>其实看完 <code>react</code> 源码，熟悉 <code>react</code> 内部的原理后，这种深优先遍历算法跟 <code>render</code> 阶段的 「work-loop」的遍历算法是一模一样的。唯一的一个区别点有两点：</p>
+<ol>
+<li>它深度优先遍历不一定会遍历到当前子树路径的叶子节点。它会因为不满足「以当前 parentFiber 为根节点的子树上是否有身上贴有 Passive 标签的 fiber 节点？」这个条件提前终止了；</li>
+<li>跟 <code>render</code> 阶段的 「work-loop」的遍历算法中，归去之前必定会执行 <code>complete work</code> 不同，当前的遍历算法会先检查是否满足条件，如果不满足，则不执行 “complete work” 。显然，这里的 “complete work” 是指 <code>commitHookPassiveUnmountEffects()</code> 的调用。</li>
+</ol>
+<h4 id="2-遍历-effect-链表"><a href="#2-遍历-effect-链表" class="headerlink" title="2. 遍历 effect 链表"></a>2. 遍历 effect 链表</h4><p>上面，我们已经介绍了 <code>react</code> 是如何了遍历整棵 <code>fiber</code> 树，找到那些所有需要执行 <code>effect</code> 的 <code>fiber</code> 节点。上一步骤末尾，我们也指出了，执行 <code>effect</code> 的 <code>fiber</code> 节点的函数是 <code>commitHookPassiveUnmountEffects()</code>。而 <code>commitHookPassiveUnmountEffects()</code> 会直接调用 <code>commitHookEffectListUnmount()</code>。顾名思义，该函数就是 <code>react</code> 遍历 <code>effect</code> 链表去调用 <code>destroy</code> 函数的所在。</p>
+<p><strong>effect 链表并不是只存储 useEffect hook 函数的 effect 对象</strong></p>
+<p>那这里所提到的 「effect 类型的」hook 函数有哪些呢？从 <a href="mailto:react@18.2.0">react@18.2.0</a> 的源码来看，它包括了5 种类型的 <code>hook</code> 函数：</p>
+<ul>
+<li>useEffect()</li>
+<li>useLayoutEffect()</li>
+<li>useInsertionEffect()</li>
+<li>useSyncExternalStore()</li>
+<li>useImperativeHandle()</li>
+</ul>
+<p>提出这个结论的依据是: 这些 hook 函数的调用栈最终都是指向了 pushEffect() 函数。如下图：</p>
+<p><img src="../images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-4.png" alt="alt text"></p>
+<p>而 <code>pushEffect()</code> 函数就是负责创建新的 <code>effect</code> 对象，把它追加到当前 <code>fiber</code> 节点 <code>effect</code> 链表的尾部。可见，如果一个 <code>function component</code> 都消费了上面这些 <code>hook</code> 函数的话，那么它所对应的 <code>fiber</code> 节点的 <code>effect</code> 链表上并不是单纯包含 <code>useEffect hook</code> 函数所产生的 <code>effect</code>。<br>回到正题。上面我们指出了 <code>commitHookEffectListUnmount</code> 函数就是 <code>react</code> 遍历 <code>effect</code> 链表去调用 <code>destroy</code> 函数的所在，下面来看看它的源码：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">commitHookEffectListUnmount</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">    flags,</span></span></span><br><span class="line"><span class="function"><span class="params">    finishedWork,</span></span></span><br><span class="line"><span class="function"><span class="params">    nearestMountedAncestor</span></span></span><br><span class="line"><span class="function"><span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> updateQueue = finishedWork.updateQueue;</span><br><span class="line">    <span class="keyword">const</span> lastEffect = updateQueue !== <span class="literal">null</span> ? updateQueue.lastEffect : <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (lastEffect !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> firstEffect = lastEffect.next;</span><br><span class="line">      <span class="keyword">let</span> effect = firstEffect;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> ((effect.tag &amp; flags) === flags) &#123;</span><br><span class="line">          <span class="comment">// Unmount</span></span><br><span class="line">          <span class="keyword">const</span> destroy = effect.destroy;</span><br><span class="line">          effect.destroy = <span class="literal">undefined</span>;</span><br><span class="line"></span><br><span class="line">          <span class="keyword">if</span> (destroy !== <span class="literal">undefined</span>) &#123;</span><br><span class="line">            safelyCallDestroy(finishedWork, nearestMountedAncestor, destroy);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        effect = effect.next;</span><br><span class="line">      &#125; <span class="keyword">while</span> (effect !== firstEffect);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">safelyCallDestroy</span>(<span class="params">current, nearestMountedAncestor, destroy</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      destroy();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (error) &#123;</span><br><span class="line">      captureCommitPhaseError(current, nearestMountedAncestor, error);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有了上面的铺垫，我们很快就能看明白这段代码的意思。<code>react</code> 通过 <code>do{...}while()</code> 循环来遍历 <code>effect</code> 链表。我们在上面也提到过，<code>effect</code> 链表其实是单向的循环链表。所以，当前即将需要遍历的 <code>effect</code> 对象又指会了第一个 <code>effect</code> 的时候，意味着我们已经遍历完了整条链表，可以退出循环了。</p>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p><img src="../images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-5.png" alt="alt text"></p>
+<h4 id="执行顺序"><a href="#执行顺序" class="headerlink" title="执行顺序"></a>执行顺序</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123;useEffect&#125; <span class="keyword">from</span> <span class="string">"react"</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">Child</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">    useEffect(<span class="function"><span class="keyword">function</span> <span class="title">childEffect</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'Child effect been called'</span>);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">Sibling</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">    useEffect(<span class="function"><span class="keyword">function</span> <span class="title">siblingEffect</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'Sibling effect been called'</span>);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">App</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">    useEffect(<span class="function"><span class="keyword">function</span> <span class="title">appEffect</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'App effect been called'</span>);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">        &lt;div&gt;</span><br><span class="line">             &lt;Child /&gt;</span><br><span class="line">             &lt;Sibling /&gt;</span><br><span class="line">        &lt;<span class="regexp">/div&gt;</span></span><br><span class="line"><span class="regexp">    )</span></span><br><span class="line"><span class="regexp">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>相信看完上面的分析，也不难得出答案：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Child effect been called</span><br><span class="line">Sibling effect been called</span><br><span class="line">App effect been called</span><br></pre></td></tr></table></figure>
+
+<p>react 采用的递归遍历算法是深度优先算法。示例 react 应用所对应的 fiber 树如下：</p>
+<p><img src="../images/react18.2hook%E4%B9%8BuseEffect%E5%92%8CuseLayoutEffect%E5%8E%9F%E7%90%86/image-6.png" alt="alt text"></p>
+<p>用文字描述整个递归遍历过程是这样的：<br><code>&lt;App&gt;</code> 的递；<br><code>&lt;div&gt;</code> 的递；<br><code>&lt;Child&gt;</code> 的递；<br><code>&lt;Child&gt;</code> 的归；<br><code>&lt;Sibling&gt;</code> 的递；<br><Sibling><code>的归；
+``&lt;App&gt;</code> 的归。</p>
+<p>在归时候，react 会在当前 fiber 节点上调用 commitHookEffectListMount() 函数，所以，调用结果是：</p>
+<p>在 <code>&lt;Child&gt;</code> 身上调用 <code>commitHookEffectListMount()</code>；<br>在 <code>&lt;Sibling&gt;</code> 身上调用 <code>commitHookEffectListMount()</code>；<br>在 <code>&lt;App&gt;</code> 身上调用 <code>commitHookEffectListMount()</code>。</p>
+<h2 id="useLayoutEffect"><a href="#useLayoutEffect" class="headerlink" title="useLayoutEffect"></a>useLayoutEffect</h2><p><code>useLayoutEffect</code> 函数跟 <code>useEffect</code> hook 函数 的不同。两者的不同之处在于两点：</p>
+<ol>
+<li>它们给「自己所创建的 effect 对象」所贴的 <code>effect flag</code> 是不同的；</li>
+<li>它们给「自己所关联的 fiber 节点」所追加的 <code>fiber flag</code> 的不同的。</li>
+</ol>
+<h3 id="所贴的-hook-flag-不同"><a href="#所贴的-hook-flag-不同" class="headerlink" title="所贴的 hook flag 不同"></a>所贴的 hook flag 不同</h3><ul>
+<li>对于 <code>useLayoutEffect() hook</code> 函数而言，它给自己所创建的 <code>effect</code> 对象所贴的 <code>effect flag</code> 是 <code>Layout</code></li>
+<li>而 <code>useEffect() hook</code> 函数给自己所创建的 <code>effect</code> 对象所贴的 <code>effect flag</code> 是 <code>Passive</code>；</li>
+</ul>
+<h3 id="所追加的-fiber-flag-不同"><a href="#所追加的-fiber-flag-不同" class="headerlink" title="所追加的 fiber flag 不同"></a>所追加的 fiber flag 不同</h3><p>对于 <code>useEffect() hook</code> 函数而言，它给自己所关联的 <code>fiber</code> 节点所追加的 <code>fiber flag</code> 是：</p>
+<ul>
+<li><code>mount</code> 阶段是 <code>Passive | PassiveStatic</code></li>
+<li><code>update</code> 阶段是 <code>Passive</code></li>
+</ul>
+<p>而 <code>useLayoutEffect() hook</code> 函数给自己所关联的 <code>fiber</code> 节点所追加的 <code>fiber flag</code> 是：</p>
+<ul>
+<li><code>mount</code> 阶段是 <code>Update | LayoutStatic</code></li>
+<li><code>update</code> 阶段是 <code>Update</code></li>
+</ul>
+<h3 id="useLayoutEffect-mutation-子阶段调用-destroy-函数"><a href="#useLayoutEffect-mutation-子阶段调用-destroy-函数" class="headerlink" title="useLayoutEffect - mutation 子阶段调用 destroy 函数"></a>useLayoutEffect - mutation 子阶段调用 destroy 函数</h3><p>它的 <code>destroy</code> 函数的调用是发生在 <code>mutation</code> 子阶段。具体来讲，就是发生在 <code>commitMutationEffectsOnFiber()</code> 这个函数里面：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">commitMutationEffectsOnFiber</span>(<span class="params">finishedWork, root, lanes</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> current = finishedWork.alternate;</span><br><span class="line">    <span class="keyword">const</span> flags = finishedWork.flags;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (finishedWork.tag) &#123;</span><br><span class="line">      <span class="keyword">case</span> FunctionComponent:</span><br><span class="line">      <span class="keyword">case</span> ForwardRef:</span><br><span class="line">      <span class="keyword">case</span> MemoComponent:</span><br><span class="line">      <span class="keyword">case</span> SimpleMemoComponent: &#123;</span><br><span class="line">        recursivelyTraverseMutationEffects(root, finishedWork);</span><br><span class="line">        commitReconciliationEffects(finishedWork);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (flags &amp; Update) &#123;</span><br><span class="line">          <span class="comment">// ......</span></span><br><span class="line">          &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">              commitHookEffectListUnmount(</span><br><span class="line">                Layout | HasEffect,</span><br><span class="line">                finishedWork,</span><br><span class="line">                finishedWork.return</span><br><span class="line">              );</span><br><span class="line">            &#125; <span class="keyword">catch</span> (error) &#123;</span><br><span class="line">              captureCommitPhaseError(finishedWork, finishedWork.return, error);</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">     <span class="comment">// ......</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="useLayoutEffect-layout-子阶段调用-create-函数"><a href="#useLayoutEffect-layout-子阶段调用-create-函数" class="headerlink" title="useLayoutEffect - layout 子阶段调用 create 函数"></a>useLayoutEffect - layout 子阶段调用 create 函数</h3><ul>
+<li>hook 类型 - 这里就是指 useLayoutEffect() hook 的 create 函数；</li>
+<li>class 类型 - 这里是指 class component 的两个生命周期函数：<ul>
+<li>componentDidMount()</li>
+<li>componentDidUpdate()</li>
+</ul>
+</li>
+</ul>
+<p><code>useLayoutEffect() hook</code> 的 <code>create</code> 函数的真正调用入口为 <code>commitHookLayoutEffects()</code></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">commitLayoutEffectOnFiber</span>(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">    finishedRoot,</span></span></span><br><span class="line"><span class="function"><span class="params">    current,</span></span></span><br><span class="line"><span class="function"><span class="params">    finishedWork,</span></span></span><br><span class="line"><span class="function"><span class="params">    committedLanes</span></span></span><br><span class="line"><span class="function"><span class="params">  </span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> flags = finishedWork.flags;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (finishedWork.tag) &#123;</span><br><span class="line">      <span class="keyword">case</span> FunctionComponent:</span><br><span class="line">      <span class="keyword">case</span> ForwardRef:</span><br><span class="line">      <span class="keyword">case</span> SimpleMemoComponent: &#123;</span><br><span class="line">        recursivelyTraverseLayoutEffects(</span><br><span class="line">          finishedRoot,</span><br><span class="line">          finishedWork,</span><br><span class="line">          committedLanes</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (flags &amp; Update) &#123;</span><br><span class="line">          commitHookLayoutEffects(finishedWork, Layout | HasEffect);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">     <span class="comment">// ......</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h3><p>关于这个问题，react 官方文档给出了一个使用用例： <a href="https://react.dev/reference/react/useLayoutEffect#measuring-layout-before-the-browser-repaints-the-screen" target="_blank" rel="noopener">在浏览器重绘之前测量 DOM 的布局信息</a>。</p>
+<p>「界面更新时候的闪烁问题」。为什么使用 <code>useLayoutEffect()</code> 能解决这类的问题呢？</p>
+<p>首先，我们要知道为什么会造成闪烁。造成闪烁的原因是 <code>react</code> 在短时间更新了多帧显示内容不一样的界面。而 <code>useLayoutEffect() hook</code> 的 <code>create</code> 函数是在 <code>layout</code> 子阶段以同步的，批量的方式去执行的。也就是说，<code>create</code> 函数里面的所发起的多次状态更新请求只会产生一次的实质性的界面重绘。 通过抹除代表着中间状态的过渡帧，将多帧压缩为一帧来更新界面，这就是 <code>useLayoutEffect()</code> 能解决「界面更新时候的闪烁问题」原因之所在。</p>
+<p>上面所提到的 「界面更新时候的闪烁问题」只是 <code>useLayoutEffect()</code> 能解决问题中的一个垂类。useLayoutEffect() 应该还能解决更多不同业务场景下的问题，我们得通过现象看本质。</p>
+<p>那 <code>useLayoutEffect()</code> 的本质能力是什么？</p>
+<ul>
+<li>访问更新后的 <code>DOM</code> 树 - 因为 <code>useLayoutEffect() hook</code> 的 <code>create</code> 函数是在 <code>mutation</code> 子阶段之后的 <code>layout</code> 子阶段执行的。所以，这就意味着我们可以去访问更新后的 <code>DOM</code> 树和做一些布局信息的测量。</li>
+<li>同步/批量执行状态更新，阻塞浏览器重绘 - <code>react</code> 将会以「同步阻塞，批量更新」的方式去对待 <code>create</code> 函数体里面所发起的过个状态更新请求。也就说，在 <code>create</code> 函数体里面所发起的过个状态更新请求只会产生一次界面重绘。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>从源码的角度来看， 这两者其实都是在同一个架构里面，拥有很多相同点：</p>
+<ul>
+<li>每一个 <code>effect</code> 类型 <code>hook</code> 都会关联一个 <code>hook</code> 对象 和 <code>effect</code> 对象；</li>
+<li>同一个 <code>function component</code> 内，所有的 <code>hook</code> 对象都共用同一条 <code>hook</code> 链表；</li>
+<li>同一个 <code>function component</code> 内，所有的 <code>effect</code> 对象都共用同一条 <code>effect</code> 链表；</li>
+<li>同一个调用机制 - 在 <code>render</code> 阶段创建 <code>hook</code> 对象和 <code>effect</code> 对象，在 <code>commit</code> 阶段去调用 <code>hook</code> 的 <code>create</code> 和 <code>destroy</code> 函数。</li>
+</ul>
+<p>这两者的不同点在于：</p>
+<ul>
+<li><code>useEffect()</code> 的 <code>destroy</code> 和 <code>create</code> 函数是在同一个子阶段(<code>layout</code> 子阶段后的 <code>passive</code> 子阶段)调用的（调用入口要么是调度后的 <code>flushPassiveEffectImpl()</code>,要么是同步的<code>flushPassiveEffectImpl()</code>）；</li>
+<li><code>useLayoutEffect()</code> 的这两个函数却是在不同的子阶段执行。<code>destroy</code> 是在 <code>mutation</code> 子阶段执行的，而 <code>create</code> 是在 <code>layout</code> 子阶段。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react18-2/" rel="tag"># react18.2</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/zh-CN/react18.2hook%E4%B9%8BuseCallback%E5%92%8CuseMemo%E5%8E%9F%E7%90%86.html" rel="prev" title="react18.2hook之useCallback和useMemo原理">
+      <i class="fa fa-chevron-left"></i> react18.2hook之useCallback和useMemo原理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/zh-CN/react18.2%E4%BB%A3%E7%A0%81%E6%89%93%E5%8D%B0%E9%A1%BA%E5%BA%8F%E5%92%8C%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90.html" rel="next" title="react18.2代码打印顺序和流程分析">
+      react18.2代码打印顺序和流程分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#useEffect"><span class="nav-number">1.</span> <span class="nav-text">useEffect</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#初始化"><span class="nav-number">1.1.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更新"><span class="nav-number">1.2.</span> <span class="nav-text">更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#create-和-destroy-函数是怎样被调用？"><span class="nav-number">1.3.</span> <span class="nav-text">create 和 destroy 函数是怎样被调用？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#调用入口"><span class="nav-number">1.3.1.</span> <span class="nav-text">调用入口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-遍历-fiber-树"><span class="nav-number">1.3.2.</span> <span class="nav-text">1. 遍历 fiber 树</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-遍历-effect-链表"><span class="nav-number">1.3.3.</span> <span class="nav-text">2. 遍历 effect 链表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小结"><span class="nav-number">1.3.4.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#执行顺序"><span class="nav-number">1.3.5.</span> <span class="nav-text">执行顺序</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#useLayoutEffect"><span class="nav-number">2.</span> <span class="nav-text">useLayoutEffect</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#所贴的-hook-flag-不同"><span class="nav-number">2.1.</span> <span class="nav-text">所贴的 hook flag 不同</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#所追加的-fiber-flag-不同"><span class="nav-number">2.2.</span> <span class="nav-text">所追加的 fiber flag 不同</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#useLayoutEffect-mutation-子阶段调用-destroy-函数"><span class="nav-number">2.3.</span> <span class="nav-text">useLayoutEffect - mutation 子阶段调用 destroy 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#useLayoutEffect-layout-子阶段调用-create-函数"><span class="nav-number">2.4.</span> <span class="nav-text">useLayoutEffect - layout 子阶段调用 create 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用"><span class="nav-number">2.5.</span> <span class="nav-text">应用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rile"
+      src="/images/Trevor.jpeg">
+  <p class="site-author-name" itemprop="name">rile</p>
+  <div class="site-description" itemprop="description">FE</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rile14929" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rile14929" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:rile14929@163.com" title="E-Mail → mailto:rile14929@163.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-rocket"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rile</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
