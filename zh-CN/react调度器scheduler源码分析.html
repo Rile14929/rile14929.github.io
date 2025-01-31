@@ -174,7 +174,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -247,7 +247,7 @@
 <p>因此可以梳理出来，3个大循环，从最开始的 eventLoop 的单个宏任务执行，会逐步触发 Scheduler 和 Reconciler 的任务循环执行。</p>
 <ul>
 <li>任务的中断与恢复，实现中断与恢复的逻辑分了2个部分，第一个是 Scheduler 中正在执行的 workLoop 的任务中断，第二个是 Reconciler 中正在执行的 workLoopConcurrent 的任务中断<ul>
-<li>Reconciler 中的任务中断与恢复：在 workLoopConcurrent 的 while 循环中，通过 shouldYield() 方法来判断当前构建 fiber 树的执行过程是否超时，如果超时，则中断当前的 while 循环。由于每次 while 执行的 fiber 构建方法，即 performUnitOfWork 是按照每个 fiberNode 来遍历的，也就是说每完成一次 fiberNode 的 beginWork + completeWork 树的构建过程，会设置下一次 nextNode 的值 ，可以理解为中断时已经保留了下一次要构建的 fiberNode 指针，以至于不会下一次不知道从哪里继续。</li>
+<li>Reconciler 中的任务中断与恢复：在 workLoopConcurrent 的 while 循环中，通过 shouldYield() 方法来判断当前构建 fiber 树的执行过程是否超时，如果超时，则中断当前的 while 循环。由于每次 while 执行的 fiber 构建方法，即 performUnitOfWork 是按照每个 fiberNode 来遍历的，也就是说每完成一次 fiberNode 的 beginWork 或 beginWork + completeWork 树的构建过程（因为 beginWork 返回的 next 如果是空，代表着没有子元素了，才会执行completeWork，如果返回的不是空，会设置workInProgress = next），会设置下一次 nextNode 的值 ，可以理解为中断时已经保留了下一次要构建的 fiberNode 指针，以至于不会下一次不知道从哪里继续。</li>
 <li>Scheduler 中的任务中断与恢复：当执行任务时间超时后，如果 Reconciler 中的 performConcurrentWorkOnRoot 方法没有执行完成，会返回其自身。在 Scheduler 中，发现当前任务还有下一个任务没有执行完，则不会将当前任务从 taskQueue 中取出，同时会把 reconciler 中返回的待执行的回调函数继续赋值给当前任务，于是下一次继续启动 Scheduler 的任务时，也就连接上了。同时退出这次中断的任务前，会通过 messageChannel 向 eventLoop 的宏任务队列放入一个新的宏任务。</li>
 <li>所以任务的恢复，其实就是从下一次 eventLoop 开始执行 Scheduler 相关的宏任务，而执行的宏任务也是 Reconciler 中断前赋值的 fiberNode，也就实现了整体的任务恢复。</li>
 </ul>
@@ -344,7 +344,7 @@
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <img class="site-author-image" itemprop="image" alt="rile"
-      src="/images/Trevor.jpeg">
+      src="/images/IMG_2044.jpg">
   <p class="site-author-name" itemprop="name">rile</p>
   <div class="site-description" itemprop="description">FE</div>
 </div>

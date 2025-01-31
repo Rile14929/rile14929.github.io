@@ -167,7 +167,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react18.2%E7%B1%BB%E7%BB%84%E4%BB%B6%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -316,7 +316,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react%E8%B0%83%E5%BA%A6%E5%99%A8scheduler%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -390,7 +390,7 @@
 <p>因此可以梳理出来，3个大循环，从最开始的 eventLoop 的单个宏任务执行，会逐步触发 Scheduler 和 Reconciler 的任务循环执行。</p>
 <ul>
 <li>任务的中断与恢复，实现中断与恢复的逻辑分了2个部分，第一个是 Scheduler 中正在执行的 workLoop 的任务中断，第二个是 Reconciler 中正在执行的 workLoopConcurrent 的任务中断<ul>
-<li>Reconciler 中的任务中断与恢复：在 workLoopConcurrent 的 while 循环中，通过 shouldYield() 方法来判断当前构建 fiber 树的执行过程是否超时，如果超时，则中断当前的 while 循环。由于每次 while 执行的 fiber 构建方法，即 performUnitOfWork 是按照每个 fiberNode 来遍历的，也就是说每完成一次 fiberNode 的 beginWork + completeWork 树的构建过程，会设置下一次 nextNode 的值 ，可以理解为中断时已经保留了下一次要构建的 fiberNode 指针，以至于不会下一次不知道从哪里继续。</li>
+<li>Reconciler 中的任务中断与恢复：在 workLoopConcurrent 的 while 循环中，通过 shouldYield() 方法来判断当前构建 fiber 树的执行过程是否超时，如果超时，则中断当前的 while 循环。由于每次 while 执行的 fiber 构建方法，即 performUnitOfWork 是按照每个 fiberNode 来遍历的，也就是说每完成一次 fiberNode 的 beginWork 或 beginWork + completeWork 树的构建过程（因为 beginWork 返回的 next 如果是空，代表着没有子元素了，才会执行completeWork，如果返回的不是空，会设置workInProgress = next），会设置下一次 nextNode 的值 ，可以理解为中断时已经保留了下一次要构建的 fiberNode 指针，以至于不会下一次不知道从哪里继续。</li>
 <li>Scheduler 中的任务中断与恢复：当执行任务时间超时后，如果 Reconciler 中的 performConcurrentWorkOnRoot 方法没有执行完成，会返回其自身。在 Scheduler 中，发现当前任务还有下一个任务没有执行完，则不会将当前任务从 taskQueue 中取出，同时会把 reconciler 中返回的待执行的回调函数继续赋值给当前任务，于是下一次继续启动 Scheduler 的任务时，也就连接上了。同时退出这次中断的任务前，会通过 messageChannel 向 eventLoop 的宏任务队列放入一个新的宏任务。</li>
 <li>所以任务的恢复，其实就是从下一次 eventLoop 开始执行 Scheduler 相关的宏任务，而执行的宏任务也是 Reconciler 中断前赋值的 fiberNode，也就实现了整体的任务恢复。</li>
 </ul>
@@ -418,7 +418,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89render-commit%E9%98%B6%E6%AE%B5.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -615,7 +615,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89render-render%E9%98%B6%E6%AE%B5.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -824,7 +824,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89scheduleUpdateOnFiber%E8%B0%83%E5%BA%A6%E6%9B%B4%E6%96%B0.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -927,7 +927,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/react%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%B8%80%EF%BC%89%20%E5%BA%94%E7%94%A8%E5%8A%A0%E8%BD%BD.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -1034,7 +1034,7 @@
 <h4 id="2-2-创建update-createUpdate"><a href="#2-2-创建update-createUpdate" class="headerlink" title="2.2 创建update(createUpdate)"></a>2.2 创建update(createUpdate)</h4><p><font color=gray><em>packages\react-reconciler\src\ReactFiberClassUpdateQueue.js</em></font></p>
 <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> type Update&lt;State&gt; = &#123;</span><br><span class="line">  lane: Lane,</span><br><span class="line"></span><br><span class="line">  tag: <span class="number">0</span> | <span class="number">1</span> | <span class="number">2</span> | <span class="number">3</span>,</span><br><span class="line">  payload: any,</span><br><span class="line">  callback: <span class="function">(<span class="params">(</span>) =&gt;</span> mixed) | <span class="literal">null</span>,</span><br><span class="line"></span><br><span class="line">  next: Update&lt;State&gt; | <span class="literal">null</span>,</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">createUpdate</span>(<span class="params">lane: Lane</span>): <span class="title">Update</span>&lt;<span class="title">mixed</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> update: Update&lt;mixed&gt; = &#123;</span><br><span class="line">    lane,</span><br><span class="line"></span><br><span class="line">    tag: UpdateState,</span><br><span class="line">    payload: <span class="literal">null</span>,</span><br><span class="line">    callback: <span class="literal">null</span>,</span><br><span class="line"></span><br><span class="line">    next: <span class="literal">null</span>,</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="keyword">return</span> update;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h4 id="2-3-update入队"><a href="#2-3-update入队" class="headerlink" title="2.3 update入队"></a>2.3 update入队</h4><p><code>createRoot(root).render()</code> 阶段与类组件的 <code>setState</code> 、<code>forceUpdate</code> 阶段最开始调⽤的是 <code>ReactFiberClassUpdateQueue.js</code> 中的 <code>enqueueUpdate</code>。</p>
+<h4 id="2-3-update入队"><a href="#2-3-update入队" class="headerlink" title="2.3 update入队"></a>2.3 update入队</h4><p><code>createRoot(root).render()</code> 阶段与类组件的 <code>setState</code> 、<code>forceUpdate</code> 阶段最开始调⽤的是 <code>ReactFiberClassUpdateQueue.js</code> 中的 <code>enqueueUpdate</code>，其实和函数组件也一样最终底层调用的都是同一个 <code>enqueueUpdate</code>。</p>
 <p><font color=gray><em>packages\react-reconciler\src\ReactFiberClassUpdateQueue.js</em></font></p>
 <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">enqueueUpdate</span>&lt;<span class="title">State</span>&gt;(<span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">  fiber: Fiber,</span></span></span><br><span class="line"><span class="function"><span class="params">  update: Update&lt;State&gt;,</span></span></span><br><span class="line"><span class="function"><span class="params">  lane: Lane,</span></span></span><br><span class="line"><span class="function"><span class="params"></span>): <span class="title">FiberRoot</span> | <span class="title">null</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> updateQueue = fiber.updateQueue;</span><br><span class="line">  <span class="keyword">if</span> (updateQueue === <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// Only occurs if the fiber has been unmounted.</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> sharedQueue: SharedQueue&lt;State&gt; = (updateQueue: any).shared;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 类组件旧的生命周期相关的update</span></span><br><span class="line">  <span class="keyword">if</span> (isUnsafeClassRenderPhaseUpdate(fiber)) &#123;</span><br><span class="line">    <span class="comment">// This is an unsafe render phase update. Add directly to the update</span></span><br><span class="line">    <span class="comment">// queue so we can process it immediately during the current render.</span></span><br><span class="line">    <span class="keyword">const</span> pending = sharedQueue.pending;</span><br><span class="line">    <span class="keyword">if</span> (pending === <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="comment">// This is the first update. Create a circular list.</span></span><br><span class="line">      update.next = update;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      update.next = pending.next;</span><br><span class="line">      pending.next = update;</span><br><span class="line">    &#125;</span><br><span class="line">    sharedQueue.pending = update;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Update the childLanes even though we're most likely already rendering</span></span><br><span class="line">    <span class="comment">// this fiber. This is for backwards compatibility in the case where you</span></span><br><span class="line">    <span class="comment">// update a different component during render phase than the one that is</span></span><br><span class="line">    <span class="comment">// currently renderings (a pattern that is accompanied by a warning).</span></span><br><span class="line">    <span class="keyword">return</span> unsafe_markUpdateLaneFromFiberToRoot(fiber, lane);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// sy</span></span><br><span class="line">    <span class="keyword">return</span> enqueueConcurrentClassUpdate(fiber, sharedQueue, update, lane);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -1078,7 +1078,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3%E7%BB%84%E4%BB%B6%E5%BC%82%E6%AD%A5%E6%9B%B4%E6%96%B0%E5%92%8CNextTick%E7%9A%84%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -1154,7 +1154,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3-computed%E5%92%8Cwatch%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -1267,7 +1267,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3%E5%93%8D%E5%BA%94%E5%BC%8F%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -1391,7 +1391,7 @@
     <link itemprop="mainEntityOfPage" href="https://rile14929.github.io/zh-CN/vue3%E6%B8%B2%E6%9F%93%E7%BB%84%E4%BB%B6%E5%89%8D%E5%88%9D%E5%A7%8B%E5%8C%96%E8%AF%A6%E8%A7%A3.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/Trevor.jpeg">
+      <meta itemprop="image" content="/images/IMG_2044.jpg">
       <meta itemprop="name" content="rile">
       <meta itemprop="description" content="FE">
     </span>
@@ -1570,7 +1570,7 @@
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <img class="site-author-image" itemprop="image" alt="rile"
-      src="/images/Trevor.jpeg">
+      src="/images/IMG_2044.jpg">
   <p class="site-author-name" itemprop="name">rile</p>
   <div class="site-description" itemprop="description">FE</div>
 </div>
